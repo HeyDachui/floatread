@@ -1,0 +1,21 @@
+# Dependencies and generated output
+node_modules/
+dist/
+release/
+playwright-report/
+test-results/
+coverage/
+
+# Local-only secrets and environment files
+.secrets/
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs and editor/OS files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
