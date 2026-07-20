@@ -24,6 +24,10 @@ if (window.top === window && !floatReadGlobal.__FLOATREAD_CONTENT_INSTALLED__) {
         if (isFloatReadMounted()) unmountFloatRead();
         else void mountFloatRead();
         break;
+      case "REFRESH_COMPANION":
+        unmountFloatRead();
+        void mountFloatRead();
+        break;
     }
   });
 

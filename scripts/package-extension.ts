@@ -1,6 +1,6 @@
 import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
-import { resolve, relative } from "node:path";
-import JSZip from "jszip";
+import { relative, resolve } from "node:path";
+import { zipSync } from "fflate";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const distRoot = resolve(projectRoot, "dist");
@@ -10,27 +10,23 @@ const packageJson = JSON.parse(await readFile(resolve(projectRoot, "package.json
 };
 const outputPath = resolve(releaseRoot, `FloatRead-v${packageJson.version}.zip`);
 
-async function addDirectory(zip: JSZip, directory: string): Promise<void> {
+async function addDirectory(files: Record<string, Uint8Array>, directory: string): Promise<void> {
   const entries = await readdir(directory, { withFileTypes: true });
-  for (const entry of entries) {
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     const path = resolve(directory, entry.name);
     if (entry.isDirectory()) {
-      await addDirectory(zip, path);
+      await addDirectory(files, path);
       continue;
     }
     const archivePath = relative(distRoot, path).replaceAll("\\", "/");
-    zip.file(archivePath, await readFile(path), { date: new Date(0) });
+    files[archivePath] = await readFile(path);
   }
 }
 
 await mkdir(releaseRoot, { recursive: true });
 await rm(outputPath, { force: true });
-const zip = new JSZip();
-await addDirectory(zip, distRoot);
-const data = await zip.generateAsync({
-  type: "nodebuffer",
-  compression: "DEFLATE",
-  compressionOptions: { level: 9 },
-});
+const files: Record<string, Uint8Array> = {};
+await addDirectory(files, distRoot);
+const data = zipSync(files, { level: 9 });
 await writeFile(outputPath, data);
 console.log(`${outputPath} (${(await stat(outputPath)).size} bytes)`);

@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: Phase 4 — complete; Phase 3 real-Provider smoke remains pending user confirmation
+- Current phase: Phase 5 — complete; Phase 3 real-Provider smoke remains pending user confirmation
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -19,8 +19,8 @@ This file is the auditable project status source. A phase is only marked complet
 | 1     | Complete           | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 11 unit tests and 2 real Chromium extension E2E tests passed                     |
 | 2     | Complete           | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | 23 unit, 2 integration and 4 real extension E2E tests passed                     |
 | 3     | Preflight complete | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | 51 unit, 2 integration and 5 real extension E2E tests passed; real smoke pending |
-| 4     | Complete           | This phase commit (see Git log)            | 59 unit, 2 integration and 6 real extension E2E tests passed                     |
-| 5     | Not started        | —                                          | —                                                                                |
+| 4     | Complete           | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | 59 unit, 2 integration and 6 real extension E2E tests passed                     |
+| 5     | Complete           | This phase commit (see Git log)            | 79 unit, 2 integration and 7 real extension E2E tests passed                     |
 | 6     | Not started        | —                                          | —                                                                                |
 | 7     | Not started        | —                                          | —                                                                                |
 
@@ -68,7 +68,7 @@ The first dependency installation downloaded packages but exited with `ERR_PNPM_
 ## Known issues
 
 - Brand identity and public repository URLs are provisional centralized values.
-- Provider, cache and skin code belongs to later phases.
+- Popup/onboarding, locale switching and page/site pause controls belong to Phase 6.
 - No real API call is authorized before the explicit smoke-test checkpoint.
 
 ## Phase 1 result
@@ -211,6 +211,40 @@ Controlled E2E failure and fix:
 
 Knowledge After at Phase 4: `not_applied` for prior knowledge cards. New project-local evidence retained: semantic cache keys must include Provider origin as well as kind/model, and damaged individual records should be deleted at read time rather than invalidating the whole database.
 
+## Phase 5 result
+
+Implemented:
+
+- Versioned runtime skin definitions and CSS design tokens for Native, Lens, Glass Orb, Pixel Bot, Ink and Terminal.
+- Five visual states (`idle`, `ready`, `thinking`, `success`, `error`) with code-free built-in motion presets and reduced-motion override.
+- Live settings preview, state preview, size/opacity/panel-width controls, no-reload activation and focused default restoration.
+- Strict `.floatread-skin` import/export using JSON plus PNG/WebP only; exported packages contain no credentials or cache data.
+- Central-directory preflight for entry count, traversal, duplicate names, encryption, ZIP64, compressed/uncompressed sizes and abnormal compression ratios.
+- Strict schema validation for color/range/string/path/unknown fields, file-signature and browser decode validation, image dimensions and understandable errors.
+- Separate metadata and IndexedDB binary-asset storage, 25 MB community capacity, replacement, deletion and idle-state fallback.
+- Community assets cross the Content boundary only as validated image data; no code, HTML, SVG, CSS, font or remote URL can enter the skin runtime.
+- Skin authoring and package-security documentation in `docs/SKINS.md`.
+
+Verification before the phase commit:
+
+| Command                 | Actual result                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| `pnpm lint`             | Passed with zero warnings                                                                             |
+| `pnpm typecheck`        | Passed                                                                                                |
+| `pnpm test`             | Passed: 15 files, 79 tests                                                                            |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                                                              |
+| `pnpm build`            | Passed; 14 production files emitted                                                                   |
+| `pnpm verify:dist`      | Passed; dynamic execution, remote script and production Mock checks passed                            |
+| `pnpm test:e2e`         | Passed: 7 real Chromium extension tests, including live apply plus a real export/import package cycle |
+
+Controlled failures and fixes:
+
+- The first package-security run exposed eager IndexedDB initialization in a non-browser import, a typed-array test fixture mismatch and a V0 field that survived strict migration. Storage now opens lazily, the fixture passes a stable ArrayBuffer, and migration removes the obsolete field.
+- The first production verification found `new Function` inside JSZip's bundled `setImmediate` fallback. JSZip was removed entirely and replaced by the synchronous, preflight-bounded `fflate` codec; the security rule was kept unchanged and the production scan now passes.
+- The first browser import-cycle test passed Playwright's extensionless temporary download path to the file input. The test now supplies the real exported bytes with the user-visible `.floatread-skin` filename, matching an actual import.
+
+Knowledge After at Phase 5: no prior knowledge card was adopted. New project-local evidence retained: security scanning must inspect bundled transitive code, not only authored source; archive safety needs metadata preflight before decompression and decoded-image validation after decompression.
+
 ## Next phase after the API checkpoint
 
-Phase 5 will implement the versioned six-skin engine, runtime design tokens, live switching and hardened `.floatread-skin` import/export. The pending one-Provider smoke test will be recorded separately as soon as the user confirms the credential's Provider.
+Phase 6 will complete Popup, onboarding, global/current-site pause, right-click and keyboard-trigger flows, locale switching and remaining accessibility/environment regression coverage. The pending one-Provider smoke test will be recorded separately as soon as the user confirms the credential's Provider.

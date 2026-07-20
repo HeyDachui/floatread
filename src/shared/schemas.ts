@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { runtimeSkinSchema } from "../skins/schema";
 
 export const readerModeSchema = z.enum(["natural_zh", "key_points", "explain_terms"]);
 export const clickBehaviorSchema = z.enum(["show_actions", "run_default_mode"]);
@@ -38,6 +39,7 @@ export const publicBootstrapSchema = z
     defaultMode: readerModeSchema,
     clickBehavior: clickBehaviorSchema,
     activeSkinId: z.string().min(1),
+    skin: runtimeSkinSchema,
     appearance: appearanceOverridesSchema,
     companionPosition: companionPositionSchema,
     providerConfigured: z.boolean(),

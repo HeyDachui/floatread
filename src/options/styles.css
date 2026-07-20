@@ -1,4 +1,7 @@
 .options-shell {
+  --option-accent: #3778e5;
+  --option-accent-soft: #edf4ff;
+  --option-border: #d9e1ed;
   max-width: 1120px;
   margin: 0 auto;
   padding: 44px 32px 64px;
@@ -25,7 +28,7 @@
 
 .eyebrow,
 .section-label {
-  color: #3778e5;
+  color: var(--option-accent);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -97,13 +100,13 @@
 .add-profile:hover,
 .add-profile:focus-visible {
   outline: none;
-  background: #edf4ff;
+  background: var(--option-accent-soft);
 }
 
 .add-profile {
   margin-top: 14px;
   border: 1px dashed #b8c8e0;
-  color: #3778e5;
+  color: var(--option-accent);
   text-align: center;
 }
 
@@ -111,12 +114,148 @@
   padding: 26px;
 }
 
-.cache-card {
+.cache-card,
+.skin-card {
   margin: 20px 0 0 250px;
+}
+
+.skin-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 20px;
+  padding-top: 22px;
+}
+
+.skin-library {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  align-content: start;
+}
+
+.skin-choice {
+  display: grid;
+  gap: 4px;
+  min-height: 66px;
+  padding: 12px;
+  border: 1px solid #d9e1ed;
+  border-radius: 12px;
+  background: #fbfcfe;
+  color: #25324a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.skin-choice small {
+  color: #788499;
+}
+
+.skin-choice.active,
+.skin-choice:hover,
+.skin-choice:focus-visible {
+  border-color: var(--option-accent);
+  outline: none;
+  background: var(--option-accent-soft);
+}
+
+.skin-preview-stage.fr-companion-layer {
+  position: relative;
+  inset: auto;
+  display: flex;
+  width: auto;
+  height: 220px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+  border: 1px solid var(--fr-border);
+  border-radius: 16px;
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      color-mix(in srgb, var(--fr-accent) 18%, transparent),
+      transparent 48%
+    ),
+    var(--fr-bg);
+  color: var(--fr-text);
+}
+
+.skin-preview-stage .fr-companion {
+  position: relative;
+  top: auto;
+  left: auto;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+.preview-state-tabs {
+  display: flex;
+  max-width: 250px;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.preview-state-tabs button {
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fr-text-muted);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.preview-state-tabs button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--fr-accent) 22%, transparent);
+  color: var(--fr-text);
+}
+
+.file-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.file-button input {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip: rect(0, 0, 0, 0);
 }
 
 .cache-intro {
   margin-top: 18px;
+}
+
+.appearance-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.appearance-controls label {
+  display: grid;
+  gap: 9px;
+  color: #66748a;
+  font-size: 12px;
+}
+
+.appearance-controls input[type="range"] {
+  width: 100%;
+  accent-color: var(--option-accent);
+}
+
+.appearance-controls .motion-toggle {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
 }
 
 .cache-controls {
@@ -246,7 +385,7 @@
   width: 16px;
   min-height: 16px;
   margin: 2px 0 0;
-  accent-color: #3778e5;
+  accent-color: var(--option-accent);
 }
 
 .radio-card span {
@@ -298,7 +437,7 @@
 }
 
 .button.primary {
-  background: #3778e5;
+  background: var(--option-accent);
   color: #fff;
 }
 
@@ -334,12 +473,19 @@
 
   .options-grid,
   .form-grid,
-  .cache-controls {
+  .cache-controls,
+  .appearance-controls {
     grid-template-columns: 1fr;
   }
 
-  .cache-card {
+  .cache-card,
+  .skin-card {
     margin-left: 0;
+  }
+
+  .skin-workbench,
+  .skin-library {
+    grid-template-columns: 1fr;
   }
 
   .wide-field {
@@ -385,6 +531,18 @@
     border-color: #3a4558;
     background: #171c25;
     color: #f2f5fa;
+  }
+
+  .skin-choice {
+    border-color: #3a4558;
+    background: #171c25;
+    color: #eef3fb;
+  }
+
+  .skin-choice.active,
+  .skin-choice:hover,
+  .skin-choice:focus-visible {
+    background: #222d40;
   }
 
   .card-heading {

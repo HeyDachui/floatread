@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { cacheStatusSchema } from "../cache/schemas";
 import type { CachePolicy, CacheStats } from "../cache/types";
+import { CompanionArtwork } from "../companion/CompanionArtwork";
 import { createProviderProfile, PROVIDER_DEFAULTS, validateProviderUrl } from "../providers/config";
 import { connectionTestResultSchema, providerProfilesSchema } from "../providers/schemas";
 import type {
@@ -11,6 +12,14 @@ import type {
   SecretStorageMode,
 } from "../providers/types";
 import type { BackgroundResponse } from "../shared/messages";
+import { publicBootstrapSchema } from "../shared/schemas";
+import type { AppearanceOverrides } from "../shared/types";
+import { exportSkinPackage } from "../skins/package-export";
+import { SkinImportError, validateSkinPackage } from "../skins/package-validator";
+import { runtimeSkinSchema } from "../skins/schema";
+import { getInstalledSkinManifest, getSkinAsset, installSkinPackage } from "../skins/storage";
+import type { RuntimeSkinDefinition, SkinState } from "../skins/types";
+import "../companion/styles.css";
 import "../shared/page.css";
 import "./styles.css";
 
@@ -29,6 +38,20 @@ const DEFAULT_CACHE_POLICY: CachePolicy = {
   maxEntries: 200,
   maxBytes: 10_000_000,
 };
+
+const DEFAULT_APPEARANCE: AppearanceOverrides = {
+  companionSize: 58,
+  companionOpacity: 0.9,
+  panelWidth: 380,
+  panelOpacity: 0.96,
+  fontScale: 1,
+  cornerRadius: 16,
+  motionEnabled: true,
+  motionIntensity: 1,
+  snapMargin: 12,
+};
+
+const SKIN_STATES: SkinState[] = ["idle", "ready", "thinking", "success", "error"];
 
 function formatBytes(bytes: number): string {
   if (bytes < 1_000) return `${bytes} B`;
@@ -57,9 +80,17 @@ export function OptionsApp(): React.JSX.Element {
     bytes: 0,
     expiredRemoved: 0,
   });
+  const [skins, setSkins] = useState<RuntimeSkinDefinition[]>([]);
+  const [activeSkinId, setActiveSkinIdState] = useState("native");
+  const [previewSkinId, setPreviewSkinId] = useState("native");
+  const [previewState, setPreviewState] = useState<SkinState>("idle");
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | undefined>(undefined);
+  const [appearance, setAppearance] = useState<AppearanceOverrides>(DEFAULT_APPEARANCE);
 
   const requiresSecret = PROVIDER_DEFAULTS[draft.kind].requiresSecret;
   const urlValidation = useMemo(() => validateProviderUrl(draft), [draft]);
+  const previewSkin = skins.find((skin) => skin.id === previewSkinId) ?? skins[0];
+  const activeSkin = skins.find((skin) => skin.id === activeSkinId);
 
   const loadProfiles = async (preferredId?: string): Promise<void> => {
     const response = await send({ type: "LIST_PROVIDER_PROFILES" });
@@ -82,10 +113,51 @@ export function OptionsApp(): React.JSX.Element {
     setCacheStats(parsed.data.stats);
   };
 
+  const loadSkins = async (): Promise<void> => {
+    const [listResponse, bootstrapResponse] = await Promise.all([
+      send({ type: "LIST_RUNTIME_SKINS" }),
+      send({ type: "GET_PUBLIC_BOOTSTRAP" }),
+    ]);
+    const list = listResponse.ok
+      ? runtimeSkinSchema.array().max(56).safeParse(listResponse.data)
+      : null;
+    const bootstrap = bootstrapResponse.ok
+      ? publicBootstrapSchema.safeParse(bootstrapResponse.data)
+      : null;
+    if (list?.success) setSkins(list.data);
+    if (bootstrap?.success) {
+      setActiveSkinIdState(bootstrap.data.activeSkinId);
+      setPreviewSkinId(bootstrap.data.activeSkinId);
+      setAppearance(bootstrap.data.appearance);
+    }
+  };
+
   useEffect(() => {
     void loadProfiles();
     void loadCacheStatus();
+    void loadSkins();
   }, []);
+
+  useEffect(() => {
+    if (!previewSkin || previewSkin.source !== "community") {
+      setPreviewImageUrl(undefined);
+      return;
+    }
+    let objectUrl: string | undefined;
+    let current = true;
+    void getInstalledSkinManifest(previewSkin.id).then(async (manifest) => {
+      if (!manifest) return;
+      const path = manifest.assets[previewState] ?? manifest.assets.idle;
+      const asset = await getSkinAsset(previewSkin.id, path);
+      if (!asset || !current) return;
+      objectUrl = URL.createObjectURL(new Blob([asset.bytes], { type: asset.mime }));
+      setPreviewImageUrl(objectUrl);
+    });
+    return () => {
+      current = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [previewSkin, previewState]);
 
   const saveCachePolicy = async (): Promise<void> => {
     setBusy(true);
@@ -104,6 +176,96 @@ export function OptionsApp(): React.JSX.Element {
       await send({ type: "CLEAR_RESULT_CACHE" });
       await loadCacheStatus();
       setStatus("AI 结果缓存已清空；Provider 配置和凭据未受影响。");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const activateSkin = async (skinId: string): Promise<void> => {
+    setBusy(true);
+    try {
+      const response = await send({ type: "ACTIVATE_SKIN", skinId });
+      if (!response.ok) throw new Error("activate failed");
+      setActiveSkinIdState(skinId);
+      setPreviewSkinId(skinId);
+      setStatus("皮肤已应用到打开的 FloatRead 助手，无需刷新网页。");
+    } catch {
+      setStatus("皮肤切换失败，请重新加载扩展后重试。");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveAppearance = async (next = appearance): Promise<void> => {
+    setBusy(true);
+    try {
+      const response = await send({ type: "UPDATE_APPEARANCE", appearance: next });
+      setStatus(response.ok ? "外观设置已应用，无需刷新网页。" : "外观设置保存失败。");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const restoreSkinDefaults = async (): Promise<void> => {
+    setAppearance(DEFAULT_APPEARANCE);
+    await saveAppearance(DEFAULT_APPEARANCE);
+    await activateSkin("native");
+    setStatus("已恢复 Native 皮肤和默认外观。Provider 与缓存设置未改变。");
+  };
+
+  const importSkin = async (file: File): Promise<void> => {
+    if (!file.name.toLowerCase().endsWith(".floatread-skin")) {
+      setStatus("请选择扩展名为 .floatread-skin 的皮肤包。");
+      return;
+    }
+    setBusy(true);
+    try {
+      const validated = await validateSkinPackage(new Uint8Array(await file.arrayBuffer()));
+      await installSkinPackage(validated);
+      await loadSkins();
+      await activateSkin(validated.manifest.id);
+      setStatus(`已安全导入并应用 ${validated.manifest.name}。`);
+    } catch (error) {
+      const reason =
+        error instanceof SkinImportError
+          ? `${error.message}${error.fileName ? `（${error.fileName}）` : ""}`
+          : error instanceof Error
+            ? error.message
+            : "未知错误";
+      setStatus(`皮肤导入失败：${reason}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const exportSkin = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      const blob = await exportSkinPackage(previewSkinId);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${previewSkinId}.floatread-skin`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setStatus("皮肤包已导出；其中不包含任何 Provider 凭据。");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "皮肤导出失败。");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deleteSkin = async (): Promise<void> => {
+    const skin = skins.find((item) => item.id === previewSkinId);
+    if (!skin || skin.source !== "community") return;
+    setBusy(true);
+    try {
+      await send({ type: "DELETE_INSTALLED_SKIN", skinId: skin.id });
+      await loadSkins();
+      setPreviewSkinId("native");
+      setActiveSkinIdState(activeSkinId === skin.id ? "native" : activeSkinId);
+      setStatus("社区皮肤及其本地资源已删除。");
     } finally {
       setBusy(false);
     }
@@ -192,7 +354,19 @@ export function OptionsApp(): React.JSX.Element {
   };
 
   return (
-    <main className="options-shell">
+    <main
+      className="options-shell"
+      data-active-skin={activeSkin?.variant ?? "native"}
+      style={
+        activeSkin
+          ? ({
+              "--option-accent": activeSkin.panel.accent,
+              "--option-accent-soft": `${activeSkin.panel.accent}24`,
+              "--option-border": activeSkin.panel.border,
+            } as React.CSSProperties)
+          : undefined
+      }
+    >
       <header className="options-hero">
         <div>
           <div className="eyebrow">LOCAL-FIRST READING COMPANION</div>
@@ -412,6 +586,185 @@ export function OptionsApp(): React.JSX.Element {
           </div>
         </section>
       </div>
+
+      <section className="settings-card skin-card" aria-labelledby="skin-title">
+        <div className="card-heading">
+          <div>
+            <div className="section-label">VERSIONED SKIN ENGINE</div>
+            <h2 id="skin-title">皮肤与实时预览</h2>
+          </div>
+          <span className="privacy-chip">只改变 FloatRead</span>
+        </div>
+        <div className="skin-workbench">
+          <div className="skin-library" aria-label="皮肤列表">
+            {skins.map((skin) => (
+              <button
+                key={skin.id}
+                type="button"
+                className={skin.id === previewSkinId ? "skin-choice active" : "skin-choice"}
+                onClick={() => setPreviewSkinId(skin.id)}
+              >
+                <span>{skin.name}</span>
+                <small>
+                  {skin.source === "builtin" ? "内置原创" : "社区皮肤"}
+                  {skin.id === activeSkinId ? " · 使用中" : ""}
+                </small>
+              </button>
+            ))}
+          </div>
+
+          {previewSkin ? (
+            <div
+              className="skin-preview-stage fr-companion-layer"
+              data-skin={previewSkin.variant}
+              style={
+                {
+                  "--fr-accent": previewSkin.panel.accent,
+                  "--fr-bg": previewSkin.panel.background,
+                  "--fr-bg-elevated": previewSkin.panel.backgroundElevated,
+                  "--fr-text": previewSkin.panel.text,
+                  "--fr-text-muted": previewSkin.panel.textMuted,
+                  "--fr-border": previewSkin.panel.border,
+                  "--fr-success": previewSkin.panel.success,
+                  "--fr-error": previewSkin.panel.error,
+                  "--fr-companion-size": `${appearance.companionSize}px`,
+                  "--fr-companion-opacity": appearance.companionOpacity,
+                } as React.CSSProperties
+              }
+            >
+              <div className={`fr-companion fr-state-${previewState}`} data-motion="none">
+                <CompanionArtwork state={previewState} communityImageUrl={previewImageUrl} />
+              </div>
+              <strong>{previewSkin.name}</strong>
+              <div className="preview-state-tabs" aria-label="预览状态">
+                {SKIN_STATES.map((state) => (
+                  <button
+                    key={state}
+                    type="button"
+                    aria-pressed={previewState === state}
+                    onClick={() => setPreviewState(state)}
+                  >
+                    {state}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <p className="cache-intro">
+          社区包仅允许严格 JSON、PNG 和 WebP；JavaScript、HTML、SVG、CSS、字体、远程
+          URL、路径穿越和异常压缩包都会被拒绝。
+        </p>
+        <div className="appearance-controls">
+          <label>
+            <span>助手大小：{appearance.companionSize}px</span>
+            <input
+              aria-label="助手大小"
+              type="range"
+              min={40}
+              max={96}
+              value={appearance.companionSize}
+              onChange={(event) =>
+                setAppearance({ ...appearance, companionSize: Number(event.target.value) })
+              }
+            />
+          </label>
+          <label>
+            <span>助手透明度：{Math.round(appearance.companionOpacity * 100)}%</span>
+            <input
+              aria-label="助手透明度"
+              type="range"
+              min={35}
+              max={100}
+              value={Math.round(appearance.companionOpacity * 100)}
+              onChange={(event) =>
+                setAppearance({ ...appearance, companionOpacity: Number(event.target.value) / 100 })
+              }
+            />
+          </label>
+          <label>
+            <span>结果面板宽度：{appearance.panelWidth}px</span>
+            <input
+              aria-label="结果面板宽度"
+              type="range"
+              min={320}
+              max={520}
+              value={appearance.panelWidth}
+              onChange={(event) =>
+                setAppearance({ ...appearance, panelWidth: Number(event.target.value) })
+              }
+            />
+          </label>
+          <label className="motion-toggle">
+            <input
+              type="checkbox"
+              checked={appearance.motionEnabled}
+              onChange={(event) =>
+                setAppearance({ ...appearance, motionEnabled: event.target.checked })
+              }
+            />
+            <span>启用内置动画（系统“减少动态效果”始终优先）</span>
+          </label>
+        </div>
+        <div className="form-actions">
+          <label className="button secondary file-button">
+            导入 .floatread-skin
+            <input
+              type="file"
+              accept=".floatread-skin,application/zip"
+              disabled={busy}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void importSkin(file);
+                event.target.value = "";
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className="button secondary"
+            disabled={busy || !previewSkin}
+            onClick={() => void exportSkin()}
+          >
+            导出当前皮肤
+          </button>
+          {previewSkin?.source === "community" ? (
+            <button
+              type="button"
+              className="button danger"
+              disabled={busy}
+              onClick={() => void deleteSkin()}
+            >
+              删除社区皮肤
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="button ghost"
+            disabled={busy}
+            onClick={() => void restoreSkinDefaults()}
+          >
+            恢复默认
+          </button>
+          <span className="action-spacer" />
+          <button
+            type="button"
+            className="button secondary"
+            disabled={busy}
+            onClick={() => void saveAppearance()}
+          >
+            保存外观
+          </button>
+          <button
+            type="button"
+            className="button primary"
+            disabled={busy || !previewSkin || activeSkinId === previewSkinId}
+            onClick={() => void activateSkin(previewSkinId)}
+          >
+            应用皮肤
+          </button>
+        </div>
+      </section>
 
       <section className="settings-card cache-card" aria-labelledby="cache-title">
         <div className="card-heading">

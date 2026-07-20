@@ -24,8 +24,10 @@ export interface PublicBootstrap {
   defaultMode: ReaderMode;
   clickBehavior: ClickBehavior;
   activeSkinId: string;
+  skin: RuntimeSkinDefinition;
   appearance: AppearanceOverrides;
   companionPosition: CompanionPosition;
   providerConfigured: boolean;
   providerLabel?: string | undefined;
 }
+import type { RuntimeSkinDefinition } from "../skins/types";

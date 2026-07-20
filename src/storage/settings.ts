@@ -6,7 +6,8 @@ import {
   companionPositionSchema,
   readerModeSchema,
 } from "../shared/schemas";
-import type { CompanionPosition, PublicBootstrap } from "../shared/types";
+import type { AppearanceOverrides, CompanionPosition, PublicBootstrap } from "../shared/types";
+import { getRuntimeSkin } from "../skins/storage";
 
 const SETTINGS_KEY = "appSettings";
 
@@ -106,6 +107,12 @@ export async function updateCachePolicy(cache: AppSettings["cache"]): Promise<vo
   await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, cache: parsed } });
 }
 
+export async function updateAppearance(appearance: AppearanceOverrides): Promise<void> {
+  const parsed = appearanceOverridesSchema.parse(appearance);
+  const settings = await getSettings();
+  await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, appearance: parsed } });
+}
+
 export async function restoreDefaultSettings(): Promise<void> {
   await chrome.storage.local.set({ [SETTINGS_KEY]: DEFAULT_SETTINGS });
 }
@@ -130,6 +137,11 @@ export async function setActiveProviderId(activeProviderId: string | null): Prom
   await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, activeProviderId } });
 }
 
+export async function setActiveSkinId(activeSkinId: string): Promise<void> {
+  const settings = await getSettings();
+  await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, activeSkinId } });
+}
+
 export async function getPublicBootstrap(): Promise<PublicBootstrap> {
   const settings = await getSettings();
   return {
@@ -137,6 +149,7 @@ export async function getPublicBootstrap(): Promise<PublicBootstrap> {
     defaultMode: settings.defaultMode,
     clickBehavior: settings.clickBehavior,
     activeSkinId: settings.activeSkinId,
+    skin: await getRuntimeSkin(settings.activeSkinId),
     appearance: settings.appearance,
     companionPosition: settings.companionPosition,
     providerConfigured: settings.activeProviderId !== null,

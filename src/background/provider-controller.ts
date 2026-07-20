@@ -3,6 +3,7 @@ import { validateProviderUrl } from "../providers/config";
 import { getProviderAdapter } from "../providers/router";
 import type { ProviderProfile } from "../providers/types";
 import type { BackgroundResponse, TrustedToBackgroundMessage } from "../shared/messages";
+import { deleteInstalledSkin, getRuntimeSkin, listRuntimeSkins } from "../skins/storage";
 import {
   activateProviderProfile,
   deleteProviderProfile,
@@ -11,7 +12,24 @@ import {
   saveProviderProfile,
 } from "../storage/providers";
 import { deleteProviderSecret, getProviderSecret, saveProviderSecret } from "../storage/secrets";
-import { getSettings, restoreDefaultSettings, updateCachePolicy } from "../storage/settings";
+import {
+  getSettings,
+  restoreDefaultSettings,
+  setActiveSkinId,
+  updateAppearance,
+  updateCachePolicy,
+} from "../storage/settings";
+
+async function refreshCompanions(): Promise<void> {
+  const tabs = await chrome.tabs.query({});
+  await Promise.allSettled(
+    tabs.flatMap((tab) =>
+      typeof tab.id === "number"
+        ? [chrome.tabs.sendMessage(tab.id, { type: "REFRESH_COMPANION" })]
+        : [],
+    ),
+  );
+}
 
 async function hasHostPermission(profile: ProviderProfile): Promise<boolean> {
   const result = validateProviderUrl(profile);
@@ -102,6 +120,32 @@ export async function routeTrustedProviderMessage(
       return { ok: true };
     case "RESTORE_DEFAULT_SETTINGS":
       await restoreDefaultSettings();
+      await refreshCompanions();
       return { ok: true };
+    case "LIST_RUNTIME_SKINS":
+      return { ok: true, data: await listRuntimeSkins() };
+    case "UPDATE_APPEARANCE":
+      await updateAppearance(message.appearance);
+      await refreshCompanions();
+      return { ok: true };
+    case "ACTIVATE_SKIN": {
+      const skin = await getRuntimeSkin(message.skinId);
+      if (skin.id !== message.skinId) {
+        return {
+          ok: false,
+          error: { code: "INVALID_MESSAGE", message: "Skin not found." },
+        };
+      }
+      await setActiveSkinId(message.skinId);
+      await refreshCompanions();
+      return { ok: true };
+    }
+    case "DELETE_INSTALLED_SKIN": {
+      const settings = await getSettings();
+      if (settings.activeSkinId === message.skinId) await setActiveSkinId("native");
+      await deleteInstalledSkin(message.skinId);
+      await refreshCompanions();
+      return { ok: true };
+    }
   }
 }

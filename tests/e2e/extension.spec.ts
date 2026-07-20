@@ -222,3 +222,52 @@ test("saves a session-only Provider without revealing its API key", async () => 
   await expect(page.getByRole("status")).toContainText("远程 Provider 必须使用 HTTPS");
   await page.close();
 });
+
+test("previews and applies a built-in skin to an open page without reloading it", async () => {
+  const worker = context.serviceWorkers()[0];
+  if (!worker) throw new Error("extension service worker missing");
+  const extensionId = new URL(worker.url()).host;
+  const fixturePage = await context.newPage();
+  await fixturePage.goto(fixtureUrl);
+  const host = fixturePage.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+  await fixturePage.evaluate(() => {
+    document.body.dataset.loadProof = crypto.randomUUID();
+  });
+  const loadProof = await fixturePage.locator("body").getAttribute("data-load-proof");
+
+  const optionsPage = await context.newPage();
+  await optionsPage.goto(`chrome-extension://${extensionId}/src/options/index.html`);
+  await expect(optionsPage.getByRole("heading", { name: "皮肤与实时预览" })).toBeVisible();
+  await expect(optionsPage.locator(".skin-choice")).toHaveCount(6);
+  await optionsPage.getByRole("button", { name: /Terminal/u }).click();
+  await expect(optionsPage.locator(".skin-preview-stage")).toHaveAttribute("data-skin", "terminal");
+  await optionsPage.getByLabel("助手大小").fill("72");
+  await optionsPage.getByRole("button", { name: "保存外观" }).click();
+  await expect(optionsPage.getByRole("status")).toContainText("外观设置已应用");
+  await optionsPage.getByRole("button", { name: "应用皮肤" }).click();
+  await expect(optionsPage.getByRole("status")).toContainText("皮肤已应用");
+
+  await expect(host.locator(".fr-companion-layer")).toHaveAttribute("data-skin", "terminal");
+  await expect(host.locator("button.fr-companion")).toHaveCSS("width", "72px");
+  await expect(fixturePage.locator("body")).toHaveAttribute("data-load-proof", loadProof ?? "");
+
+  const [download] = await Promise.all([
+    optionsPage.waitForEvent("download"),
+    optionsPage.getByRole("button", { name: "导出当前皮肤" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("terminal.floatread-skin");
+  const packagePath = await download.path();
+  if (!packagePath) throw new Error("exported skin package path missing");
+  await optionsPage.locator('input[type="file"]').setInputFiles({
+    name: "terminal.floatread-skin",
+    mimeType: "application/zip",
+    buffer: await readFile(packagePath),
+  });
+  await expect(optionsPage.getByRole("status")).toContainText("已安全导入并应用 Terminal Export");
+  await expect(optionsPage.locator(".skin-choice")).toHaveCount(7);
+  await expect(host.locator(".fr-companion-layer")).toHaveAttribute("data-skin", "community");
+  await expect(host.locator("img.fr-community-art")).toBeAttached();
+  await optionsPage.close();
+  await fixturePage.close();
+});

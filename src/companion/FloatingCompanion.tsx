@@ -8,6 +8,10 @@ import {
   type ViewportPoint,
 } from "../content/viewport-manager";
 import type { CompanionPosition, PublicBootstrap, ReaderMode } from "../shared/types";
+import type { BackgroundResponse } from "../shared/messages";
+import { skinAssetResponseSchema } from "../skins/schema";
+import type { SkinState } from "../skins/types";
+import { CompanionArtwork } from "./CompanionArtwork";
 import { isDragGesture } from "./drag-controller";
 import { ResultPanel } from "./ResultPanel";
 import { INITIAL_READER_STATE, readerReducer } from "./reader-reducer";
@@ -46,6 +50,7 @@ export function FloatingCompanion({
   const [readerState, dispatch] = useReducer(readerReducer, INITIAL_READER_STATE);
   const [visualFeedback, setVisualFeedback] = useState<"success" | "error" | null>(null);
   const [focusPanelOnOpen, setFocusPanelOnOpen] = useState(false);
+  const [communityImageUrl, setCommunityImageUrl] = useState<string | undefined>(undefined);
   const dragSession = useRef<DragSession | null>(null);
   const generationClient = useRef<GenerationClient | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -64,6 +69,27 @@ export function FloatingCompanion({
   const visualState = isGenerating
     ? "thinking"
     : (visualFeedback ?? (selection ? "ready" : "idle"));
+  const skinState = visualState as SkinState;
+
+  useEffect(() => {
+    if (bootstrap.skin.source !== "community") {
+      setCommunityImageUrl(undefined);
+      return;
+    }
+    let current = true;
+    void chrome.runtime
+      .sendMessage({ type: "GET_ACTIVE_SKIN_ASSET", state: skinState })
+      .then((response: BackgroundResponse) => {
+        const parsed = response.ok ? skinAssetResponseSchema.safeParse(response.data) : null;
+        if (current) setCommunityImageUrl(parsed?.success ? parsed.data.dataUrl : undefined);
+      })
+      .catch(() => {
+        if (current) setCommunityImageUrl(undefined);
+      });
+    return () => {
+      current = false;
+    };
+  }, [bootstrap.skin.source, skinState]);
 
   useEffect(() => {
     generationClient.current = createGenerationClient((event) => dispatch(event));
@@ -225,8 +251,20 @@ export function FloatingCompanion({
           "--fr-panel-font-size": `${14 * bootstrap.appearance.fontScale}px`,
           "--fr-panel-radius": `${bootstrap.appearance.cornerRadius}px`,
           "--fr-panel-opacity": bootstrap.appearance.panelOpacity,
+          "--fr-accent": bootstrap.skin.panel.accent,
+          "--fr-bg": bootstrap.skin.panel.background,
+          "--fr-bg-elevated": bootstrap.skin.panel.backgroundElevated,
+          "--fr-text": bootstrap.skin.panel.text,
+          "--fr-text-muted": bootstrap.skin.panel.textMuted,
+          "--fr-border": bootstrap.skin.panel.border,
+          "--fr-success": bootstrap.skin.panel.success,
+          "--fr-warning": bootstrap.skin.panel.warning,
+          "--fr-error": bootstrap.skin.panel.error,
+          "--fr-skin-radius": `${bootstrap.skin.panel.radius}px`,
+          "--fr-shadow-alpha": bootstrap.skin.panel.shadowStrength,
         } as React.CSSProperties
       }
+      data-skin={bootstrap.skin.variant}
     >
       {hint ? (
         <div className="fr-toast" role="status" aria-live="polite">
@@ -284,6 +322,9 @@ export function FloatingCompanion({
       <button
         ref={buttonRef}
         className={`fr-companion fr-state-${visualState}`}
+        data-motion={
+          bootstrap.appearance.motionEnabled ? bootstrap.skin.motions[skinState] : "none"
+        }
         type="button"
         aria-label={selection ? "FloatRead：选择阅读模式" : "FloatRead：请先选择文字"}
         aria-expanded={actionMenuOpen || contextMenuOpen || readerState.value !== "idle"}
@@ -301,8 +342,7 @@ export function FloatingCompanion({
           setContextMenuOpen((open) => !open);
         }}
       >
-        <span className="fr-orb-core" aria-hidden="true" />
-        <span className="fr-orb-focus" aria-hidden="true" />
+        <CompanionArtwork state={skinState} communityImageUrl={communityImageUrl} />
         <span className="fr-visually-hidden" aria-live="polite">
           {selection ? "已选择文字，可以开始阅读" : "等待选择文字"}
         </span>

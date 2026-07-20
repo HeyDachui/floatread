@@ -3,7 +3,8 @@ import {
   trustedToBackgroundSchema,
   type BackgroundResponse,
 } from "../shared/messages";
-import { getPublicBootstrap, updateCompanionPosition } from "../storage/settings";
+import { getSkinStateAsset } from "../skins/storage";
+import { getPublicBootstrap, getSettings, updateCompanionPosition } from "../storage/settings";
 import { routeTrustedProviderMessage } from "./provider-controller";
 
 async function routeMessage(
@@ -42,6 +43,17 @@ async function routeMessage(
     case "OPEN_OPTIONS":
       await chrome.runtime.openOptionsPage();
       return { ok: true };
+    case "GET_ACTIVE_SKIN_ASSET": {
+      const settings = await getSettings();
+      const asset = await getSkinStateAsset(settings.activeSkinId, parsed.data.state);
+      if (!asset) return { ok: true, data: null };
+      const bytes = new Uint8Array(asset.bytes);
+      let binary = "";
+      for (let offset = 0; offset < bytes.length; offset += 32_768) {
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + 32_768));
+      }
+      return { ok: true, data: { dataUrl: `data:${asset.mime};base64,${btoa(binary)}` } };
+    }
   }
 }
 

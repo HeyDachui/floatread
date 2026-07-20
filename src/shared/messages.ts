@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { PublicError } from "./errors";
 import { providerProfileSchema } from "../providers/schemas";
-import { cachePolicySchema } from "./schemas";
+import { appearanceOverridesSchema, cachePolicySchema } from "./schemas";
+import { skinStateSchema } from "../skins/schema";
 import { companionPositionSchema, readerModeSchema } from "./schemas";
 
 export const contentToBackgroundSchema = z.discriminatedUnion("type", [
@@ -18,6 +19,7 @@ export const contentToBackgroundSchema = z.discriminatedUnion("type", [
       section: z.enum(["provider", "appearance", "privacy"]).optional(),
     })
     .strict(),
+  z.object({ type: z.literal("GET_ACTIVE_SKIN_ASSET"), state: skinStateSchema }).strict(),
 ]);
 
 export type ContentToBackgroundMessage = z.infer<typeof contentToBackgroundSchema>;
@@ -47,6 +49,14 @@ export const trustedToBackgroundSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("UPDATE_CACHE_POLICY"), cache: cachePolicySchema }).strict(),
   z.object({ type: z.literal("CLEAR_RESULT_CACHE") }).strict(),
   z.object({ type: z.literal("RESTORE_DEFAULT_SETTINGS") }).strict(),
+  z.object({ type: z.literal("LIST_RUNTIME_SKINS") }).strict(),
+  z
+    .object({ type: z.literal("UPDATE_APPEARANCE"), appearance: appearanceOverridesSchema })
+    .strict(),
+  z.object({ type: z.literal("ACTIVATE_SKIN"), skinId: z.string().min(1).max(64) }).strict(),
+  z
+    .object({ type: z.literal("DELETE_INSTALLED_SKIN"), skinId: z.string().min(1).max(64) })
+    .strict(),
 ]);
 
 export type TrustedToBackgroundMessage = z.infer<typeof trustedToBackgroundSchema>;
@@ -55,6 +65,7 @@ export const backgroundToContentSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("SHOW_COMPANION") }).strict(),
   z.object({ type: z.literal("HIDE_COMPANION") }).strict(),
   z.object({ type: z.literal("TOGGLE_COMPANION") }).strict(),
+  z.object({ type: z.literal("REFRESH_COMPANION") }).strict(),
 ]);
 
 export type BackgroundToContentMessage = z.infer<typeof backgroundToContentSchema>;
