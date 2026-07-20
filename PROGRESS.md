@@ -4,12 +4,12 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: Phase 3 — implementation verified; one real-Provider smoke test pending user confirmation
+- Current phase: Phase 4 — complete; Phase 3 real-Provider smoke remains pending user confirmation
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
 - Local smoke-test secret: `.secrets/FloatRead-APIKEY.txt` (ignored; contents unread)
-- Real API status: not eligible for use; Mock and preflight checks must pass first
+- Real API status: preflight eligible; waiting for confirmation that the ignored key is a DeepSeek key
 
 ## Phase ledger
 
@@ -18,8 +18,8 @@ This file is the auditable project status source. A phase is only marked complet
 | 0     | Complete           | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | Lint, typecheck, unit, integration, build and dist verification passed           |
 | 1     | Complete           | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 11 unit tests and 2 real Chromium extension E2E tests passed                     |
 | 2     | Complete           | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | 23 unit, 2 integration and 4 real extension E2E tests passed                     |
-| 3     | Preflight complete | This phase commit (see Git log)            | 51 unit, 2 integration and 5 real extension E2E tests passed; real smoke pending |
-| 4     | Not started        | —                                          | —                                                                                |
+| 3     | Preflight complete | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | 51 unit, 2 integration and 5 real extension E2E tests passed; real smoke pending |
+| 4     | Complete           | This phase commit (see Git log)            | 59 unit, 2 integration and 6 real extension E2E tests passed                     |
 | 5     | Not started        | —                                          | —                                                                                |
 | 6     | Not started        | —                                          | —                                                                                |
 | 7     | Not started        | —                                          | —                                                                                |
@@ -176,3 +176,41 @@ Real API checkpoint:
 - No real request has been made and no credential has been echoed.
 
 Knowledge After at Phase 3: `not_applied` for prior local knowledge cards. Current primary Provider documentation and executable adapter tests were used directly. Project-local evidence retained: Provider protocols need separate framing parsers (SSE versus NDJSON), and retries are safe only before a text delta is exposed.
+
+## Phase 4 result
+
+Implemented:
+
+- Stable SHA-256 keys over normalized text, reading mode, Provider kind, Base URL, model and Prompt version.
+- Versioned result records with byte size, creation, last-access and expiry timestamps; no credential field exists in the schema.
+- Persistent IndexedDB cache and browser-session cache using separate trusted storage.
+- TTL cleanup, LRU access updates, maximum entry and byte budgets, oversized-result refusal and full clear.
+- Corrupt-record isolation: malformed entries are deleted without blocking generation or extension startup.
+- Background integration that checks cache before host permission or Provider fetch and writes only successful complete output.
+- Settings migration from the known V0 shape to V1, future-version rejection and corrupted-settings fallback.
+- Settings UI for cache location, TTL, entry limit, capacity, usage display and clear action.
+
+Verification:
+
+| Command                 | Actual result                           |
+| ----------------------- | --------------------------------------- |
+| `pnpm lint`             | Passed with zero warnings               |
+| `pnpm typecheck`        | Passed                                  |
+| `pnpm test`             | Passed: 13 files, 59 tests              |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                |
+| `pnpm build`            | Passed; 14 production files emitted     |
+| `pnpm verify:dist`      | Passed                                  |
+| `pnpm test:e2e`         | Passed: 6 real Chromium extension tests |
+
+The cache E2E uses a unique selected passage, confirms the first result is not marked cached, repeats the same request, and confirms the second result carries the cache marker from the pre-Provider return path.
+
+Controlled E2E failure and fix:
+
+- Adding cache settings introduced two accessible controls whose names contained “保存”, then two containing “持久保存在本机”. Playwright correctly rejected ambiguous locators.
+- Tests now target the exact **保存** button and credential-storage radio role. All six E2E tests pass.
+
+Knowledge After at Phase 4: `not_applied` for prior knowledge cards. New project-local evidence retained: semantic cache keys must include Provider origin as well as kind/model, and damaged individual records should be deleted at read time rather than invalidating the whole database.
+
+## Next phase after the API checkpoint
+
+Phase 5 will implement the versioned six-skin engine, runtime design tokens, live switching and hardened `.floatread-skin` import/export. The pending one-Provider smoke test will be recorded separately as soon as the user confirms the credential's Provider.

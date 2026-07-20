@@ -1,3 +1,4 @@
+import { clearAllCaches, getCacheStats } from "../cache/service";
 import { validateProviderUrl } from "../providers/config";
 import { getProviderAdapter } from "../providers/router";
 import type { ProviderProfile } from "../providers/types";
@@ -10,6 +11,7 @@ import {
   saveProviderProfile,
 } from "../storage/providers";
 import { deleteProviderSecret, getProviderSecret, saveProviderSecret } from "../storage/secrets";
+import { getSettings, restoreDefaultSettings, updateCachePolicy } from "../storage/settings";
 
 async function hasHostPermission(profile: ProviderProfile): Promise<boolean> {
   const result = validateProviderUrl(profile);
@@ -88,5 +90,18 @@ export async function routeTrustedProviderMessage(
         clearTimeout(timer);
       }
     }
+    case "GET_CACHE_STATUS": {
+      const settings = await getSettings();
+      return { ok: true, data: { policy: settings.cache, stats: await getCacheStats() } };
+    }
+    case "UPDATE_CACHE_POLICY":
+      await updateCachePolicy(message.cache);
+      return { ok: true };
+    case "CLEAR_RESULT_CACHE":
+      await clearAllCaches();
+      return { ok: true };
+    case "RESTORE_DEFAULT_SETTINGS":
+      await restoreDefaultSettings();
+      return { ok: true };
   }
 }

@@ -1,5 +1,7 @@
 import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { cacheStatusSchema } from "../cache/schemas";
+import type { CachePolicy, CacheStats } from "../cache/types";
 import { createProviderProfile, PROVIDER_DEFAULTS, validateProviderUrl } from "../providers/config";
 import { connectionTestResultSchema, providerProfilesSchema } from "../providers/schemas";
 import type {
@@ -21,6 +23,19 @@ const PROVIDER_ORDER: ProviderKind[] = [
   "ollama",
 ];
 
+const DEFAULT_CACHE_POLICY: CachePolicy = {
+  mode: "persistent",
+  ttlDays: 7,
+  maxEntries: 200,
+  maxBytes: 10_000_000,
+};
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1_000) return `${bytes} B`;
+  if (bytes < 1_000_000) return `${(bytes / 1_000).toFixed(1)} KB`;
+  return `${(bytes / 1_000_000).toFixed(1)} MB`;
+}
+
 async function send(message: unknown): Promise<BackgroundResponse> {
   return (await chrome.runtime.sendMessage(message)) as BackgroundResponse;
 }
@@ -36,6 +51,12 @@ export function OptionsApp(): React.JSX.Element {
   const [status, setStatus] = useState<string>("正在读取本地设置…");
   const [busy, setBusy] = useState(false);
   const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
+  const [cachePolicy, setCachePolicy] = useState<CachePolicy>(DEFAULT_CACHE_POLICY);
+  const [cacheStats, setCacheStats] = useState<CacheStats>({
+    entries: 0,
+    bytes: 0,
+    expiredRemoved: 0,
+  });
 
   const requiresSecret = PROVIDER_DEFAULTS[draft.kind].requiresSecret;
   const urlValidation = useMemo(() => validateProviderUrl(draft), [draft]);
@@ -53,9 +74,40 @@ export function OptionsApp(): React.JSX.Element {
     setStatus(parsed.data.length > 0 ? "配置只保存在本机浏览器。" : "请创建第一个 Provider 配置。");
   };
 
+  const loadCacheStatus = async (): Promise<void> => {
+    const response = await send({ type: "GET_CACHE_STATUS" });
+    const parsed = response.ok ? cacheStatusSchema.safeParse(response.data) : null;
+    if (!parsed?.success) return;
+    setCachePolicy(parsed.data.policy);
+    setCacheStats(parsed.data.stats);
+  };
+
   useEffect(() => {
     void loadProfiles();
+    void loadCacheStatus();
   }, []);
+
+  const saveCachePolicy = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      const response = await send({ type: "UPDATE_CACHE_POLICY", cache: cachePolicy });
+      setStatus(response.ok ? "缓存策略已保存。" : "缓存策略保存失败。");
+      await loadCacheStatus();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clearCache = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      await send({ type: "CLEAR_RESULT_CACHE" });
+      await loadCacheStatus();
+      setStatus("AI 结果缓存已清空；Provider 配置和凭据未受影响。");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const save = async (): Promise<boolean> => {
     if (!urlValidation.valid) {
@@ -360,6 +412,98 @@ export function OptionsApp(): React.JSX.Element {
           </div>
         </section>
       </div>
+
+      <section className="settings-card cache-card" aria-labelledby="cache-title">
+        <div className="card-heading">
+          <div>
+            <div className="section-label">LOCAL RESULT CACHE</div>
+            <h2 id="cache-title">结果缓存</h2>
+          </div>
+          <span className="privacy-chip">
+            {cacheStats.entries} 条 · {formatBytes(cacheStats.bytes)}
+          </span>
+        </div>
+        <p className="cache-intro">
+          相同文本、模式、Provider、Base URL、模型和 Prompt 版本才会命中。缓存永远不包含 API Key。
+        </p>
+        <div className="cache-controls">
+          <label>
+            <span>保存位置</span>
+            <select
+              value={cachePolicy.mode}
+              onChange={(event) =>
+                setCachePolicy({
+                  ...cachePolicy,
+                  mode: event.target.value as CachePolicy["mode"],
+                })
+              }
+            >
+              <option value="persistent">持久保存在本机</option>
+              <option value="session">仅本次浏览器会话</option>
+              <option value="off">关闭缓存</option>
+            </select>
+          </label>
+          <label>
+            <span>过期时间</span>
+            <select
+              value={cachePolicy.ttlDays}
+              onChange={(event) =>
+                setCachePolicy({ ...cachePolicy, ttlDays: Number(event.target.value) })
+              }
+            >
+              <option value={1}>1 天</option>
+              <option value={7}>7 天</option>
+              <option value={30}>30 天</option>
+              <option value={90}>90 天</option>
+            </select>
+          </label>
+          <label>
+            <span>最多条目</span>
+            <input
+              type="number"
+              min={1}
+              max={2_000}
+              value={cachePolicy.maxEntries}
+              onChange={(event) =>
+                setCachePolicy({ ...cachePolicy, maxEntries: Number(event.target.value) })
+              }
+            />
+          </label>
+          <label>
+            <span>最大容量</span>
+            <select
+              value={cachePolicy.maxBytes}
+              onChange={(event) =>
+                setCachePolicy({ ...cachePolicy, maxBytes: Number(event.target.value) })
+              }
+            >
+              <option value={5_000_000}>5 MB</option>
+              <option value={10_000_000}>10 MB</option>
+              <option value={25_000_000}>25 MB</option>
+              <option value={50_000_000}>50 MB</option>
+            </select>
+          </label>
+        </div>
+        <div className="form-actions">
+          <button
+            type="button"
+            className="button danger"
+            disabled={busy}
+            onClick={() => void clearCache()}
+          >
+            清空缓存
+          </button>
+          <span className="action-spacer" />
+          <button
+            type="button"
+            className="button primary"
+            disabled={busy}
+            onClick={() => void saveCachePolicy()}
+          >
+            保存缓存设置
+          </button>
+        </div>
+      </section>
     </main>
   );
 }

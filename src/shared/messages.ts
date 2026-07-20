@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { PublicError } from "./errors";
 import { providerProfileSchema } from "../providers/schemas";
+import { cachePolicySchema } from "./schemas";
 import { companionPositionSchema, readerModeSchema } from "./schemas";
 
 export const contentToBackgroundSchema = z.discriminatedUnion("type", [
@@ -42,6 +43,10 @@ export const trustedToBackgroundSchema = z.discriminatedUnion("type", [
   z
     .object({ type: z.literal("TEST_PROVIDER_CONNECTION"), profileId: z.string().min(8).max(64) })
     .strict(),
+  z.object({ type: z.literal("GET_CACHE_STATUS") }).strict(),
+  z.object({ type: z.literal("UPDATE_CACHE_POLICY"), cache: cachePolicySchema }).strict(),
+  z.object({ type: z.literal("CLEAR_RESULT_CACHE") }).strict(),
+  z.object({ type: z.literal("RESTORE_DEFAULT_SETTINGS") }).strict(),
 ]);
 
 export type TrustedToBackgroundMessage = z.infer<typeof trustedToBackgroundSchema>;

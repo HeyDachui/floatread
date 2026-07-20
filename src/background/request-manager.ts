@@ -1,4 +1,5 @@
 import { buildPrompt } from "../prompts/build-prompt";
+import { getCachedResult, putCachedResult } from "../cache/service";
 import { validateProviderUrl } from "../providers/config";
 import { streamMockResult } from "../providers/mock";
 import { streamWithSingleRetry } from "../providers/router";
@@ -12,6 +13,7 @@ import {
 } from "../shared/messages";
 import { getActiveProviderProfile } from "../storage/providers";
 import { getProviderSecret } from "../storage/secrets";
+import { getSettings } from "../storage/settings";
 
 interface ActiveRequest {
   requestId: string;
@@ -48,16 +50,44 @@ async function runProviderRequest(
   }
   const providerUrl = validateProviderUrl(profile);
   if (!providerUrl.valid) throw new ProviderFailure(providerUrl.error);
+  const prompt = buildPrompt(message.mode, message.text);
+  const settings = await getSettings();
+  const cached = await getCachedResult(
+    {
+      normalizedText: message.text,
+      mode: message.mode,
+      providerKind: profile.kind,
+      providerBaseUrl: profile.baseUrl,
+      model: profile.model,
+      promptVersion: prompt.version,
+    },
+    settings.cache,
+  );
+  if (cached.record) {
+    post(port, {
+      type: "STREAM_START",
+      requestId: request.requestId,
+      cached: true,
+      providerLabel: profile.displayName,
+    });
+    post(port, {
+      type: "STREAM_DELTA",
+      requestId: request.requestId,
+      text: cached.record.output,
+    });
+    post(port, { type: "STREAM_DONE", requestId: request.requestId });
+    return;
+  }
   if (!(await chrome.permissions.contains({ origins: [providerUrl.permission] }))) {
     throw new ProviderFailure(
       publicError("HOST_PERMISSION_DENIED", "尚未授权访问此 Provider 域名。"),
     );
   }
-  const prompt = buildPrompt(message.mode, message.text);
   const timer = setTimeout(() => {
     request.abortReason = "timeout";
     request.controller.abort();
   }, profile.timeoutMs);
+  let output = "";
   try {
     for await (const event of streamWithSingleRetry(
       {
@@ -78,11 +108,13 @@ async function runProviderRequest(
           providerLabel: profile.displayName,
         });
       } else if (event.type === "delta") {
+        output += event.text;
         post(port, { type: "STREAM_DELTA", requestId: request.requestId, text: event.text });
       } else if (event.type === "done") {
         post(port, { type: "STREAM_DONE", requestId: request.requestId });
       }
     }
+    if (output) await putCachedResult(cached.key, output, settings.cache);
   } finally {
     clearTimeout(timer);
   }
@@ -137,21 +169,53 @@ async function runMockRequest(
     return;
   }
 
+  const settings = await getSettings();
+  const cached = await getCachedResult(
+    {
+      normalizedText: message.text,
+      mode: message.mode,
+      providerKind: "mock",
+      providerBaseUrl: "mock://local",
+      model: "deterministic-v1",
+      promptVersion: prompt.version,
+    },
+    settings.cache,
+  );
+  if (cached.record) {
+    post(port, {
+      type: "STREAM_START",
+      requestId: request.requestId,
+      cached: true,
+      providerLabel: "Mock Provider",
+    });
+    post(port, {
+      type: "STREAM_DELTA",
+      requestId: request.requestId,
+      text: cached.record.output,
+    });
+    post(port, { type: "STREAM_DONE", requestId: request.requestId });
+    cleanup(request.requestId);
+    return;
+  }
+
   post(port, {
     type: "STREAM_START",
     requestId: request.requestId,
     cached: false,
     providerLabel: "Mock Provider",
   });
+  let output = "";
   try {
     for await (const delta of streamMockResult(
       message.mode,
       message.text,
       request.controller.signal,
     )) {
+      output += delta;
       post(port, { type: "STREAM_DELTA", requestId: request.requestId, text: delta });
     }
     post(port, { type: "STREAM_DONE", requestId: request.requestId });
+    await putCachedResult(cached.key, output, settings.cache);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       post(port, {

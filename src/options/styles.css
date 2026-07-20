@@ -111,6 +111,43 @@
   padding: 26px;
 }
 
+.cache-card {
+  margin: 20px 0 0 250px;
+}
+
+.cache-intro {
+  margin-top: 18px;
+}
+
+.cache-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px 0 4px;
+}
+
+.cache-controls label {
+  display: grid;
+  gap: 7px;
+}
+
+.cache-controls label > span {
+  color: #35425a;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.cache-controls input,
+.cache-controls select {
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #cfd8e7;
+  border-radius: 10px;
+  background: #fbfcfe;
+  color: #19263a;
+  font: inherit;
+}
+
 .card-heading {
   justify-content: space-between;
   gap: 20px;
@@ -296,8 +333,13 @@
   }
 
   .options-grid,
-  .form-grid {
+  .form-grid,
+  .cache-controls {
     grid-template-columns: 1fr;
+  }
+
+  .cache-card {
+    margin-left: 0;
   }
 
   .wide-field {
@@ -337,6 +379,8 @@
 
   .form-grid input,
   .form-grid select,
+  .cache-controls input,
+  .cache-controls select,
   .radio-card {
     border-color: #3a4558;
     background: #171c25;
@@ -345,6 +389,10 @@
 
   .card-heading {
     border-color: #30394a;
+  }
+
+  .cache-controls label > span {
+    color: #eef3fb;
   }
 
   .button.secondary {

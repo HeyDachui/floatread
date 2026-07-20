@@ -168,6 +168,35 @@ test("cancels an active stream and keeps partial content", async () => {
   await page.close();
 });
 
+test("reuses an identical result from cache without running Mock again", async () => {
+  const page = await context.newPage();
+  await page.goto(fixtureUrl);
+  const host = page.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+  await page.locator("#source").evaluate((element) => {
+    element.textContent = "A unique cache proof passage for FloatRead.";
+  });
+  await selectFixtureSource(page);
+  const companion = host.locator("button.fr-companion");
+  await expect(companion).toHaveAttribute("aria-label", "FloatRead：选择阅读模式");
+  await companion.click();
+  await host.getByRole("menuitem", { name: /自然中文/u }).click();
+
+  const panel = host.locator(".fr-result-panel");
+  await expect(panel.locator(".fr-output-text")).toHaveText(
+    "Mock 自然中文：A unique cache proof passage for FloatRead.",
+  );
+  await expect(panel.locator(".fr-provider-tag")).not.toContainText("缓存");
+  await panel.getByRole("button", { name: "关闭结果面板" }).click();
+  await companion.click();
+  await host.getByRole("menuitem", { name: /自然中文/u }).click();
+  await expect(panel.locator(".fr-output-text")).toHaveText(
+    "Mock 自然中文：A unique cache proof passage for FloatRead.",
+  );
+  await expect(panel.locator(".fr-provider-tag")).toContainText("缓存");
+  await page.close();
+});
+
 test("saves a session-only Provider without revealing its API key", async () => {
   const worker = context.serviceWorkers()[0];
   if (!worker) throw new Error("extension service worker missing");
@@ -179,17 +208,17 @@ test("saves a session-only Provider without revealing its API key", async () => 
   await expect(keyInput).toHaveAttribute("type", "password");
   await keyInput.fill("sk-example-not-a-real-key");
   await page.getByLabel("显示名称").fill("Local test profile");
-  await page.getByRole("button", { name: "保存" }).click();
+  await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("已保存并设为当前 Provider");
 
   await page.reload();
   await expect(page.getByLabel("API Key")).toHaveValue("");
   await expect(page.getByText("Local test profile")).toBeVisible();
 
-  await page.getByLabel(/持久保存在本机/u).check();
+  await page.getByRole("radio", { name: /持久保存在本机/u }).check();
   await expect(page.getByText(/浏览器调试权限的人仍可能读取/u)).toBeVisible();
   await page.getByLabel("Base URL").fill("http://remote.example.com/v1");
-  await page.getByRole("button", { name: "保存" }).click();
+  await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("远程 Provider 必须使用 HTTPS");
   await page.close();
 });

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   appearanceOverridesSchema,
+  cachePolicySchema,
   clickBehaviorSchema,
   companionPositionSchema,
   readerModeSchema,
@@ -18,14 +19,7 @@ export const appSettingsSchema = z
     activeProviderId: z.string().min(1).nullable(),
     activeSkinId: z.string().min(1),
     appearance: appearanceOverridesSchema,
-    cache: z
-      .object({
-        mode: z.enum(["persistent", "session", "off"]),
-        ttlDays: z.number().int().min(1).max(90),
-        maxEntries: z.number().int().min(1).max(2_000),
-        maxBytes: z.number().int().min(1_000_000).max(100_000_000),
-      })
-      .strict(),
+    cache: cachePolicySchema,
     companionPosition: companionPositionSchema,
     locale: z.enum(["auto", "zh_CN", "en"]),
   })
@@ -64,14 +58,56 @@ export const DEFAULT_SETTINGS: AppSettings = {
   locale: "auto",
 };
 
+const legacySettingsV0Schema = z
+  .object({
+    schemaVersion: z.literal(0),
+    enabled: z.boolean().optional(),
+    defaultMode: readerModeSchema.optional(),
+    clickBehavior: clickBehaviorSchema.optional(),
+    activeSkinId: z.string().min(1).optional(),
+    companionPosition: companionPositionSchema.optional(),
+    locale: z.enum(["auto", "zh_CN", "en"]).optional(),
+  })
+  .passthrough();
+
+export function migrateAppSettings(raw: unknown): AppSettings | null {
+  const current = appSettingsSchema.safeParse(raw);
+  if (current.success) return current.data;
+  const legacy = legacySettingsV0Schema.safeParse(raw);
+  if (!legacy.success) return null;
+  return {
+    ...DEFAULT_SETTINGS,
+    enabled: legacy.data.enabled ?? DEFAULT_SETTINGS.enabled,
+    defaultMode: legacy.data.defaultMode ?? DEFAULT_SETTINGS.defaultMode,
+    clickBehavior: legacy.data.clickBehavior ?? DEFAULT_SETTINGS.clickBehavior,
+    activeSkinId: legacy.data.activeSkinId ?? DEFAULT_SETTINGS.activeSkinId,
+    companionPosition: legacy.data.companionPosition ?? DEFAULT_SETTINGS.companionPosition,
+    locale: legacy.data.locale ?? DEFAULT_SETTINGS.locale,
+  };
+}
+
 export async function getSettings(): Promise<AppSettings> {
   const stored = await chrome.storage.local.get(SETTINGS_KEY);
-  const parsed = appSettingsSchema.safeParse(stored[SETTINGS_KEY]);
-  if (parsed.success) {
-    return parsed.data;
+  const raw = stored[SETTINGS_KEY];
+  const current = appSettingsSchema.safeParse(raw);
+  if (current.success) return current.data;
+  const migrated = migrateAppSettings(raw);
+  if (migrated) {
+    await chrome.storage.local.set({ [SETTINGS_KEY]: migrated });
+    return migrated;
   }
   await chrome.storage.local.set({ [SETTINGS_KEY]: DEFAULT_SETTINGS });
   return DEFAULT_SETTINGS;
+}
+
+export async function updateCachePolicy(cache: AppSettings["cache"]): Promise<void> {
+  const parsed = cachePolicySchema.parse(cache);
+  const settings = await getSettings();
+  await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, cache: parsed } });
+}
+
+export async function restoreDefaultSettings(): Promise<void> {
+  await chrome.storage.local.set({ [SETTINGS_KEY]: DEFAULT_SETTINGS });
 }
 
 export async function updateCompanionPosition(position: CompanionPosition): Promise<void> {
