@@ -9,6 +9,7 @@ const packageJson = JSON.parse(await readFile(resolve(projectRoot, "package.json
   version: string;
 };
 const outputPath = resolve(releaseRoot, `FloatRead-v${packageJson.version}.zip`);
+const reproducibleMtime = new Date("2000-01-01T00:00:00.000Z");
 
 async function addDirectory(files: Record<string, Uint8Array>, directory: string): Promise<void> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -27,6 +28,6 @@ await mkdir(releaseRoot, { recursive: true });
 await rm(outputPath, { force: true });
 const files: Record<string, Uint8Array> = {};
 await addDirectory(files, distRoot);
-const data = zipSync(files, { level: 9 });
+const data = zipSync(files, { level: 9, mtime: reproducibleMtime });
 await writeFile(outputPath, data);
 console.log(`${outputPath} (${(await stat(outputPath)).size} bytes)`);

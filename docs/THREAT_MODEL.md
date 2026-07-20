@@ -29,4 +29,4 @@
 4. Model output and imported metadata never reach an HTML execution sink.
 5. Production packages contain no remote executable code, secrets, tests, environment files or source maps.
 
-This document will be updated as real modules and tests are added.
+These invariants are enforced by unit/integration/E2E tests plus production dist, release inventory and secret scans. Remaining real-Provider risk is verified only by an explicitly authorized one-Provider smoke test; Mock coverage is never treated as that evidence.

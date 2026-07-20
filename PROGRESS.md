@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: Phase 6 — complete; Phase 3 real-Provider smoke remains pending user confirmation
+- Current phase: Phase 7 — complete; real-Provider smoke remains pending user confirmation
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -21,8 +21,8 @@ This file is the auditable project status source. A phase is only marked complet
 | 3     | Preflight complete | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | 51 unit, 2 integration and 5 real extension E2E tests passed; real smoke pending |
 | 4     | Complete           | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | 59 unit, 2 integration and 6 real extension E2E tests passed                     |
 | 5     | Complete           | `80ee9636f1025bdd6b3791ae028738b184f600fa` | 79 unit, 2 integration and 7 real extension E2E tests passed                     |
-| 6     | Complete           | This phase commit (see Git log)            | 90 unit, 2 integration and 13 real extension E2E tests passed                    |
-| 7     | Not started        | —                                          | —                                                                                |
+| 6     | Complete           | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | 90 unit, 2 integration and 13 real extension E2E tests passed                    |
+| 7     | Complete           | This phase commit (see Git log)            | Full quality gate, audit, dist/ZIP verification and secret scans passed          |
 
 ## Phase 0 target
 
@@ -68,8 +68,9 @@ The first dependency installation downloaded packages but exited with `ERR_PNPM_
 ## Known issues
 
 - Brand identity and public repository URLs are provisional centralized values.
-- Popup/onboarding, locale switching and page/site pause controls belong to Phase 6.
-- No real API call is authorized before the explicit smoke-test checkpoint.
+- Release/store screenshots have not been fabricated; the real-build capture checklist remains open.
+- The human regression checklist is prepared but is not falsely marked executed.
+- No real API call is authorized before the supplied credential's Provider is explicitly confirmed.
 
 ## Phase 1 result
 
@@ -280,6 +281,51 @@ Controlled failures and fixes:
 
 Knowledge After at Phase 6: no prior knowledge card was adopted. New project-local evidence retained: extension popup E2E must model the active-tab relationship explicitly, and command acknowledgement must wait for asynchronous Content mounting before Background reports visible state.
 
-## Next phase after the API checkpoint
+## Phase 7 result
 
-Phase 7 will complete release documentation, CI, security/secret scanning, manual test records, package inspection and the production ZIP. The pending one-Provider smoke test will be recorded separately as soon as the user confirms the credential's Provider.
+Implemented:
+
+- Complete English/Chinese READMEs, privacy notice, security policy, contribution guide, code of conduct, changelog and release notes.
+- Provider setup, permission rationale, i18n, architecture, threat model and secure skin-authoring documentation.
+- A 58-item human regression checklist that remains visibly unchecked until a human performs it.
+- Read-only GitHub Actions CI with frozen dependencies, Chromium installation, full quality gate and release package verification.
+- Secret scanner covering Git-tracked text, production output and unpacked release ZIP while intentionally excluding ignored `.secrets`.
+- Release verifier proving ZIP and `dist` entry lists/bytes match, rejecting forbidden entries, verifying version consistency, and emitting SHA-256 plus file inventory.
+- Production-load smoke that starts real Chromium with `dist`, waits for the MV3 Service Worker and renders Options, Popup and Onboarding.
+- Reproducible `pnpm package` flow that rebuilds, verifies, scans, packages and re-verifies the published bytes.
+
+Final automated verification before the phase commit:
+
+| Command                  | Actual result                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| `pnpm audit`             | Passed; no known vulnerabilities                                                           |
+| `pnpm lint`              | Passed with zero warnings                                                                  |
+| `pnpm typecheck`         | Passed                                                                                     |
+| `pnpm test`              | Passed: 18 files, 90 tests                                                                 |
+| `pnpm test:integration`  | Passed: 2 files, 2 tests                                                                   |
+| `pnpm test:e2e`          | Passed: 13 real Chromium extension tests                                                   |
+| `pnpm package`           | Passed: build, dist check, two secret scans, ZIP check and production Chrome load          |
+| `pnpm test:release-load` | Passed: production MV3 worker plus Options, Popup and Onboarding rendered in real Chromium |
+| `pnpm format:check`      | Passed before the final metadata update                                                    |
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.1.0.zip`
+- ZIP size: 268,427 bytes
+- SHA-256: `383077d0c23053ae9a21eb8fa8669bdda6150c9bc57d809af9fc07e3d5c3e879`
+- Inventory: `release/FloatRead-v0.1.0-files.txt`
+- Digest file: `release/FloatRead-v0.1.0.sha256`
+- Secret scan: passed across 160 tracked/build/archive text files after packaging
+
+Controlled release-tool failures and fixes:
+
+- Strict TypeScript rejected unchecked ZIP entry access; the verifier now requires every entry explicitly before use.
+- The first scanner run treated clearly invalid unit-test values such as `sk-example-not-real` as credentials. It now exempts only values containing explicit `example`/`not-real` markers while retaining real-key patterns.
+- One scanner regex initially lacked the global flag required by `matchAll`; the expression was corrected and the full scan passed.
+- Two identical-content ZIP runs initially differed because archive entry timestamps used the current time. Packaging now fixes metadata time; two consecutive packages produced the same SHA-256.
+
+Knowledge After at Phase 7: no prior knowledge card was adopted. New project-local evidence retained: release verification must compare archive bytes to the already-verified production tree, and secret scanning should enumerate tracked source rather than walking ignored credential directories.
+
+## Remaining checkpoint
+
+The ignored credential remains unread. Once the user confirms its Provider, Base URL and model, one minimal real-API smoke test may be run and recorded without echoing the key. Until then, the real-API matrix truthfully remains **not executed**.

@@ -1,0 +1,90 @@
+# FloatRead manual regression checklist
+
+This is an execution checklist, not a claim of completion. Record Chrome version, OS, build SHA-256, tester, date and evidence before a store submission. Never place an API key or private selected text in screenshots or logs.
+
+## Test record
+
+- Build/version:
+- Chrome/OS:
+- Tester/date:
+- Production ZIP SHA-256:
+- Test Provider/model (no key):
+
+## X isolation and user action
+
+- [ ] On X Home, exactly one `floatread-root` exists and the companion is visible.
+- [ ] No button or result is inserted into any post.
+- [ ] Post heights, font, color, spacing, layout and scrolling remain unchanged.
+- [ ] No FloatRead global stylesheet is attached to the host document.
+- [ ] With no user action, DevTools shows no AI Provider request.
+- [ ] With no selection, companion/context menu/shortcut sends no page content.
+- [ ] Select English text and click the companion; only the selected text is used.
+- [ ] Disabling/pausing/removing FloatRead completely removes its host node.
+
+## Reading workflow
+
+- [ ] Natural Chinese produces faithful natural Chinese without invented information.
+- [ ] Key Points covers meaning, relevance and omissions; inference is labeled.
+- [ ] Explain Terms stays grounded in current text.
+- [ ] Loading appears and streamed text grows incrementally where supported.
+- [ ] Cancel stops an active request and leaves a clear state.
+- [ ] Retry repeats the latest selected-text request.
+- [ ] Copy writes the result; copy-last shortcut works when a result exists.
+- [ ] Original-text view toggles without rendering HTML.
+- [ ] Errors for invalid config, denied permission, 401, 429, timeout and network failure are understandable.
+- [ ] Repeating the same text/mode/Provider/model/Prompt hits cache.
+
+## Companion and panel
+
+- [ ] Dragging does not trigger a click and releases pointer capture safely.
+- [ ] The companion snaps to left and right edges and restores its position after reload.
+- [ ] It cannot remain outside the visible viewport.
+- [ ] Resizing the window and changing page zoom corrects its coordinates.
+- [ ] Size and opacity settings update without page reload.
+- [ ] Clicking outside collapses the result panel.
+- [ ] The panel avoids all viewport edges; long text scrolls internally.
+- [ ] Keyboard Enter/Space opens actions, focus enters the menu, Escape closes, and controls have visible focus.
+- [ ] Light X, dark X, browser dark preference and `prefers-reduced-motion` all behave correctly.
+
+## Triggers and controls
+
+- [ ] Right-clicking selected text exposes all three localized modes.
+- [ ] Default-mode shortcut runs only for a valid current selection.
+- [ ] Toggle shortcut shows/removes the companion.
+- [ ] Popup shows actual Provider/model/skin/page state.
+- [ ] Global pause immediately removes all open companions and resume restores allowed pages.
+- [ ] Current-site pause uses only the origin and does not affect another site.
+- [ ] Current-page hide/show works without changing site/global state.
+- [ ] A non-X page is enabled only after the user grants temporary active-tab access.
+
+## Settings, credentials and Provider
+
+- [ ] Onboarding explains local architecture and completes without a network request using local demo.
+- [ ] Session-only key is recommended and is not displayed after reload.
+- [ ] Persistent key shows a risk warning and stays only in local extension storage.
+- [ ] Enter-each-time key is lost after the Service Worker/profile session ends.
+- [ ] Clear credentials and Provider deletion remove all corresponding key modes.
+- [ ] Content Script messages/DOM/console never contain the key.
+- [ ] Exact Provider origin permission is explained, requested and denial is recoverable.
+- [ ] Connection test works for the chosen Provider/model; logs contain no secret/header.
+- [ ] Ollama works on configured localhost/127.0.0.1 and remote HTTP is rejected.
+
+## Skins, data and languages
+
+- [ ] All six built-in skins switch immediately and preview five states.
+- [ ] Appearance tokens affect only FloatRead's Shadow DOM/extension pages.
+- [ ] Valid JSON + PNG/WebP skin imports, exports and survives restart.
+- [ ] Invalid schema/MIME/extension/path traversal/duplicate/oversize/bomb/dangerous URL/executable-field packages are rejected with understandable errors.
+- [ ] Exported skin/settings data contains no credentials or AI cache data.
+- [ ] Cache usage/limits/clear work and corrupted records do not block startup.
+- [ ] Restore defaults leaves the extension usable.
+- [ ] Chinese, English and browser-auto language modes update the complete settings shell.
+
+## Release inspection
+
+- [ ] Load the extracted production `release/FloatRead-v0.1.0.zip`, not `dist-e2e`.
+- [ ] `manifest.json` is MV3, version matches, CSP is local-only and permissions match `docs/PERMISSIONS.md`.
+- [ ] ZIP inventory contains no tests, source maps, `.env`, `.secrets`, logs, `node_modules` or unrelated screenshots.
+- [ ] `pnpm scan:secrets` and `pnpm verify:release` pass after packaging.
+- [ ] `pnpm test:release-load` starts the production MV3 worker and renders all three extension pages.
+- [ ] `git status --short` contains no accidental credential or unrelated workspace file.

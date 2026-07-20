@@ -36,3 +36,16 @@
 - Date: 2026-07-20
 - Decision: keep all publisher-facing links in `src/config/branding.ts` and use clearly replaceable project defaults.
 - Reason: publisher identity is the only unresolved product metadata and must not block implementation or spread placeholders through the UI.
+
+## D-007 — Release evidence
+
+- Date: 2026-07-20
+- Decision: `pnpm package` rebuilds production code, verifies `dist`, scans tracked/build files, creates a fixed-metadata ZIP, proves its entry list and bytes exactly match `dist`, writes a SHA-256/inventory, then scans the unpacked archive.
+- Reason: a passing source test does not prove the published bytes are clean or complete.
+- Constraint: the scanner obtains source paths from `git ls-files`; it never traverses ignored `.secrets`.
+
+## D-008 — Honest manual and real-API status
+
+- Date: 2026-07-20
+- Decision: automated Chromium E2E is reported as E2E, `MANUAL_TESTING.md` remains an unchecked human checklist, and no real Provider is marked passed without confirmed credential ownership and a live request.
+- Reason: written tests, Mock traffic and unexecuted manual steps are different evidence classes.

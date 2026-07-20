@@ -21,10 +21,14 @@
     "test": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "pnpm build:e2e && playwright test",
+    "test:release-load": "tsx scripts/test-release-load.ts",
     "verify:dist": "tsx scripts/verify-dist.ts",
-    "package": "tsx scripts/package-extension.ts",
+    "scan:secrets": "tsx scripts/secret-scan.ts",
+    "package:zip": "tsx scripts/package-extension.ts",
+    "verify:release": "tsx scripts/verify-release.ts",
+    "package": "pnpm build && pnpm verify:dist && pnpm scan:secrets && pnpm package:zip && pnpm verify:release && pnpm test:release-load && pnpm scan:secrets",
     "audit": "pnpm audit --prod",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build && pnpm verify:dist && pnpm test:e2e"
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build && pnpm verify:dist && pnpm scan:secrets && pnpm test:e2e"
   },
   "dependencies": {
     "fflate": "^0.8.3",
