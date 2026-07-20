@@ -7,6 +7,9 @@ const initializeTrustedStorage = async (): Promise<void> => {
 
 const initialization = initializeTrustedStorage();
 
+registerMessageRouter(initialization);
+registerCommands();
+
 chrome.runtime.onInstalled.addListener((details) => {
   void initialization.then(async () => {
     if (details.reason === "install") {
@@ -18,3 +21,5 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.runtime.onStartup.addListener(() => {
   void initialization;
 });
+import { registerCommands } from "./commands";
+import { registerMessageRouter } from "./message-router";

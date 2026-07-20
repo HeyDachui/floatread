@@ -1,6 +1,6 @@
 import type { ManifestV3 } from "./shared/manifest-types";
 
-export function createManifest(version: string): ManifestV3 {
+export function createManifest(version: string, isE2E = false): ManifestV3 {
   return {
     manifest_version: 3,
     name: "__MSG_extensionName__",
@@ -16,7 +16,11 @@ export function createManifest(version: string): ManifestV3 {
     },
     content_scripts: [
       {
-        matches: ["https://x.com/*", "https://twitter.com/*"],
+        matches: [
+          "https://x.com/*",
+          "https://twitter.com/*",
+          ...(isE2E ? ["http://127.0.0.1/*"] : []),
+        ],
         js: ["content/content-script.js"],
         run_at: "document_idle",
         all_frames: false,

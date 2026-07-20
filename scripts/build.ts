@@ -6,6 +6,12 @@ import { buildManifest } from "./build-manifest";
 
 const projectRoot = resolve(import.meta.dirname, "..");
 const isE2E = process.env.FLOATREAD_E2E === "true";
+const outDir = isE2E ? "dist-e2e" : "dist";
+const compileTimeConstants = {
+  "process.env.NODE_ENV": JSON.stringify("production"),
+  __FLOATREAD_SHADOW_MODE__: JSON.stringify(isE2E ? "open" : "closed"),
+  __FLOATREAD_MOCK_PROVIDER__: JSON.stringify(isE2E),
+};
 
 await build(pagesConfig);
 
@@ -13,12 +19,9 @@ await build({
   configFile: false,
   root: projectRoot,
   plugins: [react()],
-  define: {
-    __FLOATREAD_SHADOW_MODE__: JSON.stringify(isE2E ? "open" : "closed"),
-    __FLOATREAD_MOCK_PROVIDER__: JSON.stringify(isE2E),
-  },
+  define: compileTimeConstants,
   build: {
-    outDir: resolve(projectRoot, "dist"),
+    outDir: resolve(projectRoot, outDir),
     emptyOutDir: false,
     sourcemap: false,
     lib: {
@@ -35,12 +38,9 @@ await build({
 await build({
   configFile: false,
   root: projectRoot,
-  define: {
-    __FLOATREAD_SHADOW_MODE__: JSON.stringify(isE2E ? "open" : "closed"),
-    __FLOATREAD_MOCK_PROVIDER__: JSON.stringify(isE2E),
-  },
+  define: compileTimeConstants,
   build: {
-    outDir: resolve(projectRoot, "dist"),
+    outDir: resolve(projectRoot, outDir),
     emptyOutDir: false,
     sourcemap: false,
     lib: {
@@ -55,4 +55,4 @@ await build({
   },
 });
 
-await buildManifest();
+await buildManifest(outDir, isE2E);

@@ -1,19 +1,31 @@
-import { ROOT_TAG_NAME } from "../config/constants";
+import { backgroundToContentSchema } from "../shared/messages";
+import { isFloatReadMounted, mountFloatRead, unmountFloatRead } from "./mount";
 
-function mountRoot(): void {
-  if (window.top !== window || document.querySelector(ROOT_TAG_NAME)) {
-    return;
-  }
+type FloatReadGlobal = typeof globalThis & {
+  __FLOATREAD_CONTENT_INSTALLED__?: true;
+};
 
-  const host = document.createElement(ROOT_TAG_NAME);
-  host.style.position = "fixed";
-  host.style.width = "0";
-  host.style.height = "0";
-  host.style.overflow = "visible";
-  host.style.pointerEvents = "none";
-  host.style.zIndex = "2147483646";
-  host.attachShadow({ mode: __FLOATREAD_SHADOW_MODE__ });
-  document.documentElement.append(host);
+const floatReadGlobal = globalThis as FloatReadGlobal;
+
+if (window.top === window && !floatReadGlobal.__FLOATREAD_CONTENT_INSTALLED__) {
+  floatReadGlobal.__FLOATREAD_CONTENT_INSTALLED__ = true;
+
+  chrome.runtime.onMessage.addListener((message: unknown) => {
+    const parsed = backgroundToContentSchema.safeParse(message);
+    if (!parsed.success) return;
+    switch (parsed.data.type) {
+      case "SHOW_COMPANION":
+        void mountFloatRead();
+        break;
+      case "HIDE_COMPANION":
+        unmountFloatRead();
+        break;
+      case "TOGGLE_COMPANION":
+        if (isFloatReadMounted()) unmountFloatRead();
+        else void mountFloatRead();
+        break;
+    }
+  });
+
+  void mountFloatRead();
 }
-
-mountRoot();

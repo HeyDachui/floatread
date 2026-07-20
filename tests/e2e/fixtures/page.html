@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FloatRead fixture</title>
+    <style>
+      body {
+        margin: 40px;
+        color: #142033;
+        background: #f2f5fa;
+        font:
+          18px/1.6 system-ui,
+          sans-serif;
+      }
+      #source {
+        width: 620px;
+        padding: 20px;
+        border: 1px solid #b8c2d2;
+        background: white;
+      }
+      #high-z {
+        position: fixed;
+        z-index: 999999;
+        left: 8px;
+        bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="source" data-fixture="unchanged">We reset usage limits for affected Codex users.</p>
+    <input id="input" value="Input selection fixture" />
+    <textarea id="textarea">Textarea selection fixture</textarea>
+    <input id="password" type="password" value="never-read-this" />
+    <div id="high-z">Fixture overlay</div>
+    <script>
+      const source = document.querySelector("#source");
+      window.__fixtureBaseline = {
+        documentChildren: document.documentElement.children.length,
+        sourceBox: source.getBoundingClientRect().toJSON(),
+        sourceAttributes: Array.from(source.attributes, ({ name, value }) => [name, value]),
+      };
+    </script>
+  </body>
+</html>

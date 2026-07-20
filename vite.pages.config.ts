@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: "dist",
+    outDir: process.env.FLOATREAD_E2E === "true" ? "dist-e2e" : "dist",
     emptyOutDir: true,
     sourcemap: false,
     rollupOptions: {

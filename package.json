@@ -20,7 +20,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "test:e2e": "playwright test",
+    "test:e2e": "pnpm build:e2e && playwright test",
     "verify:dist": "tsx scripts/verify-dist.ts",
     "package": "tsx scripts/package-extension.ts",
     "audit": "pnpm audit --prod",
