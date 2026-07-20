@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: Phase 1 — complete; Phase 2 next
+- Current phase: Phase 2 — complete; Phase 3 next
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -16,8 +16,8 @@ This file is the auditable project status source. A phase is only marked complet
 | Phase | Status      | Commit                                     | Verification                                                           |
 | ----- | ----------- | ------------------------------------------ | ---------------------------------------------------------------------- |
 | 0     | Complete    | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | Lint, typecheck, unit, integration, build and dist verification passed |
-| 1     | Complete    | This phase commit (see Git log)            | 11 unit tests and 2 real Chromium extension E2E tests passed           |
-| 2     | Not started | —                                          | —                                                                      |
+| 1     | Complete    | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 11 unit tests and 2 real Chromium extension E2E tests passed           |
+| 2     | Complete    | This phase commit (see Git log)            | 23 unit, 2 integration and 4 real extension E2E tests passed           |
 | 3     | Not started | —                                          | —                                                                      |
 | 4     | Not started | —                                          | —                                                                      |
 | 5     | Not started | —                                          | —                                                                      |
@@ -68,7 +68,6 @@ The first dependency installation downloaded packages but exited with `ERR_PNPM_
 ## Known issues
 
 - Brand identity and public repository URLs are provisional centralized values.
-- The result panel and Mock streaming vertical slice begin in Phase 2.
 - Provider, cache and skin code belongs to later phases.
 - No real API call is authorized before the explicit smoke-test checkpoint.
 
@@ -103,6 +102,39 @@ Controlled E2E failure and fix:
 - Fix: compile `process.env.NODE_ENV` to `"production"` for Content and Background bundles.
 - Recheck: both layout-isolation and selection/drag tests passed; temporary storage diagnostics were removed.
 
+## Phase 2 result
+
+Implemented:
+
+- Prompt-versioned, mode-specific instructions for natural Chinese, key points and term explanation.
+- Explicit prompt-injection boundary: selected content is untrusted JSON data and cannot close its source delimiter.
+- Runtime-validated generation port protocol with no credential fields.
+- Background-owned request lifecycle, per-tab concurrency guard, global concurrency limit and `AbortController` cancellation.
+- Development/E2E-only deterministic Mock Provider with chunked streaming; production builds compile the branch out.
+- Reducer-driven reader state machine that ignores stale request events and preserves partial output after cancellation.
+- Edge-aware, internally scrolling result panel with mode switch, original text, stop, retry, copy and structured errors.
+- Pure-text model output rendering, keyboard close behavior, reduced-motion loading treatment and light/dark tokens.
+
+Verification:
+
+| Command                 | Actual result                           |
+| ----------------------- | --------------------------------------- |
+| `pnpm lint`             | Passed with zero warnings               |
+| `pnpm typecheck`        | Passed                                  |
+| `pnpm test`             | Passed: 7 files, 23 tests               |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                |
+| `pnpm build`            | Passed; production Mock branch removed  |
+| `pnpm verify:dist`      | Passed; 13 production files verified    |
+| `pnpm test:e2e`         | Passed: 4 real Chromium extension tests |
+
+Controlled E2E failure and fix:
+
+- First Phase 2 E2E run: two tests timed out looking for mode menu items.
+- Root cause: the tests clicked before the intentional 150 ms selection debounce had updated accessible readiness; this was a test synchronization error, not a product timeout.
+- Fix: wait on the companion's user-visible ready label before clicking. The complete E2E suite then passed.
+
+Knowledge After at Phase 2: `not_applied` for prior knowledge cards. New local evidence retained here: extension E2E must synchronize on user-visible selection readiness because the product intentionally debounces `selectionchange`; production verification now proves that Mock result strings are absent from release JavaScript.
+
 ## Next phase
 
-Phase 2 will add the reducer-driven result panel, Mock Provider streaming path, cancel, retry, copy, original-text view and keyboard behavior.
+Phase 3 will implement provider adapters and routing, secret-storage modes, optional provider host permissions, settings validation and connection testing. A real credential remains out of scope until all provider preflight tests and a production build pass.

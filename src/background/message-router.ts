@@ -16,7 +16,16 @@ async function routeMessage(
 
   switch (parsed.data.type) {
     case "GET_PUBLIC_BOOTSTRAP":
-      return { ok: true, data: await getPublicBootstrap() };
+      return {
+        ok: true,
+        data: __FLOATREAD_MOCK_PROVIDER__
+          ? {
+              ...(await getPublicBootstrap()),
+              providerConfigured: true,
+              providerLabel: "Mock Provider",
+            }
+          : await getPublicBootstrap(),
+      };
     case "UPDATE_COMPANION_POSITION":
       await updateCompanionPosition(parsed.data.position);
       return { ok: true };

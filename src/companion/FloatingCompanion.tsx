@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { createGenerationClient, type GenerationClient } from "../content/generation-client";
 import { createSelectionManager, type SelectionSnapshot } from "../content/selection-manager";
 import {
   clampPoint,
@@ -8,12 +9,13 @@ import {
 } from "../content/viewport-manager";
 import type { CompanionPosition, PublicBootstrap, ReaderMode } from "../shared/types";
 import { isDragGesture } from "./drag-controller";
+import { ResultPanel } from "./ResultPanel";
+import { INITIAL_READER_STATE, readerReducer } from "./reader-reducer";
 
 interface FloatingCompanionProps {
   bootstrap: PublicBootstrap;
   host: HTMLElement;
   onHide: () => void;
-  onModeSelected: (mode: ReaderMode, text: string) => void;
 }
 
 interface DragSession {
@@ -33,7 +35,6 @@ export function FloatingCompanion({
   bootstrap,
   host,
   onHide,
-  onModeSelected,
 }: FloatingCompanionProps): React.JSX.Element {
   const [position, setPosition] = useState<CompanionPosition>(bootstrap.companionPosition);
   const [dragPoint, setDragPoint] = useState<ViewportPoint | null>(null);
@@ -42,7 +43,11 @@ export function FloatingCompanion({
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
   const [viewportVersion, setViewportVersion] = useState(0);
+  const [readerState, dispatch] = useReducer(readerReducer, INITIAL_READER_STATE);
+  const [visualFeedback, setVisualFeedback] = useState<"success" | "error" | null>(null);
+  const [focusPanelOnOpen, setFocusPanelOnOpen] = useState(false);
   const dragSession = useRef<DragSession | null>(null);
+  const generationClient = useRef<GenerationClient | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -55,7 +60,25 @@ export function FloatingCompanion({
     [position, companionSize, snapMargin, viewportVersion],
   );
   const visualPoint = dragPoint ?? snappedPoint;
-  const visualState = selection ? "ready" : "idle";
+  const isGenerating = readerState.value === "requesting" || readerState.value === "streaming";
+  const visualState = isGenerating
+    ? "thinking"
+    : (visualFeedback ?? (selection ? "ready" : "idle"));
+
+  useEffect(() => {
+    generationClient.current = createGenerationClient((event) => dispatch(event));
+    return () => {
+      generationClient.current?.dispose();
+      generationClient.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (readerState.value !== "success" && readerState.value !== "error") return;
+    setVisualFeedback(readerState.value);
+    const timer = setTimeout(() => setVisualFeedback(null), 1_200);
+    return () => clearTimeout(timer);
+  }, [readerState.value]);
 
   useEffect(() => {
     const manager = createSelectionManager(setSelection);
@@ -146,10 +169,38 @@ export function FloatingCompanion({
     setActionMenuOpen((open) => !open);
   };
 
-  const selectMode = (mode: ReaderMode): void => {
-    if (!selection) return;
+  const startGeneration = (mode: ReaderMode, text: string, focusOnOpen = false): void => {
+    if (readerState.value !== "idle" && isGenerating) {
+      generationClient.current?.cancel(readerState.requestId);
+    }
+    const requestId = crypto.randomUUID();
+    dispatch({ type: "START", requestId, mode, originalText: text });
+    setFocusPanelOnOpen(focusOnOpen);
     setActionMenuOpen(false);
-    onModeSelected(mode, selection.text);
+    generationClient.current?.start(requestId, text, mode);
+  };
+
+  const selectMode = (mode: ReaderMode, focusOnOpen = false): void => {
+    if (!selection) return;
+    startGeneration(mode, selection.text, focusOnOpen);
+  };
+
+  const cancelGeneration = (): void => {
+    if (readerState.value === "idle") return;
+    generationClient.current?.cancel(readerState.requestId);
+    dispatch({ type: "CANCEL", requestId: readerState.requestId });
+  };
+
+  const closePanel = (): void => {
+    cancelGeneration();
+    dispatch({ type: "CLOSE" });
+    setFocusPanelOnOpen(false);
+    buttonRef.current?.focus();
+  };
+
+  const hideCompanion = (): void => {
+    cancelGeneration();
+    onHide();
   };
 
   const resetPosition = (): void => {
@@ -170,6 +221,10 @@ export function FloatingCompanion({
           "--fr-companion-y": `${visualPoint.y}px`,
           "--fr-companion-size": `${companionSize}px`,
           "--fr-companion-opacity": companionOpacity,
+          "--fr-panel-width": `${bootstrap.appearance.panelWidth}px`,
+          "--fr-panel-font-size": `${14 * bootstrap.appearance.fontScale}px`,
+          "--fr-panel-radius": `${bootstrap.appearance.cornerRadius}px`,
+          "--fr-panel-opacity": bootstrap.appearance.panelOpacity,
         } as React.CSSProperties
       }
     >
@@ -188,7 +243,7 @@ export function FloatingCompanion({
               className="fr-mode-button"
               type="button"
               role="menuitem"
-              onClick={() => selectMode(item.mode)}
+              onClick={(event) => selectMode(item.mode, event.detail === 0)}
             >
               <span>{item.label}</span>
               <small>{item.description}</small>
@@ -199,7 +254,7 @@ export function FloatingCompanion({
 
       {contextMenuOpen ? (
         <div className="fr-context-menu" role="menu" aria-label="FloatRead 助手菜单">
-          <button type="button" role="menuitem" onClick={onHide}>
+          <button type="button" role="menuitem" onClick={hideCompanion}>
             当前页面隐藏
           </button>
           <button
@@ -215,12 +270,23 @@ export function FloatingCompanion({
         </div>
       ) : null}
 
+      {readerState.value !== "idle" ? (
+        <ResultPanel
+          state={readerState}
+          focusOnOpen={focusPanelOnOpen}
+          onClose={closePanel}
+          onCancel={cancelGeneration}
+          onRetry={() => startGeneration(readerState.mode, readerState.originalText, true)}
+          onSwitchMode={(mode) => startGeneration(mode, readerState.originalText, true)}
+        />
+      ) : null}
+
       <button
         ref={buttonRef}
         className={`fr-companion fr-state-${visualState}`}
         type="button"
         aria-label={selection ? "FloatRead：选择阅读模式" : "FloatRead：请先选择文字"}
-        aria-expanded={actionMenuOpen || contextMenuOpen}
+        aria-expanded={actionMenuOpen || contextMenuOpen || readerState.value !== "idle"}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

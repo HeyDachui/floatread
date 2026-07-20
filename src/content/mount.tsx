@@ -57,20 +57,9 @@ export async function mountFloatRead(): Promise<void> {
   const reactRoot = createRoot(appRoot);
   state = { host, reactRoot };
 
-  const handleModeSelected = (): void => {
-    if (!bootstrap.providerConfigured) {
-      void chrome.runtime.sendMessage({ type: "OPEN_OPTIONS", section: "provider" });
-    }
-  };
-
   reactRoot.render(
     <StrictMode>
-      <FloatingCompanion
-        bootstrap={bootstrap}
-        host={host}
-        onHide={unmountFloatRead}
-        onModeSelected={handleModeSelected}
-      />
+      <FloatingCompanion bootstrap={bootstrap} host={host} onHide={unmountFloatRead} />
     </StrictMode>,
   );
 }

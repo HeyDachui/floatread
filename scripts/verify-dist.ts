@@ -81,6 +81,13 @@ for (const file of executableFiles) {
   if (/<script[^>]+src=["']https?:/iu.test(source)) {
     throw new Error(`remote script found in ${relative(distRoot, file)}`);
   }
+  if (
+    source.includes("Mock Provider") ||
+    source.includes("Mock 自然中文") ||
+    source.includes("本地 Mock 演示结果")
+  ) {
+    throw new Error(`development Mock code found in ${relative(distRoot, file)}`);
+  }
 }
 
 console.log(`Verified ${files.length} dist files.`);

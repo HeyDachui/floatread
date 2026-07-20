@@ -1,3 +1,7 @@
+import { registerCommands } from "./commands";
+import { registerMessageRouter } from "./message-router";
+import { registerGenerationPorts } from "./request-manager";
+
 const initializeTrustedStorage = async (): Promise<void> => {
   await Promise.all([
     chrome.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" }),
@@ -9,6 +13,7 @@ const initialization = initializeTrustedStorage();
 
 registerMessageRouter(initialization);
 registerCommands();
+registerGenerationPorts();
 
 chrome.runtime.onInstalled.addListener((details) => {
   void initialization.then(async () => {
@@ -21,5 +26,3 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.runtime.onStartup.addListener(() => {
   void initialization;
 });
-import { registerCommands } from "./commands";
-import { registerMessageRouter } from "./message-router";
