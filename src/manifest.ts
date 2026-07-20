@@ -9,6 +9,11 @@ export function createManifest(version: string, isE2E = false): ManifestV3 {
     default_locale: "zh_CN",
     minimum_chrome_version: "102",
     permissions: ["activeTab", "contextMenus", "scripting", "storage"],
+    host_permissions: [
+      "https://x.com/*",
+      "https://twitter.com/*",
+      ...(isE2E ? ["http://127.0.0.1/*"] : []),
+    ],
     optional_host_permissions: ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"],
     background: {
       service_worker: "background/service-worker.js",
@@ -34,14 +39,14 @@ export function createManifest(version: string, isE2E = false): ManifestV3 {
     commands: {
       "run-default-mode": {
         suggested_key: { default: "Alt+Shift+R" },
-        description: "Understand selected text",
+        description: "__MSG_commandRunDefault__",
       },
       "toggle-companion": {
         suggested_key: { default: "Alt+Shift+F" },
-        description: "Show or hide FloatRead",
+        description: "__MSG_commandToggle__",
       },
       "copy-last-result": {
-        description: "Copy the last FloatRead result",
+        description: "__MSG_commandCopyLast__",
       },
     },
     content_security_policy: {

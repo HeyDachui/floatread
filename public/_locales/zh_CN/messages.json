@@ -4,5 +4,26 @@
   },
   "extensionDescription": {
     "message": "使用你自己的 AI 服务理解主动选中的网页文本。"
+  },
+  "contextMenuParent": {
+    "message": "FloatRead 浮读"
+  },
+  "contextMenuNatural": {
+    "message": "自然中文"
+  },
+  "contextMenuPoints": {
+    "message": "看懂重点"
+  },
+  "contextMenuTerms": {
+    "message": "解释术语"
+  },
+  "commandRunDefault": {
+    "message": "用默认模式理解选中文字"
+  },
+  "commandToggle": {
+    "message": "显示或隐藏 FloatRead"
+  },
+  "commandCopyLast": {
+    "message": "复制上一次 FloatRead 结果"
   }
 }

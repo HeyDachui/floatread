@@ -1,6 +1,7 @@
 export type ReaderMode = "natural_zh" | "key_points" | "explain_terms";
 export type ClickBehavior = "show_actions" | "run_default_mode";
 export type CompanionEdge = "left" | "right";
+export type UiLocale = "zh_CN" | "en";
 
 export interface CompanionPosition {
   edge: CompanionEdge;
@@ -29,5 +30,6 @@ export interface PublicBootstrap {
   companionPosition: CompanionPosition;
   providerConfigured: boolean;
   providerLabel?: string | undefined;
+  locale: UiLocale;
 }
 import type { RuntimeSkinDefinition } from "../skins/types";

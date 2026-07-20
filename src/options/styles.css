@@ -115,8 +115,77 @@
 }
 
 .cache-card,
-.skin-card {
+.skin-card,
+.behavior-card,
+.about-card {
   margin: 20px 0 0 250px;
+}
+
+.behavior-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 20px;
+}
+
+.behavior-controls label {
+  display: grid;
+  gap: 7px;
+}
+
+.behavior-controls label > span {
+  color: #53627a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.behavior-controls select {
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid #d6deea;
+  border-radius: 10px;
+  background: #fff;
+  color: #1f2e46;
+  font: inherit;
+}
+
+.shortcut-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f3f6fb;
+}
+
+.shortcut-strip > div {
+  display: grid;
+  gap: 4px;
+}
+
+.shortcut-strip strong {
+  font-size: 12px;
+}
+
+.shortcut-strip span {
+  color: #6d798d;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.about-links {
+  display: flex;
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.about-links a {
+  color: var(--option-accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .skin-workbench {
@@ -474,12 +543,15 @@
   .options-grid,
   .form-grid,
   .cache-controls,
-  .appearance-controls {
+  .appearance-controls,
+  .behavior-controls {
     grid-template-columns: 1fr;
   }
 
   .cache-card,
-  .skin-card {
+  .skin-card,
+  .behavior-card,
+  .about-card {
     margin-left: 0;
   }
 
@@ -494,6 +566,11 @@
 
   .action-spacer {
     display: none;
+  }
+
+  .shortcut-strip {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 
@@ -527,6 +604,7 @@
   .form-grid select,
   .cache-controls input,
   .cache-controls select,
+  .behavior-controls select,
   .radio-card {
     border-color: #3a4558;
     background: #171c25;
@@ -556,5 +634,9 @@
   .button.secondary {
     background: #2c3749;
     color: #edf3fc;
+  }
+
+  .shortcut-strip {
+    background: #222d40;
   }
 }

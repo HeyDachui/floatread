@@ -4,6 +4,7 @@ import { getProviderAdapter } from "../providers/router";
 import type { ProviderProfile } from "../providers/types";
 import type { BackgroundResponse, TrustedToBackgroundMessage } from "../shared/messages";
 import { deleteInstalledSkin, getRuntimeSkin, listRuntimeSkins } from "../skins/storage";
+import { isSitePaused, pageOrigin, setSitePaused } from "../storage/site-pauses";
 import {
   activateProviderProfile,
   deleteProviderProfile,
@@ -16,19 +17,67 @@ import {
   getSettings,
   restoreDefaultSettings,
   setActiveSkinId,
+  setGlobalEnabled,
   updateAppearance,
   updateCachePolicy,
+  updateReadingPreferences,
 } from "../storage/settings";
+import { getActiveTab, injectAndSend, isInjectableUrl } from "./injection";
 
-async function refreshCompanions(): Promise<void> {
+async function sendToOpenContent(
+  type: "SHOW_COMPANION" | "HIDE_COMPANION" | "REFRESH_COMPANION",
+): Promise<void> {
   const tabs = await chrome.tabs.query({});
   await Promise.allSettled(
     tabs.flatMap((tab) =>
-      typeof tab.id === "number"
-        ? [chrome.tabs.sendMessage(tab.id, { type: "REFRESH_COMPANION" })]
-        : [],
+      typeof tab.id === "number" ? [chrome.tabs.sendMessage(tab.id, { type })] : [],
     ),
   );
+}
+
+async function refreshCompanions(): Promise<void> {
+  await sendToOpenContent("REFRESH_COMPANION");
+}
+
+async function getTargetTab(targetTabId?: number): Promise<chrome.tabs.Tab | undefined> {
+  if (targetTabId === undefined) return getActiveTab();
+  try {
+    return await chrome.tabs.get(targetTabId);
+  } catch {
+    return undefined;
+  }
+}
+
+async function getPopupState(targetTabId?: number): Promise<unknown> {
+  const settings = await getSettings();
+  const tab = await getTargetTab(targetTabId);
+  const supportedPage = isInjectableUrl(tab?.url);
+  let companionVisible = false;
+  if (typeof tab?.id === "number" && supportedPage) {
+    try {
+      const response = (await chrome.tabs.sendMessage(tab.id, {
+        type: "GET_COMPANION_STATUS",
+      })) as { visible?: unknown } | undefined;
+      companionVisible = response?.visible === true;
+    } catch {
+      companionVisible = false;
+    }
+  }
+  const profile = settings.activeProviderId
+    ? await getProviderProfile(settings.activeProviderId)
+    : undefined;
+  const skin = await getRuntimeSkin(settings.activeSkinId);
+  return {
+    globalEnabled: settings.enabled,
+    supportedPage,
+    currentOrigin: pageOrigin(tab?.url),
+    sitePaused: await isSitePaused(tab?.url),
+    companionVisible,
+    provider: profile
+      ? { configured: true, label: profile.displayName, model: profile.model }
+      : { configured: false },
+    skin: { id: skin.id, name: skin.name, panel: skin.panel },
+  };
 }
 
 async function hasHostPermission(profile: ProviderProfile): Promise<boolean> {
@@ -111,6 +160,61 @@ export async function routeTrustedProviderMessage(
     case "GET_CACHE_STATUS": {
       const settings = await getSettings();
       return { ok: true, data: { policy: settings.cache, stats: await getCacheStats() } };
+    }
+    case "GET_POPUP_STATE":
+      return { ok: true, data: await getPopupState(message.targetTabId) };
+    case "GET_READING_PREFERENCES": {
+      const settings = await getSettings();
+      return {
+        ok: true,
+        data: {
+          defaultMode: settings.defaultMode,
+          clickBehavior: settings.clickBehavior,
+          locale: settings.locale,
+        },
+      };
+    }
+    case "UPDATE_READING_PREFERENCES":
+      await updateReadingPreferences({
+        defaultMode: message.defaultMode,
+        clickBehavior: message.clickBehavior,
+        locale: message.locale,
+      });
+      await refreshCompanions();
+      return { ok: true };
+    case "SET_GLOBAL_ENABLED":
+      await setGlobalEnabled(message.enabled);
+      await sendToOpenContent(message.enabled ? "SHOW_COMPANION" : "HIDE_COMPANION");
+      return { ok: true, data: await getPopupState(message.targetTabId) };
+    case "SET_SITE_PAUSED_CURRENT": {
+      const tab = await getTargetTab(message.targetTabId);
+      await setSitePaused(tab?.url, message.paused);
+      if (tab) {
+        if (message.paused) {
+          if (typeof tab.id === "number") {
+            await chrome.tabs
+              .sendMessage(tab.id, { type: "HIDE_COMPANION" })
+              .catch(() => undefined);
+          }
+        } else {
+          await injectAndSend(tab, { type: "SHOW_COMPANION" });
+        }
+      }
+      return { ok: true, data: await getPopupState(message.targetTabId) };
+    }
+    case "SET_CURRENT_TAB_COMPANION": {
+      const settings = await getSettings();
+      const tab = await getTargetTab(message.targetTabId);
+      if (!tab || !settings.enabled || (await isSitePaused(tab.url))) {
+        return {
+          ok: false,
+          error: { code: "INVALID_MESSAGE", message: "FloatRead is paused for this page." },
+        };
+      }
+      await injectAndSend(tab, {
+        type: message.visible ? "SHOW_COMPANION" : "HIDE_COMPANION",
+      });
+      return { ok: true, data: await getPopupState(message.targetTabId) };
     }
     case "UPDATE_CACHE_POLICY":
       await updateCachePolicy(message.cache);

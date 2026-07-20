@@ -3,6 +3,7 @@ import { runtimeSkinSchema } from "../skins/schema";
 
 export const readerModeSchema = z.enum(["natural_zh", "key_points", "explain_terms"]);
 export const clickBehaviorSchema = z.enum(["show_actions", "run_default_mode"]);
+export const uiLocaleSchema = z.enum(["zh_CN", "en"]);
 export const companionPositionSchema = z
   .object({
     edge: z.enum(["left", "right"]),
@@ -44,5 +45,6 @@ export const publicBootstrapSchema = z
     companionPosition: companionPositionSchema,
     providerConfigured: z.boolean(),
     providerLabel: z.string().min(1).optional(),
+    locale: uiLocaleSchema,
   })
   .strict();

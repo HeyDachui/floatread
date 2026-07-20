@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { cacheStatusSchema } from "../cache/schemas";
 import type { CachePolicy, CacheStats } from "../cache/types";
 import { CompanionArtwork } from "../companion/CompanionArtwork";
+import { BRANDING } from "../config/branding";
+import { createTranslator, resolveUiLocale } from "../i18n/catalog";
 import { createProviderProfile, PROVIDER_DEFAULTS, validateProviderUrl } from "../providers/config";
 import { connectionTestResultSchema, providerProfilesSchema } from "../providers/schemas";
 import type {
@@ -13,7 +15,8 @@ import type {
 } from "../providers/types";
 import type { BackgroundResponse } from "../shared/messages";
 import { publicBootstrapSchema } from "../shared/schemas";
-import type { AppearanceOverrides } from "../shared/types";
+import type { AppearanceOverrides, ReaderMode } from "../shared/types";
+import { readingPreferencesSchema, type ReadingPreferences } from "../shared/reading-preferences";
 import { exportSkinPackage } from "../skins/package-export";
 import { SkinImportError, validateSkinPackage } from "../skins/package-validator";
 import { runtimeSkinSchema } from "../skins/schema";
@@ -51,6 +54,12 @@ const DEFAULT_APPEARANCE: AppearanceOverrides = {
   snapMargin: 12,
 };
 
+const DEFAULT_READING: ReadingPreferences = {
+  defaultMode: "natural_zh",
+  clickBehavior: "show_actions",
+  locale: "auto",
+};
+
 const SKIN_STATES: SkinState[] = ["idle", "ready", "thinking", "success", "error"];
 
 function formatBytes(bytes: number): string {
@@ -71,7 +80,7 @@ export function OptionsApp(): React.JSX.Element {
   const [profiles, setProfiles] = useState<ProviderProfile[]>([]);
   const [draft, setDraft] = useState<ProviderProfile>(() => createProviderProfile("openai"));
   const [secret, setSecret] = useState("");
-  const [status, setStatus] = useState<string>("正在读取本地设置…");
+  const [status, setStatus] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
   const [cachePolicy, setCachePolicy] = useState<CachePolicy>(DEFAULT_CACHE_POLICY);
@@ -86,23 +95,26 @@ export function OptionsApp(): React.JSX.Element {
   const [previewState, setPreviewState] = useState<SkinState>("idle");
   const [previewImageUrl, setPreviewImageUrl] = useState<string | undefined>(undefined);
   const [appearance, setAppearance] = useState<AppearanceOverrides>(DEFAULT_APPEARANCE);
+  const [reading, setReading] = useState<ReadingPreferences>(DEFAULT_READING);
 
   const requiresSecret = PROVIDER_DEFAULTS[draft.kind].requiresSecret;
   const urlValidation = useMemo(() => validateProviderUrl(draft), [draft]);
   const previewSkin = skins.find((skin) => skin.id === previewSkinId) ?? skins[0];
   const activeSkin = skins.find((skin) => skin.id === activeSkinId);
+  const optionsLocale = reading.locale === "auto" ? resolveUiLocale() : reading.locale;
+  const t = useMemo(() => createTranslator(optionsLocale), [optionsLocale]);
 
   const loadProfiles = async (preferredId?: string): Promise<void> => {
     const response = await send({ type: "LIST_PROVIDER_PROFILES" });
     const parsed = response.ok ? providerProfilesSchema.safeParse(response.data) : null;
     if (!parsed?.success) {
-      setStatus("无法读取 Provider 配置。请重新加载扩展后重试。");
+      setStatus(t("statusLoadFailed"));
       return;
     }
     setProfiles(parsed.data);
     const selected = parsed.data.find((item) => item.id === preferredId) ?? parsed.data[0];
     if (selected) setDraft(selected);
-    setStatus(parsed.data.length > 0 ? "配置只保存在本机浏览器。" : "请创建第一个 Provider 配置。");
+    setStatus(parsed.data.length > 0 ? t("statusProfilesLocal") : t("statusCreateProfile"));
   };
 
   const loadCacheStatus = async (): Promise<void> => {
@@ -132,10 +144,19 @@ export function OptionsApp(): React.JSX.Element {
     }
   };
 
+  const loadReadingPreferences = async (): Promise<void> => {
+    const response = await send({ type: "GET_READING_PREFERENCES" });
+    const parsed = response.ok ? readingPreferencesSchema.safeParse(response.data) : null;
+    if (parsed?.success) setReading(parsed.data);
+  };
+
   useEffect(() => {
     void loadProfiles();
     void loadCacheStatus();
     void loadSkins();
+    void loadReadingPreferences();
+    // Initial extension-page hydration only; later mutations refresh their own sections.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -163,7 +184,7 @@ export function OptionsApp(): React.JSX.Element {
     setBusy(true);
     try {
       const response = await send({ type: "UPDATE_CACHE_POLICY", cache: cachePolicy });
-      setStatus(response.ok ? "缓存策略已保存。" : "缓存策略保存失败。");
+      setStatus(t(response.ok ? "statusCacheSaved" : "statusCacheFailed"));
       await loadCacheStatus();
     } finally {
       setBusy(false);
@@ -175,7 +196,7 @@ export function OptionsApp(): React.JSX.Element {
     try {
       await send({ type: "CLEAR_RESULT_CACHE" });
       await loadCacheStatus();
-      setStatus("AI 结果缓存已清空；Provider 配置和凭据未受影响。");
+      setStatus(t("statusCacheCleared"));
     } finally {
       setBusy(false);
     }
@@ -188,9 +209,9 @@ export function OptionsApp(): React.JSX.Element {
       if (!response.ok) throw new Error("activate failed");
       setActiveSkinIdState(skinId);
       setPreviewSkinId(skinId);
-      setStatus("皮肤已应用到打开的 FloatRead 助手，无需刷新网页。");
+      setStatus(t("statusSkinApplied"));
     } catch {
-      setStatus("皮肤切换失败，请重新加载扩展后重试。");
+      setStatus(t("statusSkinFailed"));
     } finally {
       setBusy(false);
     }
@@ -200,7 +221,17 @@ export function OptionsApp(): React.JSX.Element {
     setBusy(true);
     try {
       const response = await send({ type: "UPDATE_APPEARANCE", appearance: next });
-      setStatus(response.ok ? "外观设置已应用，无需刷新网页。" : "外观设置保存失败。");
+      setStatus(t(response.ok ? "statusAppearanceSaved" : "statusAppearanceFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveReadingPreferences = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      const response = await send({ type: "UPDATE_READING_PREFERENCES", ...reading });
+      setStatus(t(response.ok ? "statusReadingSaved" : "statusReadingFailed"));
     } finally {
       setBusy(false);
     }
@@ -210,12 +241,12 @@ export function OptionsApp(): React.JSX.Element {
     setAppearance(DEFAULT_APPEARANCE);
     await saveAppearance(DEFAULT_APPEARANCE);
     await activateSkin("native");
-    setStatus("已恢复 Native 皮肤和默认外观。Provider 与缓存设置未改变。");
+    setStatus(t("statusDefaultsRestored"));
   };
 
   const importSkin = async (file: File): Promise<void> => {
     if (!file.name.toLowerCase().endsWith(".floatread-skin")) {
-      setStatus("请选择扩展名为 .floatread-skin 的皮肤包。");
+      setStatus(t("statusChooseSkinPackage"));
       return;
     }
     setBusy(true);
@@ -224,15 +255,15 @@ export function OptionsApp(): React.JSX.Element {
       await installSkinPackage(validated);
       await loadSkins();
       await activateSkin(validated.manifest.id);
-      setStatus(`已安全导入并应用 ${validated.manifest.name}。`);
+      setStatus(t("statusSkinImported", validated.manifest.name));
     } catch (error) {
       const reason =
         error instanceof SkinImportError
           ? `${error.message}${error.fileName ? `（${error.fileName}）` : ""}`
           : error instanceof Error
             ? error.message
-            : "未知错误";
-      setStatus(`皮肤导入失败：${reason}`);
+            : t("statusUnknownError");
+      setStatus(t("statusSkinImportFailed", reason));
     } finally {
       setBusy(false);
     }
@@ -248,9 +279,9 @@ export function OptionsApp(): React.JSX.Element {
       anchor.download = `${previewSkinId}.floatread-skin`;
       anchor.click();
       URL.revokeObjectURL(url);
-      setStatus("皮肤包已导出；其中不包含任何 Provider 凭据。");
+      setStatus(t("statusSkinExported"));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "皮肤导出失败。");
+      setStatus(error instanceof Error ? error.message : t("statusSkinExportFailed"));
     } finally {
       setBusy(false);
     }
@@ -265,7 +296,7 @@ export function OptionsApp(): React.JSX.Element {
       await loadSkins();
       setPreviewSkinId("native");
       setActiveSkinIdState(activeSkinId === skin.id ? "native" : activeSkinId);
-      setStatus("社区皮肤及其本地资源已删除。");
+      setStatus(t("statusSkinDeleted"));
     } finally {
       setBusy(false);
     }
@@ -284,13 +315,13 @@ export function OptionsApp(): React.JSX.Element {
         ...(secret.trim() ? { secret } : {}),
       });
       if (!response.ok) {
-        setStatus("保存失败，请检查配置。");
+        setStatus(t("statusSaveFailed"));
         return false;
       }
       await send({ type: "ACTIVATE_PROVIDER_PROFILE", profileId: draft.id });
       await loadProfiles(draft.id);
       setSecret("");
-      setStatus("已保存并设为当前 Provider。API Key 不会显示在配置列表中。");
+      setStatus(t("statusSaved"));
       return true;
     } finally {
       setBusy(false);
@@ -305,27 +336,27 @@ export function OptionsApp(): React.JSX.Element {
     setBusy(true);
     setTestResult(null);
     try {
-      setStatus(`FloatRead 需要访问 ${urlValidation.url.origin} 才能由 Background 调用模型。`);
+      setStatus(t("statusPermission", urlValidation.url.origin));
       const granted = await chrome.permissions.request({ origins: [urlValidation.permission] });
       if (!granted) {
-        setStatus("你拒绝了域名权限；配置仍可保存，但不会发起请求。");
+        setStatus(t("statusPermissionDenied"));
         return;
       }
       const saved = await save();
       if (!saved) return;
       setBusy(true);
-      setStatus("正在发送一次最小连接测试；Provider 可能计费少量 Token…");
+      setStatus(t("statusTesting"));
       const response = await send({ type: "TEST_PROVIDER_CONNECTION", profileId: draft.id });
       const parsed = response.ok ? connectionTestResultSchema.safeParse(response.data) : null;
       if (!parsed?.success) {
-        setStatus("连接测试返回格式异常。");
+        setStatus(t("statusInvalidTest"));
         return;
       }
       setTestResult(parsed.data as ConnectionTestResult);
       setStatus(
         parsed.data.ok
-          ? `连接成功，总耗时 ${parsed.data.totalMs} ms。`
-          : (parsed.data.error?.message ?? "连接失败。"),
+          ? t("statusConnected", String(parsed.data.totalMs))
+          : (parsed.data.error?.message ?? t("statusConnectionFailed")),
       );
     } finally {
       setBusy(false);
@@ -341,7 +372,7 @@ export function OptionsApp(): React.JSX.Element {
       setSecret("");
       setTestResult(null);
       await loadProfiles();
-      setStatus("Provider 配置及对应凭据已删除。");
+      setStatus(t("statusDeletedProfile"));
     } finally {
       setBusy(false);
     }
@@ -350,7 +381,7 @@ export function OptionsApp(): React.JSX.Element {
   const clearSecret = async (): Promise<void> => {
     await send({ type: "CLEAR_PROVIDER_SECRET", profileId: draft.id });
     setSecret("");
-    setStatus("该 Provider 的本地、会话和内存凭据均已清除。");
+    setStatus(t("statusClearedCredential"));
   };
 
   return (
@@ -370,14 +401,14 @@ export function OptionsApp(): React.JSX.Element {
       <header className="options-hero">
         <div>
           <div className="eyebrow">LOCAL-FIRST READING COMPANION</div>
-          <h1>FloatRead 设置</h1>
-          <p>请求从浏览器直接发送到你选择的 Provider，FloatRead 不设开发者服务器。</p>
+          <h1>{t("settingsTitle")}</h1>
+          <p>{t("settingsIntro")}</p>
         </div>
-        <div className="privacy-chip">无账号 · 无遥测 · BYOK</div>
+        <div className="privacy-chip">{t("privacyChip")}</div>
       </header>
 
       <div className="options-grid">
-        <aside className="profile-rail" aria-label="Provider 配置列表">
+        <aside className="profile-rail" aria-label={t("profileList")}>
           <div className="section-label">PROVIDERS</div>
           {profiles.map((profile) => (
             <button
@@ -401,10 +432,10 @@ export function OptionsApp(): React.JSX.Element {
               setDraft(createProviderProfile("openai"));
               setSecret("");
               setTestResult(null);
-              setStatus("正在创建新配置，尚未保存。");
+              setStatus(t("statusNewProfile"));
             }}
           >
-            ＋ 新建配置
+            {t("newProfile")}
           </button>
         </aside>
 
@@ -412,16 +443,16 @@ export function OptionsApp(): React.JSX.Element {
           <div className="card-heading">
             <div>
               <div className="section-label">ACTIVE PROVIDER</div>
-              <h2 id="provider-title">连接你自己的 AI</h2>
+              <h2 id="provider-title">{t("connectOwnAi")}</h2>
             </div>
             <span className="connection-dot" data-ok={testResult?.ok ?? false}>
-              {testResult?.ok ? "已验证" : "未验证"}
+              {t(testResult?.ok ? "verified" : "unverified")}
             </span>
           </div>
 
           <div className="form-grid">
             <label>
-              <span>Provider 类型</span>
+              <span>{t("providerType")}</span>
               <select
                 value={draft.kind}
                 onChange={(event) => {
@@ -448,7 +479,7 @@ export function OptionsApp(): React.JSX.Element {
             </label>
 
             <label>
-              <span>显示名称</span>
+              <span>{t("displayName")}</span>
               <input
                 value={draft.displayName}
                 maxLength={80}
@@ -465,42 +496,42 @@ export function OptionsApp(): React.JSX.Element {
               />
               <small>
                 {urlValidation.valid
-                  ? `只会申请 ${urlValidation.url.origin} 的访问权限`
+                  ? t("exactPermission", urlValidation.url.origin)
                   : urlValidation.error.message}
               </small>
             </label>
 
             <label>
-              <span>模型名</span>
+              <span>{t("modelName")}</span>
               <input
                 value={draft.model}
                 spellCheck={false}
                 onChange={(event) => setDraft(updated(draft, { model: event.target.value }))}
               />
-              <small>示例名称可编辑，不依赖远程模型列表。</small>
+              <small>{t("modelHint")}</small>
             </label>
 
             <label>
-              <span>请求超时</span>
+              <span>{t("timeout")}</span>
               <select
                 value={draft.timeoutMs}
                 onChange={(event) =>
                   setDraft(updated(draft, { timeoutMs: Number(event.target.value) }))
                 }
               >
-                <option value={30_000}>30 秒</option>
-                <option value={60_000}>60 秒</option>
-                <option value={120_000}>120 秒</option>
+                <option value={30_000}>{t("seconds", "30")}</option>
+                <option value={60_000}>{t("seconds", "60")}</option>
+                <option value={120_000}>{t("seconds", "120")}</option>
               </select>
             </label>
 
             <fieldset className="wide-field storage-modes">
-              <legend>API Key 保存方式</legend>
+              <legend>{t("keyStorage")}</legend>
               {(
                 [
-                  ["session", "仅本次浏览器会话（推荐）", "浏览器重启或扩展重载后清除"],
-                  ["local", "持久保存在本机", "方便，但浏览器本地存储不是硬件保险库"],
-                  ["prompt_each_time", "每次使用时输入", "只进入 Service Worker 当前内存"],
+                  ["session", t("onboardingSession"), t("sessionDetail")],
+                  ["local", t("onboardingLocal"), t("localDetail")],
+                  ["prompt_each_time", t("onboardingPrompt"), t("promptDetail")],
                 ] as Array<[SecretStorageMode, string, string]>
               ).map(([mode, title, detail]) => (
                 <label key={mode} className="radio-card">
@@ -526,20 +557,15 @@ export function OptionsApp(): React.JSX.Element {
                   type="password"
                   value={secret}
                   autoComplete="new-password"
-                  placeholder="已保存的 Key 不会回显；留空可保留原值"
+                  placeholder={t("keyPlaceholder")}
                   onChange={(event) => setSecret(event.target.value)}
                 />
                 {draft.secretStorageMode === "local" ? (
-                  <small className="risk-note">
-                    风险提示：拥有本机及浏览器调试权限的人仍可能读取此凭据。建议使用独立、低额度、可吊销的
-                    Key。
-                  </small>
+                  <small className="risk-note">{t("keyRisk")}</small>
                 ) : null}
               </label>
             ) : (
-              <div className="wide-field local-note">
-                Ollama 默认无需 API Key，只允许 localhost 或 127.0.0.1 地址。
-              </div>
+              <div className="wide-field local-note">{t("ollamaNoKey")}</div>
             )}
           </div>
 
@@ -554,7 +580,7 @@ export function OptionsApp(): React.JSX.Element {
               disabled={busy}
               onClick={() => void clearSecret()}
             >
-              清除凭据
+              {t("clearCredential")}
             </button>
             {profiles.some((profile) => profile.id === draft.id) ? (
               <button
@@ -563,7 +589,7 @@ export function OptionsApp(): React.JSX.Element {
                 disabled={busy}
                 onClick={() => void remove()}
               >
-                删除配置
+                {t("deleteProfile")}
               </button>
             ) : null}
             <span className="action-spacer" />
@@ -573,7 +599,7 @@ export function OptionsApp(): React.JSX.Element {
               disabled={busy}
               onClick={() => void save()}
             >
-              保存
+              {t("save")}
             </button>
             <button
               type="button"
@@ -581,22 +607,105 @@ export function OptionsApp(): React.JSX.Element {
               disabled={busy}
               onClick={() => void authorizeAndTest()}
             >
-              {busy ? "处理中…" : "授权并测试连接"}
+              {t(busy ? "processing" : "authorizeTest")}
             </button>
           </div>
         </section>
       </div>
 
+      <section className="settings-card behavior-card" aria-labelledby="behavior-title">
+        <div className="card-heading">
+          <div>
+            <div className="section-label">READING & ACCESSIBILITY</div>
+            <h2 id="behavior-title">{t("readingTitle")}</h2>
+          </div>
+        </div>
+        <div className="behavior-controls">
+          <label>
+            <span>{t("defaultMode")}</span>
+            <select
+              value={reading.defaultMode}
+              onChange={(event) =>
+                setReading({ ...reading, defaultMode: event.target.value as ReaderMode })
+              }
+            >
+              <option value="natural_zh">{t("modeNatural")}</option>
+              <option value="key_points">{t("modePoints")}</option>
+              <option value="explain_terms">{t("modeTerms")}</option>
+            </select>
+          </label>
+          <label>
+            <span>{t("clickBehavior")}</span>
+            <select
+              value={reading.clickBehavior}
+              onChange={(event) =>
+                setReading({
+                  ...reading,
+                  clickBehavior: event.target.value as ReadingPreferences["clickBehavior"],
+                })
+              }
+            >
+              <option value="show_actions">{t("showActions")}</option>
+              <option value="run_default_mode">{t("runDefault")}</option>
+            </select>
+          </label>
+          <label>
+            <span>{t("interfaceLanguage")}</span>
+            <select
+              value={reading.locale}
+              onChange={(event) =>
+                setReading({
+                  ...reading,
+                  locale: event.target.value as ReadingPreferences["locale"],
+                })
+              }
+            >
+              <option value="auto">{t("languageAuto")}</option>
+              <option value="zh_CN">{t("languageChinese")}</option>
+              <option value="en">{t("languageEnglish")}</option>
+            </select>
+          </label>
+        </div>
+        <div className="shortcut-strip">
+          <div>
+            <strong>{t("shortcutTitle")}</strong>
+            <span>{t("shortcutHint")}</span>
+          </div>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={() =>
+              void chrome.tabs
+                .create({ url: "chrome://extensions/shortcuts" })
+                .catch(() => setStatus(t("shortcutFallback")))
+            }
+          >
+            {t("openShortcuts")}
+          </button>
+        </div>
+        <div className="form-actions">
+          <span className="action-spacer" />
+          <button
+            type="button"
+            className="button primary"
+            disabled={busy}
+            onClick={() => void saveReadingPreferences()}
+          >
+            {t("saveReading")}
+          </button>
+        </div>
+      </section>
+
       <section className="settings-card skin-card" aria-labelledby="skin-title">
         <div className="card-heading">
           <div>
             <div className="section-label">VERSIONED SKIN ENGINE</div>
-            <h2 id="skin-title">皮肤与实时预览</h2>
+            <h2 id="skin-title">{t("skinTitle")}</h2>
           </div>
-          <span className="privacy-chip">只改变 FloatRead</span>
+          <span className="privacy-chip">{t("onlyFloatRead")}</span>
         </div>
         <div className="skin-workbench">
-          <div className="skin-library" aria-label="皮肤列表">
+          <div className="skin-library" aria-label={t("skinList")}>
             {skins.map((skin) => (
               <button
                 key={skin.id}
@@ -606,8 +715,8 @@ export function OptionsApp(): React.JSX.Element {
               >
                 <span>{skin.name}</span>
                 <small>
-                  {skin.source === "builtin" ? "内置原创" : "社区皮肤"}
-                  {skin.id === activeSkinId ? " · 使用中" : ""}
+                  {t(skin.source === "builtin" ? "builtinOriginal" : "communitySkin")}
+                  {skin.id === activeSkinId ? ` · ${t("active")}` : ""}
                 </small>
               </button>
             ))}
@@ -636,7 +745,7 @@ export function OptionsApp(): React.JSX.Element {
                 <CompanionArtwork state={previewState} communityImageUrl={previewImageUrl} />
               </div>
               <strong>{previewSkin.name}</strong>
-              <div className="preview-state-tabs" aria-label="预览状态">
+              <div className="preview-state-tabs" aria-label={t("previewStates")}>
                 {SKIN_STATES.map((state) => (
                   <button
                     key={state}
@@ -651,15 +760,12 @@ export function OptionsApp(): React.JSX.Element {
             </div>
           ) : null}
         </div>
-        <p className="cache-intro">
-          社区包仅允许严格 JSON、PNG 和 WebP；JavaScript、HTML、SVG、CSS、字体、远程
-          URL、路径穿越和异常压缩包都会被拒绝。
-        </p>
+        <p className="cache-intro">{t("skinSecuritySummary")}</p>
         <div className="appearance-controls">
           <label>
-            <span>助手大小：{appearance.companionSize}px</span>
+            <span>{t("companionSize", String(appearance.companionSize))}</span>
             <input
-              aria-label="助手大小"
+              aria-label={t("companionSize", String(appearance.companionSize))}
               type="range"
               min={40}
               max={96}
@@ -670,9 +776,14 @@ export function OptionsApp(): React.JSX.Element {
             />
           </label>
           <label>
-            <span>助手透明度：{Math.round(appearance.companionOpacity * 100)}%</span>
+            <span>
+              {t("companionOpacity", String(Math.round(appearance.companionOpacity * 100)))}
+            </span>
             <input
-              aria-label="助手透明度"
+              aria-label={t(
+                "companionOpacity",
+                String(Math.round(appearance.companionOpacity * 100)),
+              )}
               type="range"
               min={35}
               max={100}
@@ -683,9 +794,9 @@ export function OptionsApp(): React.JSX.Element {
             />
           </label>
           <label>
-            <span>结果面板宽度：{appearance.panelWidth}px</span>
+            <span>{t("panelWidth", String(appearance.panelWidth))}</span>
             <input
-              aria-label="结果面板宽度"
+              aria-label={t("panelWidth", String(appearance.panelWidth))}
               type="range"
               min={320}
               max={520}
@@ -703,12 +814,12 @@ export function OptionsApp(): React.JSX.Element {
                 setAppearance({ ...appearance, motionEnabled: event.target.checked })
               }
             />
-            <span>启用内置动画（系统“减少动态效果”始终优先）</span>
+            <span>{t("enableMotion")}</span>
           </label>
         </div>
         <div className="form-actions">
           <label className="button secondary file-button">
-            导入 .floatread-skin
+            {t("importSkin")}
             <input
               type="file"
               accept=".floatread-skin,application/zip"
@@ -726,7 +837,7 @@ export function OptionsApp(): React.JSX.Element {
             disabled={busy || !previewSkin}
             onClick={() => void exportSkin()}
           >
-            导出当前皮肤
+            {t("exportSkin")}
           </button>
           {previewSkin?.source === "community" ? (
             <button
@@ -735,7 +846,7 @@ export function OptionsApp(): React.JSX.Element {
               disabled={busy}
               onClick={() => void deleteSkin()}
             >
-              删除社区皮肤
+              {t("deleteSkin")}
             </button>
           ) : null}
           <button
@@ -744,7 +855,7 @@ export function OptionsApp(): React.JSX.Element {
             disabled={busy}
             onClick={() => void restoreSkinDefaults()}
           >
-            恢复默认
+            {t("restoreDefault")}
           </button>
           <span className="action-spacer" />
           <button
@@ -753,7 +864,7 @@ export function OptionsApp(): React.JSX.Element {
             disabled={busy}
             onClick={() => void saveAppearance()}
           >
-            保存外观
+            {t("saveAppearance")}
           </button>
           <button
             type="button"
@@ -761,7 +872,7 @@ export function OptionsApp(): React.JSX.Element {
             disabled={busy || !previewSkin || activeSkinId === previewSkinId}
             onClick={() => void activateSkin(previewSkinId)}
           >
-            应用皮肤
+            {t("applySkin")}
           </button>
         </div>
       </section>
@@ -770,18 +881,16 @@ export function OptionsApp(): React.JSX.Element {
         <div className="card-heading">
           <div>
             <div className="section-label">LOCAL RESULT CACHE</div>
-            <h2 id="cache-title">结果缓存</h2>
+            <h2 id="cache-title">{t("cacheTitle")}</h2>
           </div>
           <span className="privacy-chip">
-            {cacheStats.entries} 条 · {formatBytes(cacheStats.bytes)}
+            {t("cacheUsage", String(cacheStats.entries), formatBytes(cacheStats.bytes))}
           </span>
         </div>
-        <p className="cache-intro">
-          相同文本、模式、Provider、Base URL、模型和 Prompt 版本才会命中。缓存永远不包含 API Key。
-        </p>
+        <p className="cache-intro">{t("cacheIntro")}</p>
         <div className="cache-controls">
           <label>
-            <span>保存位置</span>
+            <span>{t("cacheLocation")}</span>
             <select
               value={cachePolicy.mode}
               onChange={(event) =>
@@ -791,27 +900,27 @@ export function OptionsApp(): React.JSX.Element {
                 })
               }
             >
-              <option value="persistent">持久保存在本机</option>
-              <option value="session">仅本次浏览器会话</option>
-              <option value="off">关闭缓存</option>
+              <option value="persistent">{t("cachePersistent")}</option>
+              <option value="session">{t("cacheSession")}</option>
+              <option value="off">{t("cacheOff")}</option>
             </select>
           </label>
           <label>
-            <span>过期时间</span>
+            <span>{t("cacheExpiry")}</span>
             <select
               value={cachePolicy.ttlDays}
               onChange={(event) =>
                 setCachePolicy({ ...cachePolicy, ttlDays: Number(event.target.value) })
               }
             >
-              <option value={1}>1 天</option>
-              <option value={7}>7 天</option>
-              <option value={30}>30 天</option>
-              <option value={90}>90 天</option>
+              <option value={1}>{t("days", "1")}</option>
+              <option value={7}>{t("days", "7")}</option>
+              <option value={30}>{t("days", "30")}</option>
+              <option value={90}>{t("days", "90")}</option>
             </select>
           </label>
           <label>
-            <span>最多条目</span>
+            <span>{t("maxEntries")}</span>
             <input
               type="number"
               min={1}
@@ -823,7 +932,7 @@ export function OptionsApp(): React.JSX.Element {
             />
           </label>
           <label>
-            <span>最大容量</span>
+            <span>{t("maxCapacity")}</span>
             <select
               value={cachePolicy.maxBytes}
               onChange={(event) =>
@@ -844,7 +953,7 @@ export function OptionsApp(): React.JSX.Element {
             disabled={busy}
             onClick={() => void clearCache()}
           >
-            清空缓存
+            {t("clearCache")}
           </button>
           <span className="action-spacer" />
           <button
@@ -853,8 +962,29 @@ export function OptionsApp(): React.JSX.Element {
             disabled={busy}
             onClick={() => void saveCachePolicy()}
           >
-            保存缓存设置
+            {t("saveCache")}
           </button>
+        </div>
+      </section>
+
+      <section className="settings-card about-card" aria-labelledby="about-title">
+        <div className="card-heading">
+          <div>
+            <div className="section-label">OPEN SOURCE · NO TELEMETRY</div>
+            <h2 id="about-title">{t("aboutTitle")}</h2>
+          </div>
+        </div>
+        <p className="cache-intro">{t("aboutText")}</p>
+        <div className="about-links">
+          <a href={BRANDING.authorUrl} target="_blank" rel="noreferrer">
+            {t("authorHomepage")}
+          </a>
+          <a href={BRANDING.githubUrl} target="_blank" rel="noreferrer">
+            {t("projectRepository")}
+          </a>
+          <a href={BRANDING.supportUrl} target="_blank" rel="noreferrer">
+            {t("supportIssues")}
+          </a>
         </div>
       </section>
     </main>

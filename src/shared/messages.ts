@@ -46,6 +46,42 @@ export const trustedToBackgroundSchema = z.discriminatedUnion("type", [
     .object({ type: z.literal("TEST_PROVIDER_CONNECTION"), profileId: z.string().min(8).max(64) })
     .strict(),
   z.object({ type: z.literal("GET_CACHE_STATUS") }).strict(),
+  z
+    .object({
+      type: z.literal("GET_POPUP_STATE"),
+      targetTabId: z.number().int().positive().optional(),
+    })
+    .strict(),
+  z.object({ type: z.literal("GET_READING_PREFERENCES") }).strict(),
+  z
+    .object({
+      type: z.literal("UPDATE_READING_PREFERENCES"),
+      defaultMode: readerModeSchema,
+      clickBehavior: z.enum(["show_actions", "run_default_mode"]),
+      locale: z.enum(["auto", "zh_CN", "en"]),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("SET_GLOBAL_ENABLED"),
+      enabled: z.boolean(),
+      targetTabId: z.number().int().positive().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("SET_SITE_PAUSED_CURRENT"),
+      paused: z.boolean(),
+      targetTabId: z.number().int().positive().optional(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("SET_CURRENT_TAB_COMPANION"),
+      visible: z.boolean(),
+      targetTabId: z.number().int().positive().optional(),
+    })
+    .strict(),
   z.object({ type: z.literal("UPDATE_CACHE_POLICY"), cache: cachePolicySchema }).strict(),
   z.object({ type: z.literal("CLEAR_RESULT_CACHE") }).strict(),
   z.object({ type: z.literal("RESTORE_DEFAULT_SETTINGS") }).strict(),
@@ -66,6 +102,22 @@ export const backgroundToContentSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("HIDE_COMPANION") }).strict(),
   z.object({ type: z.literal("TOGGLE_COMPANION") }).strict(),
   z.object({ type: z.literal("REFRESH_COMPANION") }).strict(),
+  z.object({ type: z.literal("GET_COMPANION_STATUS") }).strict(),
+  z
+    .object({
+      type: z.literal("RUN_SELECTION"),
+      mode: readerModeSchema.optional(),
+      text: z.string().min(1).max(12_000).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("SHOW_SELECTION_ERROR"),
+      reason: z.enum(["EMPTY", "TOO_LONG"]),
+      length: z.number().int().nonnegative(),
+    })
+    .strict(),
+  z.object({ type: z.literal("COPY_LAST_RESULT") }).strict(),
 ]);
 
 export type BackgroundToContentMessage = z.infer<typeof backgroundToContentSchema>;

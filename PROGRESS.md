@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: Phase 5 — complete; Phase 3 real-Provider smoke remains pending user confirmation
+- Current phase: Phase 6 — complete; Phase 3 real-Provider smoke remains pending user confirmation
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -20,8 +20,8 @@ This file is the auditable project status source. A phase is only marked complet
 | 2     | Complete           | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | 23 unit, 2 integration and 4 real extension E2E tests passed                     |
 | 3     | Preflight complete | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | 51 unit, 2 integration and 5 real extension E2E tests passed; real smoke pending |
 | 4     | Complete           | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | 59 unit, 2 integration and 6 real extension E2E tests passed                     |
-| 5     | Complete           | This phase commit (see Git log)            | 79 unit, 2 integration and 7 real extension E2E tests passed                     |
-| 6     | Not started        | —                                          | —                                                                                |
+| 5     | Complete           | `80ee9636f1025bdd6b3791ae028738b184f600fa` | 79 unit, 2 integration and 7 real extension E2E tests passed                     |
+| 6     | Complete           | This phase commit (see Git log)            | 90 unit, 2 integration and 13 real extension E2E tests passed                    |
 | 7     | Not started        | —                                          | —                                                                                |
 
 ## Phase 0 target
@@ -245,6 +245,41 @@ Controlled failures and fixes:
 
 Knowledge After at Phase 5: no prior knowledge card was adopted. New project-local evidence retained: security scanning must inspect bundled transitive code, not only authored source; archive safety needs metadata preflight before decompression and decoded-image validation after decompression.
 
+## Phase 6 result
+
+Implemented:
+
+- Full toolbar Popup with global enable/pause, current-site pause, current-page show/hide, Provider/model status, active skin, settings and GitHub entry.
+- Immediate all-tab removal on global pause, origin-only site pause storage and an effective bootstrap that refuses to mount while paused.
+- First-install three-step onboarding with privacy boundaries, complete Provider profile fields and secret modes, exact-origin authorization/test, six-skin selection and a zero-network local demo.
+- Parent selection context menu with three localized mode children and direct selected-text execution through Background.
+- All three manifest commands: default-mode execution, companion toggle and optional last-result copy; last results remain Content-memory-only and clear on pause/hide.
+- Unified typed Chinese/English message catalog for Companion, result panel, Popup, onboarding and Options; localized manifest, command and context-menu strings.
+- Reading behavior settings for default mode, direct-run versus action-menu behavior, and browser/Chinese/English UI locale.
+- Keyboard activation that moves focus into the mode menu, localized result controls, exact X/Twitter host permissions and `activeTab`-only temporary use elsewhere.
+- Dark-environment and reduced-motion styles across the page-owned UI; Popup and Options receive active-skin accents.
+
+Verification before the phase commit:
+
+| Command                 | Actual result                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`             | Passed with zero warnings                                                                                  |
+| `pnpm typecheck`        | Passed                                                                                                     |
+| `pnpm test`             | Passed: 18 files, 90 tests                                                                                 |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                                                                   |
+| `pnpm build`            | Passed; 18 production files emitted                                                                        |
+| `pnpm verify:dist`      | Passed; closed Shadow DOM, no dynamic execution/remote script, no production Mock                          |
+| `pnpm test:e2e`         | Passed: 13 real Chromium extension tests including Popup pause/show, onboarding, bilingual UI and keyboard |
+
+Controlled failures and fixes:
+
+- English browser locale initially broke Chinese-only E2E locators. Tests now assert localized accessible names, and a dedicated E2E switches the full settings shell between English and Chinese.
+- A normal extension tab cannot reproduce a toolbar Popup's retained active-tab grant in headless Chromium. Trusted Popup messages now accept an optional, runtime-validated target tab ID; production Popup use still defaults to Chrome's active tab, while E2E can lock the fixture tab explicitly.
+- Popup resume initially reported a stale hidden state because Content mounting was asynchronous. `SHOW_COMPANION`, refresh and direct-run messages now acknowledge only after the host mount promise completes.
+- The custom switch initially hid its checkbox behind the visual track. The real checkbox now covers the track transparently, preserving keyboard focus and reliable pointer activation.
+
+Knowledge After at Phase 6: no prior knowledge card was adopted. New project-local evidence retained: extension popup E2E must model the active-tab relationship explicitly, and command acknowledgement must wait for asynchronous Content mounting before Background reports visible state.
+
 ## Next phase after the API checkpoint
 
-Phase 6 will complete Popup, onboarding, global/current-site pause, right-click and keyboard-trigger flows, locale switching and remaining accessibility/environment regression coverage. The pending one-Provider smoke test will be recorded separately as soon as the user confirms the credential's Provider.
+Phase 7 will complete release documentation, CI, security/secret scanning, manual test records, package inspection and the production ZIP. The pending one-Provider smoke test will be recorded separately as soon as the user confirms the credential's Provider.

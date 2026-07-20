@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import type { ReaderMode } from "../shared/types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createTranslator } from "../i18n/catalog";
+import type { ReaderMode, UiLocale } from "../shared/types";
 import type { ReaderState } from "./reader-reducer";
 
 interface ResultPanelProps {
@@ -9,13 +10,8 @@ interface ResultPanelProps {
   onCancel: () => void;
   onRetry: () => void;
   onSwitchMode: (mode: ReaderMode) => void;
+  locale: UiLocale;
 }
-
-const MODE_LABELS: Record<ReaderMode, string> = {
-  natural_zh: "自然中文",
-  key_points: "看懂重点",
-  explain_terms: "解释术语",
-};
 
 export function ResultPanel({
   state,
@@ -24,11 +20,18 @@ export function ResultPanel({
   onCancel,
   onRetry,
   onSwitchMode,
+  locale,
 }: ResultPanelProps): React.JSX.Element {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
   const isLoading = state.value === "requesting" || state.value === "streaming";
   const hasOutput = state.output.length > 0;
+  const t = useMemo(() => createTranslator(locale), [locale]);
+  const modeLabels: Record<ReaderMode, string> = {
+    natural_zh: t("modeNatural"),
+    key_points: t("modePoints"),
+    explain_terms: t("modeTerms"),
+  };
 
   useEffect(() => {
     if (focusOnOpen) closeButtonRef.current?.focus();
@@ -46,45 +49,45 @@ export function ResultPanel({
     if (!hasOutput) return;
     try {
       await navigator.clipboard.writeText(state.output);
-      setCopyStatus("已复制");
+      setCopyStatus(t("copied"));
     } catch {
-      setCopyStatus("复制失败，请手动选择结果文本");
+      setCopyStatus(t("copyFailed"));
     }
   };
 
   return (
-    <section className="fr-result-panel" aria-label="FloatRead 阅读结果">
+    <section className="fr-result-panel" aria-label={t("resultLabel")}>
       <header className="fr-panel-header">
         <div>
           <div className="fr-panel-kicker">FLOATREAD</div>
-          <h2>{MODE_LABELS[state.mode]}</h2>
+          <h2>{modeLabels[state.mode]}</h2>
         </div>
         <button
           ref={closeButtonRef}
           className="fr-icon-button"
           type="button"
-          aria-label="关闭结果面板"
+          aria-label={t("closeResult")}
           onClick={onClose}
         >
           ×
         </button>
       </header>
 
-      <nav className="fr-mode-tabs" aria-label="切换阅读模式">
-        {(Object.keys(MODE_LABELS) as ReaderMode[]).map((mode) => (
+      <nav className="fr-mode-tabs" aria-label={t("switchMode")}>
+        {(Object.keys(modeLabels) as ReaderMode[]).map((mode) => (
           <button
             key={mode}
             type="button"
             aria-current={state.mode === mode ? "page" : undefined}
             onClick={() => onSwitchMode(mode)}
           >
-            {MODE_LABELS[mode]}
+            {modeLabels[mode]}
           </button>
         ))}
       </nav>
 
       <details className="fr-original">
-        <summary>查看原文</summary>
+        <summary>{t("showOriginal")}</summary>
         <div>{state.originalText}</div>
       </details>
 
@@ -92,7 +95,7 @@ export function ResultPanel({
         {state.value === "requesting" && !hasOutput ? (
           <div className="fr-loading-row" role="status">
             <span className="fr-loading-orbit" aria-hidden="true" />
-            正在建立安全连接…
+            {t("connecting")}
           </div>
         ) : null}
         {hasOutput ? <div className="fr-output-text">{state.output}</div> : null}
@@ -101,7 +104,7 @@ export function ResultPanel({
         ) : null}
         {state.value === "cancelled" ? (
           <div className="fr-inline-status" role="status">
-            请求已停止，已保留收到的内容。
+            {t("cancelled")}
           </div>
         ) : null}
         {state.value === "error" ? (
@@ -115,23 +118,25 @@ export function ResultPanel({
       <footer className="fr-panel-footer">
         <div className="fr-provider-tag">
           <span aria-hidden="true" />
-          {"providerLabel" in state && state.providerLabel ? state.providerLabel : "等待 Provider"}
-          {"cached" in state && state.cached ? " · 缓存" : ""}
+          {"providerLabel" in state && state.providerLabel
+            ? state.providerLabel
+            : t("waitingProvider")}
+          {"cached" in state && state.cached ? ` · ${t("cached")}` : ""}
         </div>
         <div className="fr-panel-actions">
           {isLoading ? (
             <button type="button" className="fr-secondary-button" onClick={onCancel}>
-              停止
+              {t("stop")}
             </button>
           ) : null}
           {hasOutput ? (
             <button type="button" className="fr-secondary-button" onClick={() => void copyResult()}>
-              复制
+              {t("copy")}
             </button>
           ) : null}
           {!isLoading ? (
             <button type="button" className="fr-primary-button" onClick={onRetry}>
-              重试
+              {t("retry")}
             </button>
           ) : null}
           {state.value === "error" && state.error.code === "PROVIDER_NOT_CONFIGURED" ? (
@@ -142,7 +147,7 @@ export function ResultPanel({
                 void chrome.runtime.sendMessage({ type: "OPEN_OPTIONS", section: "provider" })
               }
             >
-              打开设置
+              {t("openSettings")}
             </button>
           ) : null}
         </div>

@@ -1,6 +1,7 @@
 import { registerCommands } from "./commands";
 import { registerMessageRouter } from "./message-router";
 import { registerGenerationPorts } from "./request-manager";
+import { createContextMenus, registerContextMenuClicks } from "./context-menu";
 
 const initializeTrustedStorage = async (): Promise<void> => {
   await Promise.all([
@@ -13,12 +14,16 @@ const initialization = initializeTrustedStorage();
 
 registerMessageRouter(initialization);
 registerCommands();
+registerContextMenuClicks();
 registerGenerationPorts();
 
 chrome.runtime.onInstalled.addListener((details) => {
   void initialization.then(async () => {
     if (details.reason === "install") {
+      await createContextMenus();
       await chrome.tabs.create({ url: chrome.runtime.getURL("src/options/onboarding/index.html") });
+    } else if (details.reason === "update") {
+      await createContextMenus();
     }
   });
 });

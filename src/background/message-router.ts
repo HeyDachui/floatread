@@ -4,6 +4,7 @@ import {
   type BackgroundResponse,
 } from "../shared/messages";
 import { getSkinStateAsset } from "../skins/storage";
+import { isSitePaused } from "../storage/site-pauses";
 import { getPublicBootstrap, getSettings, updateCompanionPosition } from "../storage/settings";
 import { routeTrustedProviderMessage } from "./provider-controller";
 
@@ -26,17 +27,23 @@ async function routeMessage(
   }
 
   switch (parsed.data.type) {
-    case "GET_PUBLIC_BOOTSTRAP":
+    case "GET_PUBLIC_BOOTSTRAP": {
+      const bootstrap = await getPublicBootstrap();
+      const effectiveBootstrap = {
+        ...bootstrap,
+        enabled: bootstrap.enabled && !(await isSitePaused(sender.tab?.url ?? sender.url)),
+      };
       return {
         ok: true,
         data: __FLOATREAD_MOCK_PROVIDER__
           ? {
-              ...(await getPublicBootstrap()),
+              ...effectiveBootstrap,
               providerConfigured: true,
               providerLabel: "Mock Provider",
             }
-          : await getPublicBootstrap(),
+          : effectiveBootstrap,
       };
+    }
     case "UPDATE_COMPANION_POSITION":
       await updateCompanionPosition(parsed.data.position);
       return { ok: true };

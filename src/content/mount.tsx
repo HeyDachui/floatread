@@ -6,6 +6,11 @@ import { ROOT_TAG_NAME } from "../config/constants";
 import { publicBootstrapSchema } from "../shared/schemas";
 import type { BackgroundResponse } from "../shared/messages";
 import type { PublicBootstrap } from "../shared/types";
+import type { ReaderMode } from "../shared/types";
+
+export type InitialCompanionAction =
+  | { kind: "run"; text: string; mode?: ReaderMode | undefined }
+  | { kind: "selection_error"; reason: "EMPTY" | "TOO_LONG"; length: number };
 
 interface MountState {
   host: HTMLElement;
@@ -34,7 +39,7 @@ export function unmountFloatRead(): void {
   document.querySelector(ROOT_TAG_NAME)?.remove();
 }
 
-export async function mountFloatRead(): Promise<void> {
+export async function mountFloatRead(initialAction?: InitialCompanionAction): Promise<void> {
   if (state || document.querySelector(ROOT_TAG_NAME)) return;
   const bootstrap = await requestBootstrap();
   if (!bootstrap?.enabled) return;
@@ -59,7 +64,12 @@ export async function mountFloatRead(): Promise<void> {
 
   reactRoot.render(
     <StrictMode>
-      <FloatingCompanion bootstrap={bootstrap} host={host} onHide={unmountFloatRead} />
+      <FloatingCompanion
+        bootstrap={bootstrap}
+        host={host}
+        onHide={unmountFloatRead}
+        initialAction={initialAction}
+      />
     </StrictMode>,
   );
 }

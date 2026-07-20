@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { createGenerationClient, type GenerationClient } from "../content/generation-client";
 import { createSelectionManager, type SelectionSnapshot } from "../content/selection-manager";
+import { rememberLastResult } from "../content/last-result";
+import type { InitialCompanionAction } from "../content/mount";
+import { createTranslator } from "../i18n/catalog";
 import {
   clampPoint,
   pointToPosition,
@@ -20,6 +23,7 @@ interface FloatingCompanionProps {
   bootstrap: PublicBootstrap;
   host: HTMLElement;
   onHide: () => void;
+  initialAction?: InitialCompanionAction | undefined;
 }
 
 interface DragSession {
@@ -29,16 +33,11 @@ interface DragSession {
   dragged: boolean;
 }
 
-const MODE_LABELS: Array<{ mode: ReaderMode; label: string; description: string }> = [
-  { mode: "natural_zh", label: "自然中文", description: "准确、自然地表达原意" },
-  { mode: "key_points", label: "看懂重点", description: "意思、重点与未说明项" },
-  { mode: "explain_terms", label: "解释术语", description: "用普通中文拆解关键概念" },
-];
-
 export function FloatingCompanion({
   bootstrap,
   host,
   onHide,
+  initialAction,
 }: FloatingCompanionProps): React.JSX.Element {
   const [position, setPosition] = useState<CompanionPosition>(bootstrap.companionPosition);
   const [dragPoint, setDragPoint] = useState<ViewportPoint | null>(null);
@@ -51,9 +50,17 @@ export function FloatingCompanion({
   const [visualFeedback, setVisualFeedback] = useState<"success" | "error" | null>(null);
   const [focusPanelOnOpen, setFocusPanelOnOpen] = useState(false);
   const [communityImageUrl, setCommunityImageUrl] = useState<string | undefined>(undefined);
+  const t = useMemo(() => createTranslator(bootstrap.locale), [bootstrap.locale]);
+  const modeLabels: Array<{ mode: ReaderMode; label: string; description: string }> = [
+    { mode: "natural_zh", label: t("modeNatural"), description: t("modeNaturalDesc") },
+    { mode: "key_points", label: t("modePoints"), description: t("modePointsDesc") },
+    { mode: "explain_terms", label: t("modeTerms"), description: t("modeTermsDesc") },
+  ];
   const dragSession = useRef<DragSession | null>(null);
   const generationClient = useRef<GenerationClient | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const actionMenuRef = useRef<HTMLDivElement | null>(null);
+  const focusMenuOnOpen = useRef(false);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { companionSize, companionOpacity, snapMargin } = bootstrap.appearance;
@@ -102,7 +109,10 @@ export function FloatingCompanion({
   useEffect(() => {
     if (readerState.value !== "success" && readerState.value !== "error") return;
     setVisualFeedback(readerState.value);
-    const timer = setTimeout(() => setVisualFeedback(null), 1_200);
+    const timer = setTimeout(
+      () => setVisualFeedback(null),
+      readerState.value === "success" ? 900 : 1_200,
+    );
     return () => clearTimeout(timer);
   }, [readerState.value]);
 
@@ -135,6 +145,12 @@ export function FloatingCompanion({
     },
     [],
   );
+
+  useEffect(() => {
+    if (!actionMenuOpen || !focusMenuOnOpen.current) return;
+    focusMenuOnOpen.current = false;
+    actionMenuRef.current?.querySelector<HTMLButtonElement>(".fr-mode-button")?.focus();
+  }, [actionMenuOpen]);
 
   const showHint = (message: string): void => {
     if (hintTimer.current) clearTimeout(hintTimer.current);
@@ -172,6 +188,20 @@ export function FloatingCompanion({
     setDragPoint(nextPoint);
   };
 
+  const activateCompanion = (keyboard = false): void => {
+    if (!selection) {
+      showHint(t("selectFirst"));
+      return;
+    }
+    setContextMenuOpen(false);
+    if (bootstrap.clickBehavior === "run_default_mode") {
+      startGeneration(bootstrap.defaultMode, selection.text, keyboard);
+      return;
+    }
+    focusMenuOnOpen.current = keyboard;
+    setActionMenuOpen((open) => !open);
+  };
+
   const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>): void => {
     const session = dragSession.current;
     if (!session || session.pointerId !== event.pointerId) return;
@@ -187,12 +217,7 @@ export function FloatingCompanion({
       });
       return;
     }
-    if (!selection) {
-      showHint("先选中一段需要理解的文字。");
-      return;
-    }
-    setContextMenuOpen(false);
-    setActionMenuOpen((open) => !open);
+    activateCompanion();
   };
 
   const startGeneration = (mode: ReaderMode, text: string, focusOnOpen = false): void => {
@@ -210,6 +235,27 @@ export function FloatingCompanion({
     if (!selection) return;
     startGeneration(mode, selection.text, focusOnOpen);
   };
+
+  useEffect(() => {
+    if (!initialAction) return;
+    if (initialAction.kind === "run") {
+      startGeneration(initialAction.mode ?? bootstrap.defaultMode, initialAction.text, true);
+    } else {
+      showHint(
+        initialAction.reason === "TOO_LONG"
+          ? t("selectionTooLong", String(initialAction.length))
+          : t("selectFirst"),
+      );
+    }
+    // An initial action is immutable for this mounted instance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (readerState.value === "success" && readerState.output) {
+      rememberLastResult(readerState.output);
+    }
+  }, [readerState]);
 
   const cancelGeneration = (): void => {
     if (readerState.value === "idle") return;
@@ -273,9 +319,14 @@ export function FloatingCompanion({
       ) : null}
 
       {actionMenuOpen ? (
-        <div className="fr-action-menu" role="menu" aria-label="选择阅读模式">
-          <div className="fr-menu-kicker">如何阅读？</div>
-          {MODE_LABELS.map((item) => (
+        <div
+          ref={actionMenuRef}
+          className="fr-action-menu"
+          role="menu"
+          aria-label={t("actionsLabel")}
+        >
+          <div className="fr-menu-kicker">{t("actionsQuestion")}</div>
+          {modeLabels.map((item) => (
             <button
               key={item.mode}
               className="fr-mode-button"
@@ -291,19 +342,19 @@ export function FloatingCompanion({
       ) : null}
 
       {contextMenuOpen ? (
-        <div className="fr-context-menu" role="menu" aria-label="FloatRead 助手菜单">
+        <div className="fr-context-menu" role="menu" aria-label={t("companionMenu")}>
           <button type="button" role="menuitem" onClick={hideCompanion}>
-            当前页面隐藏
+            {t("hidePage")}
           </button>
           <button
             type="button"
             role="menuitem"
             onClick={() => void chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}
           >
-            打开设置
+            {t("openSettings")}
           </button>
           <button type="button" role="menuitem" onClick={resetPosition}>
-            恢复默认位置
+            {t("resetPosition")}
           </button>
         </div>
       ) : null}
@@ -316,6 +367,7 @@ export function FloatingCompanion({
           onCancel={cancelGeneration}
           onRetry={() => startGeneration(readerState.mode, readerState.originalText, true)}
           onSwitchMode={(mode) => startGeneration(mode, readerState.originalText, true)}
+          locale={bootstrap.locale}
         />
       ) : null}
 
@@ -326,7 +378,7 @@ export function FloatingCompanion({
           bootstrap.appearance.motionEnabled ? bootstrap.skin.motions[skinState] : "none"
         }
         type="button"
-        aria-label={selection ? "FloatRead：选择阅读模式" : "FloatRead：请先选择文字"}
+        aria-label={selection ? t("companionReady") : t("companionWaiting")}
         aria-expanded={actionMenuOpen || contextMenuOpen || readerState.value !== "idle"}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -336,6 +388,11 @@ export function FloatingCompanion({
           setDragPoint(null);
         }}
         onDoubleClick={(event) => event.preventDefault()}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          activateCompanion(true);
+        }}
         onContextMenu={(event) => {
           event.preventDefault();
           setActionMenuOpen(false);
@@ -344,7 +401,7 @@ export function FloatingCompanion({
       >
         <CompanionArtwork state={skinState} communityImageUrl={communityImageUrl} />
         <span className="fr-visually-hidden" aria-live="polite">
-          {selection ? "已选择文字，可以开始阅读" : "等待选择文字"}
+          {selection ? t("selectionReady") : t("selectionWaiting")}
         </span>
       </button>
     </div>

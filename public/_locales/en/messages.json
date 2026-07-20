@@ -4,5 +4,26 @@
   },
   "extensionDescription": {
     "message": "Understand text you explicitly select using your own AI provider."
+  },
+  "contextMenuParent": {
+    "message": "FloatRead"
+  },
+  "contextMenuNatural": {
+    "message": "Natural Chinese"
+  },
+  "contextMenuPoints": {
+    "message": "Key points"
+  },
+  "contextMenuTerms": {
+    "message": "Explain terms"
+  },
+  "commandRunDefault": {
+    "message": "Understand selected text with the default mode"
+  },
+  "commandToggle": {
+    "message": "Show or hide FloatRead"
+  },
+  "commandCopyLast": {
+    "message": "Copy the last FloatRead result"
   }
 }

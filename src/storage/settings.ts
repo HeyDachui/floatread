@@ -113,6 +113,14 @@ export async function updateAppearance(appearance: AppearanceOverrides): Promise
   await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, appearance: parsed } });
 }
 
+export async function updateReadingPreferences(
+  preferences: Pick<AppSettings, "defaultMode" | "clickBehavior" | "locale">,
+): Promise<void> {
+  const settings = await getSettings();
+  const next = appSettingsSchema.parse({ ...settings, ...preferences });
+  await chrome.storage.local.set({ [SETTINGS_KEY]: next });
+}
+
 export async function restoreDefaultSettings(): Promise<void> {
   await chrome.storage.local.set({ [SETTINGS_KEY]: DEFAULT_SETTINGS });
 }
@@ -144,6 +152,12 @@ export async function setActiveSkinId(activeSkinId: string): Promise<void> {
 
 export async function getPublicBootstrap(): Promise<PublicBootstrap> {
   const settings = await getSettings();
+  const locale =
+    settings.locale === "auto"
+      ? chrome.i18n.getUILanguage().toLowerCase().startsWith("zh")
+        ? "zh_CN"
+        : "en"
+      : settings.locale;
   return {
     enabled: settings.enabled,
     defaultMode: settings.defaultMode,
@@ -153,5 +167,6 @@ export async function getPublicBootstrap(): Promise<PublicBootstrap> {
     appearance: settings.appearance,
     companionPosition: settings.companionPosition,
     providerConfigured: settings.activeProviderId !== null,
+    locale,
   };
 }

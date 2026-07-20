@@ -6,6 +6,7 @@ export interface ManifestV3 {
   default_locale: string;
   minimum_chrome_version: string;
   permissions: string[];
+  host_permissions: string[];
   optional_host_permissions: string[];
   background: {
     service_worker: string;
