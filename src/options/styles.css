@@ -1,0 +1,354 @@
+.options-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 44px 32px 64px;
+}
+
+.options-hero,
+.card-heading,
+.form-actions {
+  display: flex;
+  align-items: center;
+}
+
+.options-hero {
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.options-hero h1 {
+  margin: 5px 0 5px;
+  font-size: clamp(30px, 5vw, 48px);
+  letter-spacing: -0.04em;
+}
+
+.eyebrow,
+.section-label {
+  color: #3778e5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.privacy-chip,
+.connection-dot {
+  border: 1px solid #d9e2f2;
+  border-radius: 999px;
+  background: #fff;
+  color: #53627a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.privacy-chip {
+  padding: 9px 13px;
+  white-space: nowrap;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.profile-rail,
+.settings-card {
+  border: 1px solid #dfe5ef;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 50px rgba(40, 57, 85, 0.08);
+}
+
+.profile-rail {
+  align-self: start;
+  padding: 18px;
+}
+
+.profile-card,
+.add-profile {
+  width: 100%;
+  margin-top: 8px;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #1c2a40;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-card {
+  display: grid;
+  gap: 3px;
+}
+
+.profile-card span {
+  overflow: hidden;
+  color: #748096;
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.profile-card.active,
+.profile-card:hover,
+.profile-card:focus-visible,
+.add-profile:hover,
+.add-profile:focus-visible {
+  outline: none;
+  background: #edf4ff;
+}
+
+.add-profile {
+  margin-top: 14px;
+  border: 1px dashed #b8c8e0;
+  color: #3778e5;
+  text-align: center;
+}
+
+.settings-card {
+  padding: 26px;
+}
+
+.card-heading {
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #e7ebf2;
+}
+
+.card-heading h2 {
+  margin: 4px 0 0;
+  font-size: 22px;
+}
+
+.connection-dot {
+  padding: 7px 10px;
+}
+
+.connection-dot[data-ok="true"] {
+  border-color: #b9e6c9;
+  color: #198548;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 24px 0;
+}
+
+.form-grid label:not(.radio-card),
+.wide-field {
+  display: grid;
+  gap: 7px;
+}
+
+.form-grid label > span,
+.storage-modes legend {
+  color: #35425a;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.form-grid input,
+.form-grid select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #cfd8e7;
+  border-radius: 10px;
+  outline: none;
+  background: #fbfcfe;
+  color: #19263a;
+  font: inherit;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+  border-color: #4f8cff;
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.14);
+}
+
+.form-grid small {
+  color: #768197;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.wide-field {
+  grid-column: 1 / -1;
+}
+
+.storage-modes {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.storage-modes legend {
+  margin-bottom: 8px;
+}
+
+.radio-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #dbe2ed;
+  border-radius: 11px;
+  cursor: pointer;
+}
+
+.radio-card + .radio-card {
+  margin-top: 7px;
+}
+
+.radio-card input {
+  width: 16px;
+  min-height: 16px;
+  margin: 2px 0 0;
+  accent-color: #3778e5;
+}
+
+.radio-card span {
+  display: grid;
+  gap: 2px;
+}
+
+.risk-note {
+  color: #9b542a !important;
+}
+
+.local-note,
+.status-line {
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: #f2f6fc;
+  color: #5c687d;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.status-line {
+  min-height: 42px;
+}
+
+.form-actions {
+  gap: 9px;
+  padding-top: 18px;
+}
+
+.action-spacer {
+  flex: 1;
+}
+
+.button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.button.primary {
+  background: #3778e5;
+  color: #fff;
+}
+
+.button.secondary {
+  background: #e8eef8;
+  color: #253652;
+}
+
+.button.ghost {
+  background: transparent;
+  color: #52627a;
+}
+
+.button.danger {
+  background: transparent;
+  color: #b4474c;
+}
+
+@media (max-width: 760px) {
+  .options-shell {
+    padding: 24px 16px 40px;
+  }
+
+  .options-hero,
+  .form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .privacy-chip {
+    align-self: flex-start;
+  }
+
+  .options-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wide-field {
+    grid-column: 1;
+  }
+
+  .action-spacer {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .profile-rail,
+  .settings-card,
+  .privacy-chip,
+  .connection-dot {
+    border-color: #30394a;
+    background: rgba(25, 29, 38, 0.95);
+  }
+
+  .profile-card,
+  .form-grid label > span,
+  .storage-modes legend,
+  .card-heading h2 {
+    color: #eef3fb;
+  }
+
+  .profile-card.active,
+  .profile-card:hover,
+  .profile-card:focus-visible,
+  .add-profile:hover,
+  .add-profile:focus-visible,
+  .local-note,
+  .status-line {
+    background: #222d40;
+  }
+
+  .form-grid input,
+  .form-grid select,
+  .radio-card {
+    border-color: #3a4558;
+    background: #171c25;
+    color: #f2f5fa;
+  }
+
+  .card-heading {
+    border-color: #30394a;
+  }
+
+  .button.secondary {
+    background: #2c3749;
+    color: #edf3fc;
+  }
+}

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { PublicError } from "./errors";
+import { providerProfileSchema } from "../providers/schemas";
 import { companionPositionSchema, readerModeSchema } from "./schemas";
 
 export const contentToBackgroundSchema = z.discriminatedUnion("type", [
@@ -19,6 +20,31 @@ export const contentToBackgroundSchema = z.discriminatedUnion("type", [
 ]);
 
 export type ContentToBackgroundMessage = z.infer<typeof contentToBackgroundSchema>;
+
+export const trustedToBackgroundSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("LIST_PROVIDER_PROFILES") }).strict(),
+  z
+    .object({
+      type: z.literal("SAVE_PROVIDER_PROFILE"),
+      profile: providerProfileSchema,
+      secret: z.string().max(1_000).optional(),
+    })
+    .strict(),
+  z
+    .object({ type: z.literal("DELETE_PROVIDER_PROFILE"), profileId: z.string().min(8).max(64) })
+    .strict(),
+  z
+    .object({ type: z.literal("ACTIVATE_PROVIDER_PROFILE"), profileId: z.string().min(8).max(64) })
+    .strict(),
+  z
+    .object({ type: z.literal("CLEAR_PROVIDER_SECRET"), profileId: z.string().min(8).max(64) })
+    .strict(),
+  z
+    .object({ type: z.literal("TEST_PROVIDER_CONNECTION"), profileId: z.string().min(8).max(64) })
+    .strict(),
+]);
+
+export type TrustedToBackgroundMessage = z.infer<typeof trustedToBackgroundSchema>;
 
 export const backgroundToContentSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("SHOW_COMPANION") }).strict(),

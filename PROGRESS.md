@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: Phase 2 — complete; Phase 3 next
+- Current phase: Phase 3 — implementation verified; one real-Provider smoke test pending user confirmation
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -13,16 +13,16 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Phase ledger
 
-| Phase | Status      | Commit                                     | Verification                                                           |
-| ----- | ----------- | ------------------------------------------ | ---------------------------------------------------------------------- |
-| 0     | Complete    | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | Lint, typecheck, unit, integration, build and dist verification passed |
-| 1     | Complete    | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 11 unit tests and 2 real Chromium extension E2E tests passed           |
-| 2     | Complete    | This phase commit (see Git log)            | 23 unit, 2 integration and 4 real extension E2E tests passed           |
-| 3     | Not started | —                                          | —                                                                      |
-| 4     | Not started | —                                          | —                                                                      |
-| 5     | Not started | —                                          | —                                                                      |
-| 6     | Not started | —                                          | —                                                                      |
-| 7     | Not started | —                                          | —                                                                      |
+| Phase | Status             | Commit                                     | Verification                                                                     |
+| ----- | ------------------ | ------------------------------------------ | -------------------------------------------------------------------------------- |
+| 0     | Complete           | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | Lint, typecheck, unit, integration, build and dist verification passed           |
+| 1     | Complete           | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 11 unit tests and 2 real Chromium extension E2E tests passed                     |
+| 2     | Complete           | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | 23 unit, 2 integration and 4 real extension E2E tests passed                     |
+| 3     | Preflight complete | This phase commit (see Git log)            | 51 unit, 2 integration and 5 real extension E2E tests passed; real smoke pending |
+| 4     | Not started        | —                                          | —                                                                                |
+| 5     | Not started        | —                                          | —                                                                                |
+| 6     | Not started        | —                                          | —                                                                                |
+| 7     | Not started        | —                                          | —                                                                                |
 
 ## Phase 0 target
 
@@ -137,4 +137,42 @@ Knowledge After at Phase 2: `not_applied` for prior knowledge cards. New local e
 
 ## Next phase
 
-Phase 3 will implement provider adapters and routing, secret-storage modes, optional provider host permissions, settings validation and connection testing. A real credential remains out of scope until all provider preflight tests and a production build pass.
+Phase 3 preflight is complete. The user has been asked to confirm whether the ignored credential file belongs to DeepSeek before one minimal smoke test uses `https://api.deepseek.com` and `deepseek-v4-flash`. Work that does not require the credential can continue into Phase 4 while this answer is pending.
+
+## Phase 3 preflight result
+
+Implemented:
+
+- Six independent adapters behind one Provider Router: OpenAI Responses, OpenAI Compatible, DeepSeek, Anthropic Messages, Gemini Generate Content and Ollama Chat.
+- Ordinary completions and incremental SSE/NDJSON streaming with fragmented UTF-8 handling.
+- Background-only request construction, exact-origin permission checks and safe Base URL validation.
+- `AbortController` cancellation, per-profile timeout, status mapping and at most one automatic retry before any output is emitted.
+- Versioned Zod Provider profiles stored separately from credentials.
+- Session (recommended), local and prompt-each-time credential repositories; deletion clears all three locations.
+- Trusted-extension-only Provider management messages. The public Content protocol still rejects URL, header and credential fields.
+- Settings UI for profiles, editable model/Base URL, risk warnings, exact host authorization, minimal connection test and credential clearing.
+- Central redaction helpers that expose no more than four trailing credential characters and reduce URLs to their origin.
+
+Verification:
+
+| Command                 | Actual result                                             |
+| ----------------------- | --------------------------------------------------------- |
+| `pnpm lint`             | Passed with zero warnings                                 |
+| `pnpm typecheck`        | Passed                                                    |
+| `pnpm test`             | Passed: 11 files, 51 tests                                |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                  |
+| `pnpm build`            | Passed; 14 production files emitted                       |
+| `pnpm verify:dist`      | Passed; Mock code absent and release constraints verified |
+| `pnpm test:e2e`         | Passed: 5 real Chromium extension tests                   |
+
+The E2E settings test verifies a password input, session-only save, no key re-display after reload, persistent-storage risk disclosure and rejection of remote HTTP Base URLs.
+
+Real API checkpoint:
+
+- Proposed Provider: DeepSeek.
+- Proposed Base URL: `https://api.deepseek.com`.
+- Proposed model: `deepseek-v4-flash`.
+- Secret source: ignored `.secrets/FloatRead-APIKEY.txt`; file contents remain unread pending Provider confirmation.
+- No real request has been made and no credential has been echoed.
+
+Knowledge After at Phase 3: `not_applied` for prior local knowledge cards. Current primary Provider documentation and executable adapter tests were used directly. Project-local evidence retained: Provider protocols need separate framing parsers (SSE versus NDJSON), and retries are safe only before a text delta is exposed.

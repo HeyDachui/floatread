@@ -1,5 +1,10 @@
-import { contentToBackgroundSchema, type BackgroundResponse } from "../shared/messages";
+import {
+  contentToBackgroundSchema,
+  trustedToBackgroundSchema,
+  type BackgroundResponse,
+} from "../shared/messages";
 import { getPublicBootstrap, updateCompanionPosition } from "../storage/settings";
+import { routeTrustedProviderMessage } from "./provider-controller";
 
 async function routeMessage(
   message: unknown,
@@ -11,6 +16,11 @@ async function routeMessage(
 
   const parsed = contentToBackgroundSchema.safeParse(message);
   if (!parsed.success) {
+    const trusted = trustedToBackgroundSchema.safeParse(message);
+    const extensionOrigin = chrome.runtime.getURL("");
+    if (trusted.success && sender.url?.startsWith(extensionOrigin)) {
+      return routeTrustedProviderMessage(trusted.data);
+    }
     return { ok: false, error: { code: "INVALID_MESSAGE", message: "Invalid message." } };
   }
 

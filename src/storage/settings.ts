@@ -89,6 +89,11 @@ export async function setGlobalEnabled(enabled: boolean): Promise<void> {
   await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, enabled } });
 }
 
+export async function setActiveProviderId(activeProviderId: string | null): Promise<void> {
+  const settings = await getSettings();
+  await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, activeProviderId } });
+}
+
 export async function getPublicBootstrap(): Promise<PublicBootstrap> {
   const settings = await getSettings();
   return {

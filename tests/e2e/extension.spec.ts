@@ -167,3 +167,29 @@ test("cancels an active stream and keeps partial content", async () => {
   await expect(panel.getByRole("button", { name: "重试" })).toBeVisible();
   await page.close();
 });
+
+test("saves a session-only Provider without revealing its API key", async () => {
+  const worker = context.serviceWorkers()[0];
+  if (!worker) throw new Error("extension service worker missing");
+  const extensionId = new URL(worker.url()).host;
+  const page = await context.newPage();
+  await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
+
+  const keyInput = page.getByLabel("API Key");
+  await expect(keyInput).toHaveAttribute("type", "password");
+  await keyInput.fill("sk-example-not-a-real-key");
+  await page.getByLabel("显示名称").fill("Local test profile");
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByRole("status")).toContainText("已保存并设为当前 Provider");
+
+  await page.reload();
+  await expect(page.getByLabel("API Key")).toHaveValue("");
+  await expect(page.getByText("Local test profile")).toBeVisible();
+
+  await page.getByLabel(/持久保存在本机/u).check();
+  await expect(page.getByText(/浏览器调试权限的人仍可能读取/u)).toBeVisible();
+  await page.getByLabel("Base URL").fill("http://remote.example.com/v1");
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByRole("status")).toContainText("远程 Provider 必须使用 HTTPS");
+  await page.close();
+});
