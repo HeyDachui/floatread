@@ -22,7 +22,7 @@ This file is the auditable project status source. A phase is only marked complet
 | 4     | Complete           | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | 59 unit, 2 integration and 6 real extension E2E tests passed                     |
 | 5     | Complete           | `80ee9636f1025bdd6b3791ae028738b184f600fa` | 79 unit, 2 integration and 7 real extension E2E tests passed                     |
 | 6     | Complete           | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | 90 unit, 2 integration and 13 real extension E2E tests passed                    |
-| 7     | Complete           | This phase commit (see Git log)            | Full quality gate, audit, dist/ZIP verification and secret scans passed          |
+| 7     | Complete           | `2b4c95624715b0ff2715bb5532a29002bb75f212` | Full quality gate, audit, dist/ZIP verification and secret scans passed          |
 
 ## Phase 0 target
 
