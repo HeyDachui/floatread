@@ -1,8 +1,8 @@
 # FloatRead
 
-FloatRead is an open-source, serverless, bring-your-own-key page translator for Chromium browsers. Enable it once for a site to translate visible English content as you scroll; main posts receive precision translation, while menus and controls reuse persistent local translation memory. Selection reading remains available for deeper analysis.
+FloatRead is an open-source, serverless, bring-your-own-key page translator for Chromium browsers. Translation starts only when the user clicks the companion, then progressively handles visible content in the selected source languages. Main content receives natural translation, while menus reuse persistent local translation memory. Selection reading remains available for deeper analysis.
 
-> Current release: `0.2.3`. Version 0.2.2 is superseded because its immediate React text-node reapplication could overload a dynamic page. The publisher links bundled in this source tree are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
+> Current release: `0.3.0`. Page translation defaults to English, and users may add more source languages and choose one target language. Publisher links are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
 
 [简体中文](README.zh-CN.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Manual testing](MANUAL_TESTING.md)
 
@@ -12,19 +12,22 @@ FloatRead is an open-source, serverless, bring-your-own-key page translator for 
 - Key points: what the text says, why it matters, what it omits, and clearly labeled inference.
 - Explain terms: plain-Chinese explanations grounded in the selected text.
 - One-click visible-page translation with progressive processing as the user scrolls.
+- One to five source languages and one target language; the extension UI itself remains Chinese/English.
+- Local per-session request, cache-hit and input/output/total token accounting from Start to Stop.
 - Precision translation for article/post content and concise translation for navigation, menus and buttons.
 - Persistent, bounded local translation memory so repeated UI labels do not call the model again.
 - Floating companion with drag, edge snap, viewport correction, sizing, opacity and six built-in skins.
 - Streaming output, cancel, retry, copy, original-text view and bounded local cache.
-- Popup controls, per-site/global pause, context menu, keyboard shortcuts and onboarding.
+- A simplified Popup, per-site/global pause, context menu, keyboard shortcuts and onboarding.
 - Chinese/English UI, keyboard operation, dark appearance and `prefers-reduced-motion` support.
 - OpenAI, OpenAI Compatible, DeepSeek, Anthropic Claude, Google Gemini and Ollama.
+- Mochi, an original default pet, plus local PNG/JPG-to-pet creation and secure skin packages.
 
 FloatRead has no developer server, account, payment, analytics, advertising or telemetry system. Provider requests go directly from the extension's Background Service Worker to the endpoint the user configures.
 
 ## How page translation works
 
-After the user explicitly starts translation, FloatRead scans only visible and near-viewport English text. It uses semantic HTML roles rather than X's private `data-testid` values, normally batches at most six segments / 6,000 characters, and translates new visible content as the user scrolls. It never preloads an infinite timeline.
+After the user explicitly starts translation, FloatRead scans only visible and near-viewport text in the source languages selected by the user. Language detection happens locally. It uses semantic HTML roles rather than X's private `data-testid` values, normally batches at most six segments / 6,000 characters, and translates new visible content as the user scrolls. It never preloads an infinite timeline.
 
 Translations replace visible text-node values and can change wrapping. A restricted child-list observer detects newly added posts and menus without continuously rewriting React-controlled character data. Stop aborts the Background batch, disables restart for the origin and preserves completed translations; Clear also restores surviving original text nodes. Reloading a page never automatically starts AI translation.
 
@@ -36,7 +39,7 @@ Release screenshots are intentionally not fabricated. Maintainers should capture
 
 ## Install a release build
 
-1. Obtain `FloatRead-v0.2.3.zip` and verify its SHA-256 against the adjacent `.sha256` file.
+1. Obtain `FloatRead-v0.3.0.zip` and verify its SHA-256 against the adjacent `.sha256` file.
 2. Extract the ZIP to a permanent local folder.
 3. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. Open FloatRead settings, add a Provider, grant the exact endpoint origin when prompted, and test the connection.
@@ -62,7 +65,7 @@ Production output is written to `dist/`; the installable archive, inventory and 
 
 ## Provider and API key setup
 
-Open **Settings → Provider**, choose an adapter, review the Base URL and model, select a credential mode, then grant the exact host permission and run **Test connection**. Custom services should normally use OpenAI Compatible.
+Open **Settings → AI service**, choose a service and model, enter the key and select a credential mode, then Save or authorize a connection test. DeepSeek is listed first; service address and timeout are under **Advanced settings**. Custom services should normally use OpenAI Compatible.
 
 Credential modes:
 
@@ -96,7 +99,7 @@ Read [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md) and the [threat model]
 
 ## Skins
 
-V1 includes Native, Lens, Glass Orb, Pixel Bot, Ink and Terminal. Community packages are local ZIP-based `.floatread-skin` files containing only strict JSON and PNG/WebP. JavaScript, HTML, SVG, CSS, fonts, remote URLs and executable expressions are rejected. See [skin authoring](docs/SKINS.md).
+Mochi is the original default pet. Users can also drop one PNG/JPG into Settings; FloatRead locally removes border-connected light background pixels, crops the subject, converts it to transparent WebP and applies built-in motions. Native, Lens, Glass Orb, Pixel Bot, Ink and Terminal remain available. Community `.floatread-skin` packages contain only strict JSON and PNG/WebP; executable or remote content is rejected. See [skin authoring](docs/SKINS.md).
 
 ## Contributing
 

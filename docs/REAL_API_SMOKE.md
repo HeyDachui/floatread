@@ -1,6 +1,6 @@
 # Real API smoke-test record
 
-Test date: 2026-07-21
+Latest test date: 2026-07-22
 
 This record contains no credential, Authorization header, selected private text or model output body.
 
@@ -23,6 +23,7 @@ This record contains no credential, Authorization header, selected private text 
 | Cancellation                 | Passed |   104 ms | `ABORTED`                                   |
 | V2 page batch                | Passed | 1,144 ms | 2 segments; 196 input / 38 output tokens    |
 | V2.1 JSON page batch         | Passed | 1,481 ms | 2 segments; 216 input / 38 output tokens    |
+| V0.3 multilingual page batch | Passed |   919 ms | 2 segments; 229 input / 39 output tokens    |
 
 ## Controlled initial failure and fix
 
@@ -32,8 +33,10 @@ DeepSeek V4 defaults to Thinking mode and counts reasoning plus final-answer tok
 
 ## Credential handling
 
-The key was never printed, copied into source, saved in a tracked file, put into Chrome settings, or included in test output. Each shell invocation removed all three smoke-test environment variables in a `finally` block. The ignored source file remains local so the project owner can revoke or remove it.
+The key was never printed, copied into source, saved in a tracked file, put into Chrome settings, or included in test output. The shell invocation removed its temporary environment variables. After the final V0.3 request, the ignored `.secrets/FloatRead-APIKEY.txt` injection file was deleted as required; the user should revoke the low-limit test credential if it is no longer needed anywhere else.
 
 The V2 page-batch smoke used `Account settings` plus the fixed public test sentence. The record stores only segment count and output character lengths (4 and 23), not the returned translations.
 
 The V2.1 retest explicitly requested the Provider's JSON-object response mode after the multiline/mixed-text reliability fix. It used the same two harmless segments and retained the same no-body/no-key evidence policy.
+
+The V0.3 retest exercised the new source/target-language prompt and cache version with the same harmless two-segment batch. It returned strict JSON for both IDs. Only segment count, output lengths (4 and 24) and Provider-reported usage (229 input / 39 output, 268 total) were retained.

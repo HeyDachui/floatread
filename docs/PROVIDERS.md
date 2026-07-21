@@ -20,11 +20,10 @@ DeepSeek V4 requests explicitly disable Thinking mode. FloatRead needs only a co
 ## Setup
 
 1. Open the toolbar Popup and choose **Settings**.
-2. Add a Provider and review its Base URL/model.
+2. Choose the AI service and model. DeepSeek is listed first as the recommended simple default.
 3. Choose session (recommended), local persistent, or enter-each-time credential handling.
-4. Save the profile. FloatRead explains and requests the exact origin permission.
-5. Run **Test connection**. The test uses a minimal request and reports a public error without headers or key contents.
-6. Set the working profile active.
+4. Use **Save** to keep the configuration without a network request, or **Save and test** to request the exact origin permission and run one minimal connection check.
+5. Open **Advanced settings** only when the service address or the default 30-second timeout needs to change.
 
 Remote endpoints must use HTTPS. URLs containing a username, password, query or fragment are rejected. Errors for HTTP 400/401/403/404/408/429/5xx, timeout, abort, malformed response and network failure are normalized. Automatic retry happens at most once and only before output has begun.
 

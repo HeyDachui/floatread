@@ -14,6 +14,7 @@ FloatRead 是一个不依赖开发者后端的本地浏览器扩展。项目不�
 - Selected text: read only after a separate precision-reading action.
 - Provider response: displayed in FloatRead's isolated panel and optionally cached locally according to settings.
 - Settings and Provider profile: stored locally by Chrome. Profiles contain Base URL/model metadata but not the key itself.
+- Translation usage: each explicit Start-to-Stop session stores request count, cache hits and Provider-reported input/output token totals locally. This record is shown only to the user, is never telemetry and can be cleared from Settings.
 - API key: stored only in the user-selected session/local mode, or retained temporarily in Service Worker memory for enter-each-time mode.
 - Page translation preference and memory: enabled origins plus bounded hashed translation records are stored locally so repeated menu labels can be reused.
 - Skin packages: validated and stored locally; imports contain no permitted network URL or executable content.
@@ -34,7 +35,7 @@ When page translation is enabled, bounded visible text batches and fixed transla
 
 ## Local cache and deletion
 
-Cache keys are stable hashes of normalized text, reading mode/segment kind, Provider kind/origin, model and Prompt version. Cached records contain generated text and metadata, never credentials. Page UI memory is bounded to 2,000 hashed records. Users can stop/clear page translation, clear the result cache, remove Provider credentials, delete imported skins or restore defaults from Settings.
+Cache keys are stable hashes of normalized text, source/target language, reading mode/segment kind, Provider kind/origin, model and Prompt version. Cached records contain generated text and metadata, never credentials. Page UI memory is bounded to 2,000 hashed records. Users can stop/clear page translation, clear local usage and result caches, remove Provider credentials, delete imported skins or restore defaults from Settings.
 
 开启某个网站的页面翻译后，FloatRead 会处理当前可见及接近视口的未选中文字，并随滚动渐进处理新内容；不会预读无限时间线。停止会取消当前批次，清除会恢复仍存在的原文节点并关闭该网站的持续翻译偏好。
 

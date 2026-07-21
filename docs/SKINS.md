@@ -2,9 +2,15 @@
 
 FloatRead 皮肤只改变扩展自己的悬浮助手、结果面板、Popup 和设置页设计令牌。它不能修改网页、X 时间线、字体或布局，也不能执行任何代码。
 
+## 一张图片生成宠物
+
+设置页顶部提供本地宠物制作器：拖入或选择不超过 5 MB 的 PNG/JPG，FloatRead 会把最长边缩至最多 1024 像素，只移除与图片边缘连通的浅色区域，保留被深色轮廓包围的眼白、花纹等内部细节，随后自动裁边并转换为不超过 1.5 MB 的透明 WebP。
+
+用户可以调整去白强度并在保存前预览。生成的宠物使用 FloatRead 内置的呼吸、准备、漂浮、成功弹跳、错误摇晃与按压反馈；图片本身不会执行代码，也不会上传到服务器。JPG 只作为制作器的输入，最终安全皮肤资源仍是 WebP。
+
 ## 内置皮肤
 
-V1 提供六套原创内置皮肤：Native、Lens、Glass Orb、Pixel Bot、Ink 和 Terminal。每套皮肤覆盖 `idle`、`ready`、`thinking`、`success`、`error` 五种状态，并从 FloatRead 内置动画预设中选择动效。
+V0.3 默认提供原创宠物 Mochi，并保留 Native、Lens、Glass Orb、Pixel Bot、Ink 和 Terminal。每套皮肤覆盖 `idle`、`ready`、`thinking`、`success`、`error` 五种状态，并从 FloatRead 内置动画预设中选择动效。Mochi 的生成来源记录见 [资产记录](source/MOCHI_ASSET_PROVENANCE.md)。
 
 ## 包格式
 

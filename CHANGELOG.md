@@ -2,6 +2,30 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.3.0] - 2026-07-22
+
+### Added
+
+- Record each page-translation session from explicit Start to Stop, including Provider/model, source and target languages, requests, cache hits, translated segments, input tokens, output tokens and total tokens. Records stay local and can be cleared.
+- Let users select one to five source languages and one target language. The local scanner reports detected languages and sends only user-selected language families for translation.
+- Add Mochi, an original transparent pet character, as the default companion with idle, ready, thinking, success, error and press feedback.
+- Add local PNG/JPG pet creation: bounded validation, connected light-background removal, automatic crop, WebP conversion, preview, naming and safe installation through the existing code-free skin engine.
+- Add regression tests for concurrent usage accounting, language selection, pet background removal, custom-pet creation and the complete browser upload flow.
+
+### Changed
+
+- Simplify Popup to global enable/disable, current-site enable/disable, recent usage, active skin and Settings.
+- Put DeepSeek first and recommended. The normal settings view now shows only AI service, model, API Key and storage mode; service address and timeout are under Advanced, with 30 seconds as the default.
+- Keep interface languages limited to Simplified Chinese and English while page translation supports additional languages.
+- Increase the fresh-install companion size to 76 px; users can still adjust it from 32–120 px.
+
+### Safety
+
+- Serialize local usage mutations so simultaneous tabs cannot overwrite each other's counters.
+- Gate page batches on usage-session initialization so the first request cannot escape accounting.
+- Bump the multilingual page prompt/cache version and preserve the existing bounded scanning, immediate cancellation and no-auto-restart rules.
+- Disable both orb and image-pet motion when the operating system requests reduced motion.
+
 ## [0.2.3] - 2026-07-21
 
 ### Safety fix

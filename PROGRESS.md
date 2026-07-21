@@ -491,3 +491,45 @@ Project-loop conclusion: 0.2.2 is rejected. Version 0.2.3 has formal artifacts, 
 ### Preliminary live-X owner feedback — 2026-07-21
 
 The owner used 0.2.3 for a short period and reported that it was substantially smoother than the previous version. This is positive real-environment evidence for the reduced mutation and batch pressure. It is recorded as preliminary feedback, not a complete manual pass: the owner has not yet explicitly confirmed the Stop-under-load, reload-stays-stopped, long-scroll coverage or no-crash checklist items. No code variable is changed on this evidence alone; the next useful acceptance evidence is those four targeted checks.
+
+## Version 0.3 product simplification and pet round — 2026-07-22
+
+Owner-confirmed scope: retain full-page translation but simplify the consumer surface; keep the software UI to Simplified Chinese/English; let users choose additional page-translation languages; record each explicit Start-to-Stop usage session; and make a pet-based companion plus one-image local pet creation the visual priority.
+
+Implemented:
+
+- Settings schema V2 with 1–5 unique source languages and one different target language; local detection covers Simplified/Traditional Chinese, English, Japanese, Korean, French, German, Spanish, Portuguese, Italian, Russian and Arabic.
+- Serialized local usage ledger with Provider/model, source/target languages, requests, cache hits, translated segments, Provider-reported input/output tokens and end reason. Session startup is awaited before the first batch.
+- Simplified Popup and AI settings, DeepSeek-first setup, 30-second default timeout and advanced-only service address/timeout.
+- Original Mochi default pet asset plus state motion/press feedback and reduced-motion compliance.
+- Local PNG/JPG pet preparation with size/type/dimension limits, connected-light-background removal, crop, WebP conversion, preview and safe skin storage.
+- Product, source/provenance, privacy, architecture, Provider, i18n, skin and manual-testing documentation updates.
+
+Controlled failures corrected during verification:
+
+- The reduced-motion E2E initially looked only for the old orb artwork and then proved the pet still bounced. CSS and the assertion were corrected so image pets also have no animation.
+- The old Popup E2E expected removed Start/Stop/Hide controls. It was replaced with the owner-approved simplified Popup contract; page translation is exercised through the pet.
+- Adding the PNG input made a generic file-input locator ambiguous. The skin-package and pet-image inputs now have separate browser assertions.
+- A full-sequence run found that `Date.toLocaleString("zh_CN")` crashed the settings page only after usage data existed. The date locale is now converted to standard `zh-CN`; the complete sequence passes.
+
+Actual verification:
+
+| Command                    | Actual result                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `pnpm typecheck`           | Passed                                                                        |
+| `pnpm lint`                | Passed, zero warnings                                                         |
+| `pnpm test`                | Passed: 20 files, 105 tests                                                   |
+| `pnpm test:integration`    | Passed: 2 files, 2 tests                                                      |
+| `pnpm test:e2e`            | Passed: 16 real Chromium extension tests                                      |
+| `pnpm package`             | Passed: 20 dist/ZIP entries, secret scans and production MV3 page/worker load |
+| `pnpm smoke:deepseek-page` | Passed in 919 ms: 2 strict-JSON segments, 229 input / 39 output tokens        |
+
+Release evidence:
+
+- Implementation commit: `0ae860d6a21e352bceae38b9b16fdb9e796ea4a4`
+- ZIP: `release/FloatRead-v0.3.0.zip`
+- ZIP size: 435,000 bytes
+- SHA-256: `631387595d36d412819acad51f86f8fff40933044d3d3e87d374a55ba08dd08c`
+- Temporary test Key file deleted after the single final DeepSeek request; no credential was printed or retained.
+
+Acceptance status: formal repository/artifact completeness passed; controlled functional and automated quality gates passed; real DeepSeek page-prompt readiness passed. Authenticated-X production quality for 0.3.0 remains an owner manual check, not an automated claim. Single-image custom pets have built-in motion presets rather than newly illustrated multi-frame animation.

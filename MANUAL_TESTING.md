@@ -14,7 +14,8 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 - [ ] On X Home, exactly one `floatread-root` exists and the companion is visible.
 - [ ] Before page translation is enabled, DevTools shows no AI Provider request and no host text changes.
-- [ ] Clicking the companion with no selection enables translation for the current origin and translates visible text.
+- [ ] Clicking the companion with no selection starts translation; clicking it again stops immediately.
+- [ ] Settings can add 1–5 source languages and one target language; unselected languages remain unchanged.
 - [ ] Visible tweet/article text is translated naturally; navigation/menu/button text is concise.
 - [ ] Infinite timeline content outside the visible/near-visible window is not preloaded.
 - [ ] Scrolling progressively translates newly visible posts.
@@ -59,8 +60,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Right-clicking selected text exposes all three localized modes.
 - [ ] Default-mode shortcut runs only for a valid current selection.
 - [ ] Toggle shortcut shows/removes the companion.
-- [ ] Popup shows actual Provider/model/skin/page state.
-- [ ] Popup shows live page-translation status/count and Start/Stop/Resume/Clear all work.
+- [ ] Popup shows only global enable/disable, current-site enable/disable, recent local usage, active skin and Settings.
 - [ ] Global pause immediately removes all open companions and resume restores allowed pages.
 - [ ] Current-site pause uses only the origin and does not affect another site.
 - [ ] Current-page hide/show works without changing site/global state.
@@ -80,18 +80,22 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Skins, data and languages
 
-- [ ] All six built-in skins switch immediately and preview five states.
+- [ ] Mochi is the fresh-install default, remains legible at the default size and reacts to click/state changes.
+- [ ] A PNG/JPG can be previewed, locally de-backgrounded, named and enabled as a custom pet.
+- [ ] Internal light details are preserved when enclosed by the pet outline; the source image is never uploaded.
+- [ ] Mochi plus all six earlier built-in skins switch immediately and preview five states.
 - [ ] Appearance tokens affect only FloatRead's Shadow DOM/extension pages.
 - [ ] Valid JSON + PNG/WebP skin imports, exports and survives restart.
 - [ ] Invalid schema/MIME/extension/path traversal/duplicate/oversize/bomb/dangerous URL/executable-field packages are rejected with understandable errors.
 - [ ] Exported skin/settings data contains no credentials or AI cache data.
 - [ ] Cache usage/limits/clear work and corrupted records do not block startup.
 - [ ] Restore defaults leaves the extension usable.
-- [ ] Chinese, English and browser-auto language modes update the complete settings shell.
+- [ ] Chinese, English and browser-auto modes update the complete settings shell; these UI choices are separate from page translation languages.
+- [ ] Starting and stopping page translation creates one local usage session with request/cache and Provider-reported token totals.
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.2.3.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.3.0.zip`, not `dist-e2e`.
 - [ ] `manifest.json` is MV3, version matches, CSP is local-only and permissions match `docs/PERMISSIONS.md`.
 - [ ] ZIP inventory contains no tests, source maps, `.env`, `.secrets`, logs, `node_modules` or unrelated screenshots.
 - [ ] `pnpm scan:secrets` and `pnpm verify:release` pass after packaging.
