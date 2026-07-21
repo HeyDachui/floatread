@@ -1,95 +1,96 @@
-# FloatRead 0.1.0 final verification report
+# FloatRead 0.2.0 final verification report
 
-Report date: 2026-07-20
+Report date: 2026-07-21
 
 Audited workspace: `E:\AI-900\FloatRead`
 
-Release version: `0.1.0`
+Release version: `0.2.0`
 
 ## 1. Completion overview
 
-FloatRead is implemented as a strict-TypeScript Chrome Manifest V3 extension with no developer backend. The complete selection-only flow works through the isolated floating companion, Background-owned Mock/real Provider architecture, streaming result panel, settings, Popup, onboarding, cache and skin engine. Production code, automated tests, open-source documentation and a verified installable ZIP are present in one independent Git repository.
+FloatRead 0.2.0 is a runnable, tested and packaged Chrome Manifest V3 extension. Following the project owner's acceptance feedback, the primary flow is now user-enabled progressive page translation: currently visible and near-viewport English text is translated in bounded batches, dynamic menus remain translated while the feature is active, and selection-based precision reading remains available. Provider traffic and credentials stay inside trusted extension contexts; there is no FloatRead backend, account, telemetry, advertising or payment system.
+
+Automated delivery is complete. Human regression on the live X website and Chrome Web Store publication remain external acceptance work and are not reported as completed.
 
 ## 2. Implemented features
 
-- One fixed-position page host with a closed production Shadow DOM; no post injection, X selector dependency, global CSS or timeline observer.
-- Selection-only Natural Chinese, Key Points and Explain Terms modes with user-gesture enforcement and injection-resistant prompts.
-- Drag, left/right snap, saved proportional position, viewport correction, sizing/opacity, outside-click collapse and edge-aware scrolling panel.
-- Streaming, loading, cancel, retry, copy, last-result shortcut, source view, structured errors and bounded retry.
+- One fixed FloatRead host with a closed production Shadow DOM; FloatRead UI styles remain isolated.
+- User-enabled, per-origin progressive page translation of visible/near-visible text, with content/UI classification and dynamic-content observation only while active.
+- Stop, resume and clear controls. Stop aborts the active batch and rejects late results; clear restores original text for surviving nodes and disables that origin's translation preference.
+- Persistent, hashed translation memory for repeated menu/UI and content segments, bounded to 2,000 records.
+- Selection-based Natural Chinese, Key Points and Explain Terms precision modes with injection-resistant prompts.
+- Dragging, edge snap, saved position, viewport correction, 32–120 px companion size, opacity, and a result panel configurable to 760 px and directly resizable.
+- Streaming, cancel, retry, copy, source view, cache, understandable errors, Popup, onboarding, context menu, shortcuts, bilingual UI, keyboard access, reduced motion, and light/dark compatibility.
 - OpenAI, OpenAI Compatible, DeepSeek, Anthropic Claude, Google Gemini and Ollama adapters behind a Background-only router.
-- Three credential modes, exact-origin optional permissions, connection testing, credential clearing and redacted diagnostics.
-- Versioned SHA-256 cache keys, TTL, LRU/capacity limits, usage display, clearing, migration and corrupt-record isolation.
-- Six built-in skins, five visual states, live preview, import/export/default restore/migration and code-free archive validation.
-- Popup, per-origin/global pause, page show/hide, context menu, three shortcuts and local-only onboarding demo.
-- Chinese/English UI, keyboard focus behavior, light/dark compatibility and reduced-motion handling.
+- Session, persistent-local and prompt-each-time credential modes; exact-origin optional permissions; connection testing and credential clearing.
+- Six built-in skins plus versioned, code-free skin import/export and validation.
 
 ## 3. Repository structure
 
 ```text
 FloatRead/
 ├── .github/workflows/       # read-only CI
-├── docs/                    # architecture, permissions, Providers, skins, threat model, source spec
+├── docs/                    # architecture, permissions, Providers, skins and security
 ├── public/_locales/         # Chrome locale catalogs
-├── scripts/                 # build, dist/release verification, secret scan, production load smoke
+├── scripts/                 # build, smoke, scan, package and release verification
 ├── src/
-│   ├── background/          # trusted request, command, permission and routing boundary
-│   ├── cache/               # versioned session/IndexedDB result cache
-│   ├── companion/           # closed-Shadow floating UI and reader state
-│   ├── content/             # selection, mount, viewport and generation client
-│   ├── i18n/                # typed runtime catalog
-│   ├── options/             # settings and onboarding
-│   ├── popup/               # toolbar controls
-│   ├── prompts/             # mode prompts and untrusted-data boundary
-│   ├── providers/           # six independent adapters and stream parsers
-│   ├── security/            # centralized redaction
-│   ├── shared/              # typed/runtime-validated protocols
-│   ├── skins/               # definitions, schema, package validation and storage
-│   └── storage/             # settings, profiles, credentials and site pauses
+│   ├── background/          # trusted Provider/page-batch request boundary
+│   ├── cache/               # precision-reading result cache
+│   ├── companion/           # isolated floating UI and reader state
+│   ├── content/             # page scanner/translator and precision-reading client
+│   ├── page-translation/    # batch prompt and strict result protocol
+│   ├── providers/           # six independent Provider adapters
+│   ├── shared/              # typed and runtime-validated protocols
+│   ├── skins/               # schema, package validation and storage
+│   └── storage/             # settings, credentials, pauses and translation memory
 ├── tests/{unit,integration,e2e}/
 ├── dist/                    # generated production extension (ignored)
 └── release/                 # generated ZIP, inventory and digest (ignored)
 ```
 
-## 4. Phase commits
+## 4. Git commit ledger
 
-| Phase | Commit                                     | Subject                                     |
-| ----- | ------------------------------------------ | ------------------------------------------- |
-| 0     | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | initialize repository and architecture      |
-| 1     | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | implement isolated floating companion       |
-| 2     | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | implement mock streaming result flow        |
-| 3     | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | implement providers permissions and secrets |
-| 4     | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | implement versioned local result cache      |
-| 5     | `80ee9636f1025bdd6b3791ae028738b184f600fa` | implement secure skin engine                |
-| 6     | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | complete onboarding popup and i18n          |
-| 7     | `2b4c95624715b0ff2715bb5532a29002bb75f212` | prepare verified open source release        |
+| Stage             | Commit                                     | Subject                                     |
+| ----------------- | ------------------------------------------ | ------------------------------------------- |
+| Phase 0           | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | initialize repository and architecture      |
+| Phase 1           | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | implement isolated floating companion       |
+| Phase 2           | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | implement mock streaming result flow        |
+| Phase 3           | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | implement providers permissions and secrets |
+| Phase 4           | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | implement versioned local result cache      |
+| Phase 5           | `80ee9636f1025bdd6b3791ae028738b184f600fa` | implement secure skin engine                |
+| Phase 6           | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | complete onboarding popup and i18n          |
+| Phase 7           | `2b4c95624715b0ff2715bb5532a29002bb75f212` | prepare verified open-source release        |
+| Final V1 evidence | `7dc163f04b41b1ab54b79dccb4732e90bf75a5be` | record final verification report            |
+| DeepSeek live fix | `1eefc8115fd4bf85e4002139102578e69af6e9c0` | verify DeepSeek V4 live integration         |
+| V2 redesign       | `c69fec0c2822455e5b9e1dadd8404ceb01031898` | implement progressive page translation      |
 
 ## 5. Key architecture decisions
 
-- Content receives only public settings/skin data and never a credential, URL, header, model or system prompt.
-- Background reconstructs validated requests and owns all Provider fetch/abort/retry behavior.
-- Production Shadow DOM is closed; only the E2E-specific build opens it for assertions.
-- Provider protocols remain independent adapters using standard `fetch` rather than vendor SDKs.
-- Keys, profiles, cache results and skin binaries use separated storage repositories.
-- Model output uses React text nodes; external messages and JSON use discriminated/Zod runtime validation.
-- Release verification covers bundled dependencies and published bytes, not only authored source.
+- The owner-authorized V2 boundary is recorded separately in `docs/V2_PRODUCT_BOUNDARY.md`; the V1 source specification remains unchanged as historical evidence.
+- The scanner processes only visible and near-viewport eligible text, caps each batch at 12 segments/6,000 characters and does not preload an infinite timeline.
+- Text is classified as content or UI. Exact, validated IDs map Provider results back to text nodes; malformed or partial JSON is rejected.
+- Content cannot choose Provider URLs, headers, models, prompts or credentials. Background reconstructs requests and owns permission, fetch, abort and retry behavior.
+- Cancellation uses both `AbortController` and generation IDs so buffered late completion messages cannot revive stopped work.
+- Production Shadow DOM is closed; the E2E-only build opens it for assertions. Production Mock behavior is compiled out.
+- UI strategy is code-native and operational: the Popup exposes page state and controls, the companion supplies contextual actions, and the larger resizable result panel remains dedicated to precision reading. Existing tokenized skins and restrained state feedback were preserved.
 
-## 6. Manifest permissions
+## 6. Manifest permissions and purpose
 
-| Permission                                 | Purpose                                                                       |
-| ------------------------------------------ | ----------------------------------------------------------------------------- |
-| `storage`                                  | Settings, cache, pauses, Provider profile/selected credential mode and skins. |
-| `contextMenus`                             | Explicit selection actions for three reading modes.                           |
-| `activeTab`                                | Temporary non-X activation after toolbar/shortcut user gesture.               |
-| `scripting`                                | Mount/remove the single host in the authorized active tab.                    |
-| `https://x.com/*`, `https://twitter.com/*` | Companion availability on X without internal post access.                     |
-| Optional HTTPS origins                     | Exact user-selected remote Provider origin, requested at configuration time.  |
-| Optional localhost/127.0.0.1               | User-controlled Ollama/local proxy.                                           |
+| Permission                                 | Purpose                                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `storage`                                  | Settings, Provider profile, credential mode, pauses, skins, caches, origin preference and translation memory. |
+| `contextMenus`                             | Explicit precision-reading actions for selected text.                                                         |
+| `activeTab`                                | Temporary non-X activation after a toolbar/shortcut user gesture.                                             |
+| `scripting`                                | Mount or remove the single host in an authorized active tab.                                                  |
+| `https://x.com/*`, `https://twitter.com/*` | Make the companion/page translator available on X without private X selectors.                                |
+| Optional Provider origins                  | Exact selected remote Provider origin, requested when configured.                                             |
+| Optional localhost/127.0.0.1               | User-controlled Ollama or local proxy.                                                                        |
 
-No permanent `<all_urls>`, tabs, history, cookies, downloads, webRequest or unlimitedStorage permission is present. See `docs/PERMISSIONS.md`.
+There is no permanent `<all_urls>`, tabs, history, cookies, downloads, webRequest or unlimitedStorage permission.
 
 ## 7. Provider support matrix
 
-| Provider          | Ordinary    | Streaming | Cancel      | Test connection | Adapter tests |
+| Provider          | Ordinary    | Streaming | Cancel      | Connection test | Adapter tests |
 | ----------------- | ----------- | --------- | ----------- | --------------- | ------------- |
 | OpenAI Responses  | Implemented | SSE       | Implemented | Implemented     | Passed        |
 | OpenAI Compatible | Implemented | SSE       | Implemented | Implemented     | Passed        |
@@ -98,93 +99,91 @@ No permanent `<all_urls>`, tabs, history, cookies, downloads, webRequest or unli
 | Google Gemini     | Implemented | SSE       | Implemented | Implemented     | Passed        |
 | Ollama            | Implemented | NDJSON    | Implemented | Implemented     | Passed        |
 
-Status/error mapping covers HTTP 400, 401, 403, 404, 408, 429, 5xx, timeout, abort, malformed response and network failure. Retry is limited to one attempt before any output is exposed.
+HTTP 400, 401, 403, 404, 408, 429, 5xx, timeout, abort, malformed response and network failures are mapped to unified errors. Automatic retry is limited to one attempt before any output is exposed.
 
-## 8–10. Real API smoke tests, models and credential handling
+## 8–10. Real API smoke matrix and credential confirmation
 
-| Provider          | Base URL                   | Model               | Connection     | Ordinary       | Stream         | Cancel         |
-| ----------------- | -------------------------- | ------------------- | -------------- | -------------- | -------------- | -------------- |
-| DeepSeek          | `https://api.deepseek.com` | `deepseek-v4-flash` | Passed, 976 ms | Passed, 651 ms | Passed, 772 ms | Passed, 104 ms |
-| OpenAI            | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
-| OpenAI Compatible | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
-| Anthropic         | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
-| Gemini            | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
-| Ollama            | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
+| Provider/model                 | Connection     | Ordinary       | Stream         | Cancel         | V2 page batch    |
+| ------------------------------ | -------------- | -------------- | -------------- | -------------- | ---------------- |
+| DeepSeek / `deepseek-v4-flash` | Passed, 976 ms | Passed, 651 ms | Passed, 772 ms | Passed, 104 ms | Passed, 1,144 ms |
+| Other adapters                 | Not executed   | Not executed   | Not executed   | Not executed   | Not executed     |
 
-The authorized model was `deepseek-v4-flash`. The ordinary request returned 24 characters using 317 input and 12 output tokens; model text was deliberately not recorded. Streaming returned 24 characters and cancellation produced `ABORTED`. The initial eight-token connection attempt returned `INVALID_RESPONSE` because default Thinking consumed the output budget before final `content`; the adapter was fixed to disable Thinking, unit-tested and then retested successfully.
+Base URL: `https://api.deepseek.com`. The page test used two harmless segments and returned the exact two-segment JSON shape. The recorded evidence contains only durations, token/character counts and result types—not response bodies or credentials.
 
-The ignored key was read only into `FLOATREAD_TEST_DEEPSEEK_KEY` for the test process and removed in a `finally` block. No credential was echoed into source, docs, output, logs, `dist`, ZIP or this report. Other Provider adapters were not given real credentials. See `docs/REAL_API_SMOKE.md`.
+The ignored local key was read into `FLOATREAD_TEST_DEEPSEEK_KEY` only for each smoke process and removed in `finally`. It was not copied to source, settings, docs, logs, `dist`, the release ZIP or this report. No other Provider received a real credential. The controlled initial DeepSeek Thinking-mode failure and adapter fix are documented in `docs/REAL_API_SMOKE.md`.
 
 ## 11–13. Executed tests and unexecuted checks
 
-| Command                                      | Actual result                                                                             |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `pnpm audit`                                 | Passed; no known vulnerabilities.                                                         |
-| `pnpm format:check`                          | Passed.                                                                                   |
-| `pnpm lint`                                  | Passed with zero warnings.                                                                |
-| `pnpm typecheck`                             | Passed.                                                                                   |
-| `pnpm test`                                  | Passed: 18 files, 90 unit tests.                                                          |
-| `pnpm test:integration`                      | Passed: 2 files, 2 tests.                                                                 |
-| `pnpm test:e2e`                              | Passed: 13 real Chromium extension tests.                                                 |
-| `pnpm build`                                 | Passed; 18 production files.                                                              |
-| `pnpm verify:dist`                           | Passed; Manifest, closed Shadow DOM, file policy, no dynamic/remote/Mock production code. |
-| `pnpm package`                               | Passed; rebuild, dist check, scans, ZIP, release check and production Chrome load.        |
-| `pnpm verify:release`                        | Passed; 18 ZIP entries exactly match `dist`, version consistent.                          |
-| `pnpm test:release-load`                     | Passed; production MV3 Service Worker plus three extension pages loaded in real Chromium. |
-| `pnpm scan:secrets`                          | Passed across 178 tracked/build/archive text files after staging the smoke evidence.      |
-| Consecutive `package:zip` + `verify:release` | Passed twice with identical SHA-256.                                                      |
-| `pnpm smoke:deepseek`                        | Passed after the documented adapter fix: connection, ordinary, stream and cancel.         |
+| Command                           | Actual result                                                                                  |
+| --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm audit`                      | Passed; no known vulnerabilities.                                                              |
+| `pnpm format:check`               | Passed.                                                                                        |
+| `pnpm lint`                       | Passed with zero warnings.                                                                     |
+| `pnpm typecheck`                  | Passed.                                                                                        |
+| `pnpm test`                       | Passed: 19 files, 95 tests.                                                                    |
+| `pnpm test:integration`           | Passed: 2 files, 2 tests.                                                                      |
+| `pnpm test:e2e`                   | Passed: 14 real Chromium extension tests.                                                      |
+| `pnpm build` / `pnpm verify:dist` | Passed: 18 production files; file policy and production flags verified.                        |
+| `pnpm package`                    | Passed: rebuild, dist validation, two secret scans, ZIP validation and production Chrome load. |
+| `pnpm test:release-load`          | Passed: MV3 worker and three extension pages loaded in real Chromium.                          |
+| `pnpm smoke:deepseek`             | Passed: connection, ordinary, stream and cancel.                                               |
+| `pnpm smoke:deepseek-page`        | Passed: strict two-segment page batch.                                                         |
+| Two `package:zip` runs            | Passed with identical SHA-256.                                                                 |
 
 Not executed:
 
-- Human checklist: `MANUAL_TESTING.md` is prepared with 58 unchecked steps. Automated E2E coverage is not mislabeled as human execution.
-- Chrome Web Store upload/review: requires publisher account and finalized identity.
-- Store screenshots: not fabricated; capture from a real build after publisher branding is final.
+- The live-X human checklist remains unchecked. The E2E page fixture verifies layout isolation, translation, dynamic menus, stop/resume and restoration, but is not represented as live-X acceptance.
+- Chrome Web Store upload/review and store screenshots require the publisher account and finalized branding.
+- OpenAI, Anthropic, Gemini, OpenAI Compatible and Ollama were adapter-tested, not live-key-tested.
 
 ## 14–15. Security and secret checks
 
-- Dependency audit: no known vulnerability.
-- No authored/bundled `eval` or `new Function`; no remote script; local-only extension CSP.
-- Production Mock strings absent; tests, maps, environment files, secrets, logs and node_modules absent from release.
-- Content/public messages reject credential/network fields; saved keys are restricted to trusted contexts and never returned to Content.
-- Skin tests cover schema, MIME/signature/decode, path traversal, duplicate, over-size, ratio/bomb, URL and executable-field rejection.
-- Secret scan passed for Git-tracked source, `dist` and unpacked ZIP. It enumerates tracked source and does not traverse ignored `.secrets`.
+- Dependency audit found no known vulnerabilities.
+- No authored/bundled `eval`, `new Function`, remote script or remote execution path; extension CSP is local-only.
+- Credentials remain in trusted storage contexts and are absent from public/content messages, caches and exports.
+- Page-batch messages are bounded and runtime-validated; strict response parsing requires the exact requested ID set.
+- Model output is assigned as text, not injected as HTML.
+- Skin tests cover schema, MIME/signature, path traversal, duplicate, over-size, decompression ratio, dangerous URL and executable-field rejection.
+- Secret scanning passed across tracked files, `dist` and the unpacked release ZIP; ignored `.secrets` is deliberately outside repository enumeration.
 
 ## 16–18. Build artifacts
 
 - Production directory: `E:\AI-900\FloatRead\dist`
-- Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.1.0.zip`
-- Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.1.0-files.txt`
-- Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.1.0.sha256`
-- ZIP size: 268,464 bytes
-- SHA-256: `7da4b46299585504118ad04351e556ebe40cc6de3ca10aed93a050a927a2409b`
+- Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.2.0.zip`
+- Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.2.0-files.txt`
+- Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.2.0.sha256`
+- ZIP size: 274,619 bytes
+- SHA-256: `0e10539dfbc5e62d71aa17032716a56e5cb032d94f29492e2b477c280f61df98`
+- ZIP entries: 18; every path and byte matched the verified `dist` tree.
 
 ## 19. Local installation
 
-1. Verify the ZIP digest against the `.sha256` file.
-2. Extract the ZIP into a persistent folder.
-3. Open `chrome://extensions`, enable Developer mode and choose **Load unpacked**.
-4. Select the extracted folder containing `manifest.json`.
-5. Configure one Provider from Settings and grant its exact origin when prompted.
+1. Extract `release/FloatRead-v0.2.0.zip` into a persistent folder.
+2. Open `chrome://extensions` and enable Developer mode.
+3. Choose **Load unpacked** and select the extracted folder containing `manifest.json`.
+4. Open FloatRead Settings, choose DeepSeek, set `https://api.deepseek.com`, model `deepseek-v4-flash`, and enter the key using the preferred storage mode.
+5. Grant only the displayed exact Provider-origin permission.
+6. Open X, click the companion without selecting text to start page translation; use Popup or the companion menu to stop, resume or clear.
 
 ## 20. Human acceptance
 
-Follow `MANUAL_TESTING.md` against the extracted production ZIP. Prioritize X layout isolation, no-request-without-action, all trigger paths, credential modes, permission denial, cancel/cache behavior, dark/reduced-motion/keyboard paths and malicious skin rejection. Record Chrome/OS, tester/date, ZIP digest and Provider/model without recording a key.
+Use `MANUAL_TESTING.md` against the extracted production ZIP. For the reported issue, first verify: visible tweet text translates; menus translate once and remain translated; scrolling progressively translates newly visible text; Stop prevents later batches; Resume continues; Clear restores current original nodes; late results never appear after Stop; and X layout/scrolling remain usable. Record Chrome/OS, tester/date and ZIP digest without recording a key.
 
-## 21–22. Known limitations and remaining work
+## 21–22. Known limitations and incomplete work
 
+- Real X behavior still needs the owner's manual run; X can change its DOM and React can replace translated text nodes.
+- Direct page-text replacement is intentionally invasive under the V2 authorization. Clear restores nodes that still exist, but a site framework may destroy/recreate nodes before restoration.
+- Translation is progressive around the viewport, not an eager crawl of the entire infinite timeline.
+- One page batch is non-streaming because it must return strict JSON for multiple segment IDs; precision-reading requests still stream.
 - Publisher name, GitHub/support URLs and store assets are provisional.
-- Firefox/Safari are not supported or tested in V1.
-- Human regression remains pending; automated and real-API evidence are not mislabeled as human execution.
-- Chrome Web Store publication is outside this local repository delivery.
-- Stream quality and availability depend on the selected Provider/proxy.
+- Firefox/Safari, Chrome Web Store submission and other Providers' real-key smoke tests are not completed.
 
-No core V1 implementation item is intentionally left as a TODO or fixed production demo. Mock code is development/E2E-only and absent from production.
+No V2 core path uses a fixed production demo. Automated coverage is complete for the current scope; the live-site manual checklist is the remaining acceptance gate.
 
 ## 23. Suggested next release
 
-- Finalize publisher identity, repository security contact and real screenshots.
-- Run one minimal authorized smoke per priority Provider over time, never in parallel and never with committed credentials.
-- Validate Edge/Brave and assess Firefox MV3 portability.
-- Add signed/community-reviewed skin distribution without introducing remote execution.
-- Improve Provider diagnostics while preserving exact-origin permissions and redaction.
+- Use live-X manual evidence to tune semantic priority, batch cadence and text-node restoration without adopting private X selectors.
+- Add an explicit translation-language setting and per-section include/exclude controls.
+- Add an optional side-by-side/original-on-hover presentation mode for sites where direct replacement is fragile.
+- Run minimal authorized smoke tests for additional priority Providers, one credential at a time.
+- Finalize publisher identity, repository URLs, screenshots and store listing.

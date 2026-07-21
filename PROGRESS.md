@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: V2 page-translation redesign — implementation and automated verification in progress
+- Current phase: V2 page-translation redesign — automated release complete; manual X acceptance pending
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -13,16 +13,17 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Phase ledger
 
-| Phase | Status   | Commit                                     | Verification                                                            |
-| ----- | -------- | ------------------------------------------ | ----------------------------------------------------------------------- |
-| 0     | Complete | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | Lint, typecheck, unit, integration, build and dist verification passed  |
-| 1     | Complete | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 11 unit tests and 2 real Chromium extension E2E tests passed            |
-| 2     | Complete | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | 23 unit, 2 integration and 4 real extension E2E tests passed            |
-| 3     | Complete | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | Automated checks plus post-Phase-7 authorized DeepSeek smoke passed     |
-| 4     | Complete | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | 59 unit, 2 integration and 6 real extension E2E tests passed            |
-| 5     | Complete | `80ee9636f1025bdd6b3791ae028738b184f600fa` | 79 unit, 2 integration and 7 real extension E2E tests passed            |
-| 6     | Complete | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | 90 unit, 2 integration and 13 real extension E2E tests passed           |
-| 7     | Complete | `2b4c95624715b0ff2715bb5532a29002bb75f212` | Full quality gate, audit, dist/ZIP verification and secret scans passed |
+| Phase | Status   | Commit                                     | Verification                                                                    |
+| ----- | -------- | ------------------------------------------ | ------------------------------------------------------------------------------- |
+| 0     | Complete | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | Lint, typecheck, unit, integration, build and dist verification passed          |
+| 1     | Complete | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 11 unit tests and 2 real Chromium extension E2E tests passed                    |
+| 2     | Complete | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | 23 unit, 2 integration and 4 real extension E2E tests passed                    |
+| 3     | Complete | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | Automated checks plus post-Phase-7 authorized DeepSeek smoke passed             |
+| 4     | Complete | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | 59 unit, 2 integration and 6 real extension E2E tests passed                    |
+| 5     | Complete | `80ee9636f1025bdd6b3791ae028738b184f600fa` | 79 unit, 2 integration and 7 real extension E2E tests passed                    |
+| 6     | Complete | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | 90 unit, 2 integration and 13 real extension E2E tests passed                   |
+| 7     | Complete | `2b4c95624715b0ff2715bb5532a29002bb75f212` | Full quality gate, audit, dist/ZIP verification and secret scans passed         |
+| V2    | Complete | `c69fec0c2822455e5b9e1dadd8404ceb01031898` | 95 unit, 2 integration, 14 Chromium E2E, live DeepSeek batch and package passed |
 
 ## Phase 0 target
 
@@ -345,7 +346,7 @@ The first pre-fix connection returned `INVALID_RESPONSE` in 808 ms and did not p
 
 Owner acceptance on 2026-07-21 replaced the selection-only primary flow. The new object boundary is recorded in `docs/V2_PRODUCT_BOUNDARY.md`; BYOK, Background-only networking, credential isolation, no backend and no telemetry remain unchanged.
 
-Implemented so far:
+Implemented:
 
 - No-selection companion click and Popup controls start user-authorized per-origin page translation.
 - Visible/near-visible semantic text scanner with `content` versus `ui` classification; no private X `data-testid` dependency.
@@ -368,10 +369,24 @@ Verification at this checkpoint:
 | `pnpm exec playwright test`       | Passed: 14 real Chromium extension tests                                |
 | `pnpm build` + `pnpm verify:dist` | Passed: 18 production files; production Mock removed                    |
 | `pnpm smoke:deepseek-page`        | Passed: strict two-segment JSON batch in 1,144 ms; no body/key recorded |
+| `pnpm audit`                      | Passed; no known vulnerabilities                                        |
+| `pnpm format:check`               | Passed                                                                  |
+| `pnpm package`                    | Passed: verified production ZIP and real-Chromium load                  |
+
+V2 release evidence:
+
+- ZIP: `release/FloatRead-v0.2.0.zip`
+- ZIP size: 274,619 bytes
+- SHA-256: `0e10539dfbc5e62d71aa17032716a56e5cb032d94f29492e2b477c280f61df98`
+- Inventory: `release/FloatRead-v0.2.0-files.txt`
+- Digest file: `release/FloatRead-v0.2.0.sha256`
+- Two consecutive packaging runs produced the same SHA-256.
 
 Controlled failures:
 
 - The first page-scanner unit test exposed an empty JSDOM opacity string being coerced to zero; visibility now excludes opacity only when the computed value is explicitly present and zero.
 - Two old E2E assertions encoded the superseded product boundary (no-selection click should show a selection hint; first keyboard item should be Natural Chinese). They were updated to assert the new page-translation primary path and still verify keyboard access to precision modes.
 
-Project-loop conclusion for this round: the acceptance gap was product-level, not a selection-parser defect. The next release is only complete after docs, production package and manual X verification are updated. The human X regression remains intentionally unchecked.
+Project-loop conclusion for this round: the acceptance gap was product-level, not a selection-parser defect. Automated V2 delivery is complete; the remaining external acceptance gap is a human run on live X. Preserve the cancellation generation guard, bounded visible-page batches, Background-only credential boundary and exact-origin permissions in future iterations.
+
+Knowledge After for V2: the earlier query had `no_relevant_hit`, so no external knowledge candidate was adopted or rated. Project-local evidence retained: asynchronous cancellation needs both transport abort and generation-ID result rejection; direct text-node translation must discard detached-node records; and changing a product boundary requires replacing obsolete acceptance assertions instead of treating them as regressions. No external knowledge asset was created because these findings are currently specific to FloatRead's implementation and tests.
