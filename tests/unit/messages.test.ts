@@ -47,7 +47,7 @@ describe("page translation port protocol", () => {
       pageTranslationPortIncomingSchema.safeParse({
         type: "PAGE_TRANSLATE_BATCH",
         jobId: "page-job-123456",
-        segments: [{ id: "seg_0", text: "x".repeat(6_001), kind: "content" }],
+        segments: [{ id: "seg_0", text: "x".repeat(12_001), kind: "content" }],
       }).success,
     ).toBe(false);
     expect(
@@ -56,7 +56,7 @@ describe("page translation port protocol", () => {
         jobId: "page-job-123456",
         segments: Array.from({ length: 12 }, (_, index) => ({
           id: `seg_${index}`,
-          text: "x".repeat(600),
+          text: "x".repeat(1_100),
           kind: "content",
         })),
       }).success,

@@ -2,6 +2,19 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.2.2] - 2026-07-21
+
+### Fixed
+
+- Immediately reapply a known translation when a dynamic React page resets the same text node to its exact original value.
+- Retry one malformed or retryable page-batch completion once; non-retryable credential/configuration failures are never retried.
+- Include short English fragments inside semantic `lang` containers and additional menu/dialog roles.
+- Raise the bounded page batch to 12,000 characters for long-form posts while retaining the 12-segment cap.
+
+### Verified
+
+- Added deterministic tests for React-style node reset, one-retry termination, short language fragments, long-form bodies and the updated protocol limit.
+
 ## [0.2.1] - 2026-07-21
 
 ### Fixed

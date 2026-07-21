@@ -462,6 +462,15 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
   await popup.getByRole("button", { name: /翻译当前页面|Translate this page/u }).click();
   await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
   await expect(fixture.locator("#multiline")).toContainText("页面译文：");
+  const reappliedImmediately = await fixture.evaluate(async () => {
+    const source = document.querySelector("#source");
+    const node = source?.firstChild;
+    if (!node) return null;
+    node.nodeValue = "We reset usage limits for affected Codex users.";
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    return node.nodeValue;
+  });
+  expect(reappliedImmediately).toBe("我们已重置受影响的 Codex 用户的使用限额。");
 
   await fixture.evaluate(() => {
     const menu = document.createElement("div");

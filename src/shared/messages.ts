@@ -223,7 +223,7 @@ export const GENERATION_PORT_NAME = "floatread-generation";
 const pageTranslationSegmentSchema = z
   .object({
     id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/u),
-    text: z.string().min(1).max(6_000),
+    text: z.string().min(1).max(12_000),
     kind: z.enum(["content", "ui"]),
   })
   .strict();
@@ -238,7 +238,7 @@ export const pageTranslationPortIncomingSchema = z.discriminatedUnion("type", [
     .strict()
     .superRefine((value, context) => {
       const total = value.segments.reduce((sum, segment) => sum + segment.text.length, 0);
-      if (total > 6_000) context.addIssue({ code: "custom", message: "Batch is too large." });
+      if (total > 12_000) context.addIssue({ code: "custom", message: "Batch is too large." });
     }),
   z.object({ type: z.literal("PAGE_TRANSLATE_CANCEL"), jobId: requestIdSchema }).strict(),
 ]);
@@ -252,7 +252,7 @@ export const pageTranslationPortOutgoingSchema = z.discriminatedUnion("type", [
       type: z.literal("PAGE_SEGMENT_RESULT"),
       jobId: requestIdSchema,
       id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/u),
-      text: z.string().min(1).max(8_000),
+      text: z.string().min(1).max(16_000),
       cached: z.boolean(),
     })
     .strict(),

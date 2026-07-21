@@ -2,8 +2,8 @@ import { createCacheKey } from "../cache/key";
 import {
   buildPageTranslationPrompt,
   PAGE_TRANSLATION_PROMPT_VERSION,
-  parsePageTranslationResponse,
 } from "../page-translation/prompt";
+import { completePageTranslationWithSingleRetry } from "../page-translation/complete";
 import { validateProviderUrl } from "../providers/config";
 import { getProviderAdapter } from "../providers/router";
 import { ProviderFailure } from "../providers/types";
@@ -124,28 +124,28 @@ async function runBatch(
     const prompt = buildPageTranslationPrompt(misses.map((item) => item.segment));
     const timer = setTimeout(() => job.controller.abort(), profile.timeoutMs);
     try {
-      const completion = await getProviderAdapter(profile.kind).complete(
-        {
-          requestId: job.jobId,
-          systemPrompt: prompt.systemPrompt,
-          userPrompt: prompt.userPrompt,
-          maxOutputTokens: prompt.maxOutputTokens,
-          temperature: 0,
-          responseFormat: "json_object",
-        },
-        profile,
-        await getProviderSecret(profile.id, profile.secretStorageMode),
+      const adapter = getProviderAdapter(profile.kind);
+      const secret = await getProviderSecret(profile.id, profile.secretStorageMode);
+      const results = await completePageTranslationWithSingleRetry(
+        async () =>
+          (
+            await adapter.complete(
+              {
+                requestId: job.jobId,
+                systemPrompt: prompt.systemPrompt,
+                userPrompt: prompt.userPrompt,
+                maxOutputTokens: prompt.maxOutputTokens,
+                temperature: 0,
+                responseFormat: "json_object",
+              },
+              profile,
+              secret,
+              job.controller.signal,
+            )
+          ).text,
+        misses.map((item) => item.segment.id),
         job.controller.signal,
       );
-      const results = parsePageTranslationResponse(
-        completion.text,
-        misses.map((item) => item.segment.id),
-      );
-      if (!results) {
-        throw new ProviderFailure(
-          publicError("INVALID_RESPONSE", "页面翻译返回格式异常，请重试。", true),
-        );
-      }
       const memoryWrites: Array<{ key: string; translation: string }> = [];
       for (const item of misses) {
         const translated = results.get(item.segment.id);

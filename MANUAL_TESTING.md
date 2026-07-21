@@ -27,7 +27,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Reading workflow
 
-- [ ] Page batches contain at most 12 segments / 6,000 characters and malformed JSON is reported.
+- [ ] Page batches contain at most 12 segments / 12,000 characters; malformed JSON retries once, then reports an error.
 - [ ] Natural Chinese produces faithful natural Chinese without invented information.
 - [ ] Key Points covers meaning, relevance and omissions; inference is labeled.
 - [ ] Explain Terms stays grounded in current text.
@@ -89,7 +89,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.2.1.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.2.2.zip`, not `dist-e2e`.
 - [ ] `manifest.json` is MV3, version matches, CSP is local-only and permissions match `docs/PERMISSIONS.md`.
 - [ ] ZIP inventory contains no tests, source maps, `.env`, `.secrets`, logs, `node_modules` or unrelated screenshots.
 - [ ] `pnpm scan:secrets` and `pnpm verify:release` pass after packaging.

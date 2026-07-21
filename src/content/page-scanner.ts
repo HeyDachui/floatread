@@ -11,7 +11,7 @@ export interface PageTextSegment {
 const BLOCKED_SELECTOR =
   "script,style,noscript,code,pre,textarea,input,select,option,[contenteditable='true'],floatread-root";
 const UI_SELECTOR =
-  "nav,header,aside,button,[role='button'],[role='menu'],[role='menuitem'],[role='tab'],[role='navigation']";
+  "nav,header,aside,footer,button,[role='button'],[role='menu'],[role='menuitem'],[role='tab'],[role='navigation'],[role='dialog'],[role='listbox'],[role='option'],[role='tooltip']";
 
 function normalize(value: string): string {
   return value.normalize("NFC").replace(/\s+/gu, " ").trim();
@@ -48,7 +48,7 @@ function classify(element: HTMLElement, text: string): PageSegmentKind | null {
   const inArticle = element.closest("article");
   const inUi = element.closest(UI_SELECTOR);
   if (inArticle && !element.closest("nav,header,[role='menu'],[role='menuitem']")) {
-    return text.length >= 4 ? "content" : null;
+    return text.length >= (element.closest("[lang]") ? 2 : 4) ? "content" : null;
   }
   if (inUi) return text.length <= 120 ? "ui" : null;
   if (element.closest("main,article,section") && text.length >= 12) return "content";
@@ -59,7 +59,7 @@ export function collectVisiblePageSegments(
   skipped: ReadonlySet<Text>,
   documentRef: Document = document,
   limit = 12,
-  maxCharacters = 6_000,
+  maxCharacters = 12_000,
 ): PageTextSegment[] {
   const root = documentRef.body;
   if (!root) return [];
@@ -76,7 +76,7 @@ export function collectVisiblePageSegments(
     if (!element || element.closest(BLOCKED_SELECTOR)) continue;
     const original = node.nodeValue ?? "";
     const text = normalize(original);
-    if (!looksEnglish(text) || text.length > 6_000 || !isVisible(element, 280)) continue;
+    if (!looksEnglish(text) || text.length > 12_000 || !isVisible(element, 280)) continue;
     const kind = classify(element, text);
     if (!kind || characters + text.length > maxCharacters) continue;
     segments.push({ id: `seg_${counter++}`, text, kind, node, original });

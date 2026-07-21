@@ -2,7 +2,7 @@
 
 FloatRead is an open-source, serverless, bring-your-own-key page translator for Chromium browsers. Enable it once for a site to translate visible English content as you scroll; main posts receive precision translation, while menus and controls reuse persistent local translation memory. Selection reading remains available for deeper analysis.
 
-> Current release: `0.2.1`. The publisher links bundled in this source tree are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
+> Current release: `0.2.2`. The publisher links bundled in this source tree are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
 
 [简体中文](README.zh-CN.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Manual testing](MANUAL_TESTING.md)
 
@@ -36,7 +36,7 @@ Release screenshots are intentionally not fabricated. Maintainers should capture
 
 ## Install a release build
 
-1. Obtain `FloatRead-v0.2.1.zip` and verify its SHA-256 against the adjacent `.sha256` file.
+1. Obtain `FloatRead-v0.2.2.zip` and verify its SHA-256 against the adjacent `.sha256` file.
 2. Extract the ZIP to a permanent local folder.
 3. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. Open FloatRead settings, add a Provider, grant the exact endpoint origin when prompted, and test the connection.

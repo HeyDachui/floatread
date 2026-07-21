@@ -3,6 +3,8 @@ import {
   buildPageTranslationPrompt,
   parsePageTranslationResponse,
 } from "../../src/page-translation/prompt";
+import { completePageTranslationWithSingleRetry } from "../../src/page-translation/complete";
+import { ProviderFailure } from "../../src/providers/types";
 import { collectVisiblePageSegments } from "../../src/content/page-scanner";
 import {
   getPageTranslationMemory,
@@ -28,6 +30,29 @@ describe("page translation prompt", () => {
       parsePageTranslationResponse('{"translations":[{"id":"seg_0","text":"译文"}]}', ["seg_0"]),
     ).toEqual(new Map([["seg_0", "译文"]]));
     expect(parsePageTranslationResponse('{"translations":[]}', ["seg_0"])).toBeNull();
+  });
+
+  it("retries malformed or retryable completion once and never loops", async () => {
+    const completion = vi
+      .fn<() => Promise<string>>()
+      .mockResolvedValueOnce("not json")
+      .mockResolvedValueOnce('{"translations":[{"id":"seg_0","text":"译文"}]}');
+    await expect(
+      completePageTranslationWithSingleRetry(completion, ["seg_0"], new AbortController().signal),
+    ).resolves.toEqual(new Map([["seg_0", "译文"]]));
+    expect(completion).toHaveBeenCalledTimes(2);
+
+    const forbidden = vi.fn<() => Promise<string>>().mockRejectedValue(
+      new ProviderFailure({
+        code: "INVALID_API_KEY",
+        message: "invalid",
+        retryable: false,
+      }),
+    );
+    await expect(
+      completePageTranslationWithSingleRetry(forbidden, ["seg_0"], new AbortController().signal),
+    ).rejects.toMatchObject({ publicError: { code: "INVALID_API_KEY" } });
+    expect(forbidden).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -84,6 +109,47 @@ describe("visible page scanner", () => {
       kind: "content",
     });
     expect(segments[1]?.text).toBe("This English release note includes 少量中文内容 for context.");
+  });
+
+  it("keeps short English fragments inside a semantic language container", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 200,
+      bottom: 20,
+      width: 200,
+      height: 20,
+      toJSON: () => ({}),
+    });
+    document.body.innerHTML =
+      '<article><div lang="en"><span>We</span><span>go</span></div></article>';
+    expect(collectVisiblePageSegments(new Set()).map((segment) => segment.text)).toEqual([
+      "We",
+      "go",
+    ]);
+  });
+
+  it("accepts a bounded long-form post above the former 6,000-character limit", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 500,
+      bottom: 200,
+      width: 500,
+      height: 200,
+      toJSON: () => ({}),
+    });
+    const article = document.createElement("article");
+    article.lang = "en";
+    article.textContent = "Long-form English post. ".repeat(300);
+    document.body.append(article);
+    const segments = collectVisiblePageSegments(new Set());
+    expect(segments).toHaveLength(1);
+    expect(segments[0]?.text.length).toBeGreaterThan(6_000);
   });
 });
 

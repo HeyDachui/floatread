@@ -133,7 +133,16 @@ const onViewportChange = (): void => scheduleScan(180);
 
 function startWatching(): void {
   if (!observer && document.body) {
-    observer = new MutationObserver(() => scheduleScan());
+    observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.type !== "characterData" || !(record.target instanceof Text)) continue;
+        const translated = applied.get(record.target);
+        if (translated && record.target.nodeValue === translated.original) {
+          record.target.nodeValue = translated.translation;
+        }
+      }
+      scheduleScan();
+    });
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
   window.addEventListener("scroll", onViewportChange, { passive: true });
