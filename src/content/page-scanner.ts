@@ -58,8 +58,8 @@ function classify(element: HTMLElement, text: string): PageSegmentKind | null {
 export function collectVisiblePageSegments(
   skipped: ReadonlySet<Text>,
   documentRef: Document = document,
-  limit = 12,
-  maxCharacters = 12_000,
+  limit = 6,
+  maxCharacters = 6_000,
 ): PageTextSegment[] {
   const root = documentRef.body;
   if (!root) return [];
@@ -78,7 +78,14 @@ export function collectVisiblePageSegments(
     const text = normalize(original);
     if (!looksEnglish(text) || text.length > 12_000 || !isVisible(element, 280)) continue;
     const kind = classify(element, text);
-    if (!kind || characters + text.length > maxCharacters) continue;
+    if (!kind) continue;
+    if (characters + text.length > maxCharacters) {
+      if (segments.length === 0 && text.length <= 12_000) {
+        segments.push({ id: `seg_${counter++}`, text, kind, node, original });
+        break;
+      }
+      continue;
+    }
     segments.push({ id: `seg_${counter++}`, text, kind, node, original });
     characters += text.length;
   }

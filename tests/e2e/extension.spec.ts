@@ -462,7 +462,7 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
   await popup.getByRole("button", { name: /翻译当前页面|Translate this page/u }).click();
   await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
   await expect(fixture.locator("#multiline")).toContainText("页面译文：");
-  const reappliedImmediately = await fixture.evaluate(async () => {
+  const hostResetValue = await fixture.evaluate(async () => {
     const source = document.querySelector("#source");
     const node = source?.firstChild;
     if (!node) return null;
@@ -470,7 +470,13 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
     await new Promise((resolve) => setTimeout(resolve, 20));
     return node.nodeValue;
   });
-  expect(reappliedImmediately).toBe("我们已重置受影响的 Codex 用户的使用限额。");
+  expect(hostResetValue).toBe("We reset usage limits for affected Codex users.");
+  await fixture.evaluate(() => {
+    const marker = document.createElement("span");
+    marker.id = "react-update-marker";
+    document.body.append(marker);
+  });
+  await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
 
   await fixture.evaluate(() => {
     const menu = document.createElement("div");
@@ -483,6 +489,15 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
   });
   await expect(fixture.getByRole("menuitem")).toHaveText("账户设置");
 
+  await fixture.evaluate(() => {
+    const storm = setInterval(() => {
+      const transient = document.createElement("span");
+      transient.textContent = "Transient timeline update";
+      document.body.append(transient);
+      transient.remove();
+    }, 5);
+    setTimeout(() => clearInterval(storm), 1_000);
+  });
   await popup.getByRole("button", { name: /停止|Stop/u }).click();
   await fixture.evaluate(() => {
     const paragraph = document.createElement("p");
@@ -495,7 +510,7 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
     "This text appeared after page translation stopped.",
   );
 
-  await popup.getByRole("button", { name: /继续|Resume/u }).click();
+  await popup.getByRole("button", { name: /翻译当前页面|Translate this page/u }).click();
   await expect(fixture.locator("#after-stop")).toContainText("页面译文：");
   await popup.getByRole("button", { name: /清除译文|Clear translations/u }).click();
   await expect(fixture.locator("#source")).toHaveText(
@@ -505,6 +520,40 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
     "This English release note has multiple spaces and 少量中文内容 for context.",
   );
   await expect(fixture.getByRole("menuitem")).toHaveText("Account settings");
+
+  await popup.close();
+  await fixture.close();
+});
+
+test("never auto-restarts page translation after a reload and persists Stop", async () => {
+  const fixture = await context.newPage();
+  await fixture.goto(fixtureUrl);
+  const tabId = await currentTabId(fixture);
+  const popup = await context.newPage();
+  await popup.goto(
+    `chrome-extension://${currentExtensionId()}/src/popup/index.html?targetTabId=${tabId}`,
+  );
+
+  await popup.getByRole("button", { name: /翻译当前页面|Translate this page/u }).click();
+  await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
+
+  await fixture.reload();
+  await fixture.locator("floatread-root").waitFor({ state: "attached" });
+  await fixture.waitForTimeout(900);
+  await expect(fixture.locator("#source")).toHaveText(
+    "We reset usage limits for affected Codex users.",
+  );
+
+  await popup.getByRole("button", { name: /继续|Resume/u }).click();
+  await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
+  await popup.getByRole("button", { name: /停止|Stop/u }).click();
+
+  await fixture.reload();
+  await fixture.locator("floatread-root").waitFor({ state: "attached" });
+  await fixture.waitForTimeout(900);
+  await expect(fixture.locator("#source")).toHaveText(
+    "We reset usage limits for affected Codex users.",
+  );
 
   await popup.close();
   await fixture.close();

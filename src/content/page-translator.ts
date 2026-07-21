@@ -92,7 +92,7 @@ function handleEvent(event: PageTranslationPortOutgoing): void {
     currentJobId = null;
     if (active) {
       publish({ status: "watching", translatedCount: translatedCount() });
-      scheduleScan(80);
+      scheduleScan(400);
     } else publish({ status: "paused", translatedCount: translatedCount() });
   }
 }
@@ -125,25 +125,16 @@ function scan(): void {
 
 function scheduleScan(delay = 260): void {
   if (!active) return;
-  if (scheduleTimer) clearTimeout(scheduleTimer);
+  if (scheduleTimer) return;
   scheduleTimer = setTimeout(scan, delay);
 }
 
-const onViewportChange = (): void => scheduleScan(180);
+const onViewportChange = (): void => scheduleScan(300);
 
 function startWatching(): void {
   if (!observer && document.body) {
-    observer = new MutationObserver((records) => {
-      for (const record of records) {
-        if (record.type !== "characterData" || !(record.target instanceof Text)) continue;
-        const translated = applied.get(record.target);
-        if (translated && record.target.nodeValue === translated.original) {
-          record.target.nodeValue = translated.translation;
-        }
-      }
-      scheduleScan();
-    });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    observer = new MutationObserver(() => scheduleScan(750));
+    observer.observe(document.body, { childList: true, subtree: true });
   }
   window.addEventListener("scroll", onViewportChange, { passive: true });
   window.addEventListener("resize", onViewportChange, { passive: true });

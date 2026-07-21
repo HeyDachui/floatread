@@ -1,6 +1,6 @@
-# FloatRead 0.2.2 release notes
+# FloatRead 0.2.3 safety release notes
 
-FloatRead 0.2 changes the primary product flow from selection-only reading to user-enabled progressive page translation. Patch 0.2.2 adds immediate recovery when React resets translated nodes, one bounded retry for malformed page batches, short `lang`-fragment coverage, more UI roles and a 12,000-character batch limit for long-form posts.
+FloatRead 0.2.3 is an urgent safety release. It removes 0.2.2's immediate React text-node reapplication, coalesces dynamic-page scans, reduces normal batches to six segments / 6,000 characters, makes Stop persistent, aborts the Background job independently, and prevents every reload-time automatic restart.
 
 ## Highlights
 
@@ -14,7 +14,7 @@ FloatRead 0.2 changes the primary product flow from selection-only reading to us
 
 ## Install
 
-Extract `release/FloatRead-v0.2.2.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
+Remove or reload 0.2.2 before returning to X. Extract `release/FloatRead-v0.2.3.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
 
 ## Verification status
 

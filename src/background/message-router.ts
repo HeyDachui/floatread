@@ -7,6 +7,7 @@ import { getSkinStateAsset } from "../skins/storage";
 import { isSitePaused } from "../storage/site-pauses";
 import { getPublicBootstrap, getSettings, updateCompanionPosition } from "../storage/settings";
 import { isPageTranslationEnabled, setPageTranslationEnabled } from "../storage/page-translation";
+import { cancelPageTranslationForTab } from "./page-translation-manager";
 import { routeTrustedProviderMessage } from "./provider-controller";
 
 async function routeMessage(
@@ -65,6 +66,9 @@ async function routeMessage(
     }
     case "SET_PAGE_TRANSLATION_PREFERENCE":
       await setPageTranslationEnabled(sender.tab?.url ?? sender.url, parsed.data.enabled);
+      if (!parsed.data.enabled && typeof sender.tab?.id === "number") {
+        cancelPageTranslationForTab(sender.tab.id);
+      }
       return { ok: true };
   }
 }

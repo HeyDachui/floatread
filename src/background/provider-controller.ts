@@ -24,6 +24,7 @@ import {
   updateReadingPreferences,
 } from "../storage/settings";
 import { getActiveTab, injectAndSend, isInjectableUrl } from "./injection";
+import { cancelPageTranslationForTab } from "./page-translation-manager";
 
 async function sendToOpenContent(
   type: "SHOW_COMPANION" | "HIDE_COMPANION" | "REFRESH_COMPANION",
@@ -300,7 +301,10 @@ export async function routeTrustedProviderMessage(
         };
       }
       if (message.action === "start") await setPageTranslationEnabled(tab.url, true);
-      if (message.action === "clear") await setPageTranslationEnabled(tab.url, false);
+      if (message.action === "pause" || message.action === "clear") {
+        await setPageTranslationEnabled(tab.url, false);
+        if (typeof tab.id === "number") cancelPageTranslationForTab(tab.id);
+      }
       await injectAndSend(tab, { type: "CONTROL_PAGE_TRANSLATION", action: message.action });
       return { ok: true, data: await getPopupState(message.targetTabId) };
     }

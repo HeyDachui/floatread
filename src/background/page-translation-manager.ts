@@ -25,6 +25,10 @@ interface ActivePageJob {
 
 const activeByTab = new Map<number, ActivePageJob>();
 
+export function cancelPageTranslationForTab(tabId: number): void {
+  activeByTab.get(tabId)?.controller.abort();
+}
+
 function post(port: chrome.runtime.Port, message: PageTranslationPortOutgoing): void {
   try {
     port.postMessage(message);

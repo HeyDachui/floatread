@@ -2,6 +2,19 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.2.3] - 2026-07-21
+
+### Safety fix
+
+- Removed the immediate character-data rewrite loop introduced in 0.2.2; FloatRead no longer fights React for the same text node.
+- Observe only added/removed DOM nodes, coalesce mutation scans instead of continuously resetting timers, and use six-segment / 6,000-character normal batches. A single bounded long-form node can still use the 12,000-character protocol ceiling.
+- Stop now disables the origin preference and aborts the Background job independently; a reload never auto-restarts page translation.
+- Added a sustained DOM-mutation stop test and a reload test proving translation stays off until the user starts it again.
+
+### Status
+
+- Version 0.2.2 is superseded and should not be used on X.
+
 ## [0.2.2] - 2026-07-21
 
 ### Fixed

@@ -2,7 +2,7 @@
 
 FloatRead is an open-source, serverless, bring-your-own-key page translator for Chromium browsers. Enable it once for a site to translate visible English content as you scroll; main posts receive precision translation, while menus and controls reuse persistent local translation memory. Selection reading remains available for deeper analysis.
 
-> Current release: `0.2.2`. The publisher links bundled in this source tree are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
+> Current release: `0.2.3`. Version 0.2.2 is superseded because its immediate React text-node reapplication could overload a dynamic page. The publisher links bundled in this source tree are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
 
 [简体中文](README.zh-CN.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Manual testing](MANUAL_TESTING.md)
 
@@ -24,9 +24,9 @@ FloatRead has no developer server, account, payment, analytics, advertising or t
 
 ## How page translation works
 
-After the user explicitly enables the current origin, FloatRead scans only visible and near-viewport English text. It uses semantic HTML roles rather than X's private `data-testid` values, batches at most 12 bounded segments, and translates new visible content as the user scrolls. It never preloads an infinite timeline.
+After the user explicitly starts translation, FloatRead scans only visible and near-viewport English text. It uses semantic HTML roles rather than X's private `data-testid` values, normally batches at most six segments / 6,000 characters, and translates new visible content as the user scrolls. It never preloads an infinite timeline.
 
-Translations replace visible text-node values and can change wrapping. A restricted observer detects dynamic posts and menus; it does not modify React event handlers or X business state. Stop aborts the active batch and preserves completed translations; Clear restores surviving original text nodes and disables the site's persistent translation preference.
+Translations replace visible text-node values and can change wrapping. A restricted child-list observer detects newly added posts and menus without continuously rewriting React-controlled character data. Stop aborts the Background batch, disables restart for the origin and preserves completed translations; Clear also restores surviving original text nodes. Reloading a page never automatically starts AI translation.
 
 No page AI request is made until the user explicitly enables translation for that origin. Selection-only precision modes remain separate user actions. See the [V2 product boundary](docs/V2_PRODUCT_BOUNDARY.md).
 
@@ -36,7 +36,7 @@ Release screenshots are intentionally not fabricated. Maintainers should capture
 
 ## Install a release build
 
-1. Obtain `FloatRead-v0.2.2.zip` and verify its SHA-256 against the adjacent `.sha256` file.
+1. Obtain `FloatRead-v0.2.3.zip` and verify its SHA-256 against the adjacent `.sha256` file.
 2. Extract the ZIP to a permanent local folder.
 3. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. Open FloatRead settings, add a Provider, grant the exact endpoint origin when prompted, and test the connection.

@@ -139,10 +139,6 @@ export function FloatingCompanion({
   useEffect(() => subscribePageTranslation(setPageTranslation), []);
 
   useEffect(() => {
-    if (bootstrap.pageTranslationEnabled) startPageTranslation();
-  }, [bootstrap.pageTranslationEnabled]);
-
-  useEffect(() => {
     const onResize = (): void => setViewportVersion((version) => version + 1);
     window.addEventListener("resize", onResize, { passive: true });
     return () => window.removeEventListener("resize", onResize);
@@ -211,6 +207,10 @@ export function FloatingCompanion({
   const activateCompanion = (keyboard = false): void => {
     if (!selection) {
       if (isPageActive) {
+        void chrome.runtime.sendMessage({
+          type: "SET_PAGE_TRANSLATION_PREFERENCE",
+          enabled: false,
+        });
         pausePageTranslation();
         showHint(t("pageTranslationPaused", String(pageTranslation.translatedCount)));
       } else {
@@ -321,6 +321,7 @@ export function FloatingCompanion({
   };
 
   const stopPageTranslation = (): void => {
+    void chrome.runtime.sendMessage({ type: "SET_PAGE_TRANSLATION_PREFERENCE", enabled: false });
     pausePageTranslation();
     setActionMenuOpen(false);
     setContextMenuOpen(false);
