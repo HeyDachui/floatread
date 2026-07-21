@@ -1,14 +1,14 @@
-# FloatRead 0.2.1 final verification report
+# FloatRead 0.2.2 final verification report
 
 Report date: 2026-07-21
 
 Audited workspace: `E:\AI-900\FloatRead`
 
-Release version: `0.2.1`
+Release version: `0.2.2`
 
 ## 1. Completion overview
 
-FloatRead 0.2.1 is a runnable, tested and packaged Chrome Manifest V3 extension. Following the project owner's acceptance feedback, the primary flow is now user-enabled progressive page translation: currently visible and near-viewport English text is translated in bounded batches, dynamic menus remain translated while the feature is active, and selection-based precision reading remains available. Patch 0.2.1 fixes multiline and English-dominant mixed-language bodies that could be scanned but rejected during write-back. Provider traffic and credentials stay inside trusted extension contexts; there is no FloatRead backend, account, telemetry, advertising or payment system.
+FloatRead 0.2.2 is a runnable, tested and packaged Chrome Manifest V3 extension. Following the project owner's repeated acceptance feedback, the primary flow is user-enabled progressive page translation: currently visible and near-viewport English text is translated in bounded batches, dynamic menus remain translated while the feature is active, and selection-based precision reading remains available. The two reliability patches cover multiline/mixed-language bodies, React text-node resets, short language fragments, one bounded malformed-response retry and long-form posts up to the 12,000-character batch boundary. Provider traffic and credentials stay inside trusted extension contexts; there is no FloatRead backend, account, telemetry, advertising or payment system.
 
 Automated delivery is complete. Human regression on the live X website and Chrome Web Store publication remain external acceptance work and are not reported as completed.
 
@@ -63,14 +63,17 @@ FloatRead/
 | Final V1 evidence | `7dc163f04b41b1ab54b79dccb4732e90bf75a5be` | record final verification report            |
 | DeepSeek live fix | `1eefc8115fd4bf85e4002139102578e69af6e9c0` | verify DeepSeek V4 live integration         |
 | V2 redesign       | `c69fec0c2822455e5b9e1dadd8404ceb01031898` | implement progressive page translation      |
+| V2.1 reliability  | `44d6861`                                  | translate multiline and mixed page text     |
+| V2.2 reliability  | `85763347a7dece3ae68c54b9aac0eb5387cd1842` | harden dynamic page translation             |
 
 ## 5. Key architecture decisions
 
 - The owner-authorized V2 boundary is recorded separately in `docs/V2_PRODUCT_BOUNDARY.md`; the V1 source specification remains unchanged as historical evidence.
-- The scanner processes only visible and near-viewport eligible text, caps each batch at 12 segments/6,000 characters and does not preload an infinite timeline.
+- The scanner processes only visible and near-viewport eligible text, caps each batch at 12 segments/12,000 characters and does not preload an infinite timeline.
 - Text is classified as content or UI. Exact, validated IDs map Provider results back to text nodes; malformed or partial JSON is rejected.
 - Content cannot choose Provider URLs, headers, models, prompts or credentials. Background reconstructs requests and owns permission, fetch, abort and retry behavior.
-- Cancellation uses both `AbortController` and generation IDs so buffered late completion messages cannot revive stopped work.
+- Cancellation uses both `AbortController` and generation IDs so buffered late completion messages cannot revive stopped work. A malformed or retryable page completion is retried at most once; non-retryable failures are not retried.
+- If the host React application resets the same connected text node to its exact original value, Content reapplies the known local translation immediately without a new Provider request.
 - Production Shadow DOM is closed; the E2E-only build opens it for assertions. Production Mock behavior is compiled out.
 - UI strategy is code-native and operational: the Popup exposes page state and controls, the companion supplies contextual actions, and the larger resizable result panel remains dedicated to precision reading. Existing tokenized skins and restrained state feedback were preserved.
 
@@ -120,7 +123,7 @@ The ignored local key was read into `FLOATREAD_TEST_DEEPSEEK_KEY` only for each 
 | `pnpm format:check`               | Passed.                                                                                        |
 | `pnpm lint`                       | Passed with zero warnings.                                                                     |
 | `pnpm typecheck`                  | Passed.                                                                                        |
-| `pnpm test`                       | Passed: 19 files, 96 tests.                                                                    |
+| `pnpm test`                       | Passed: 19 files, 99 tests.                                                                    |
 | `pnpm test:integration`           | Passed: 2 files, 2 tests.                                                                      |
 | `pnpm test:e2e`                   | Passed: 14 real Chromium extension tests.                                                      |
 | `pnpm build` / `pnpm verify:dist` | Passed: 18 production files; file policy and production flags verified.                        |
@@ -149,16 +152,16 @@ Not executed:
 ## 16–18. Build artifacts
 
 - Production directory: `E:\AI-900\FloatRead\dist`
-- Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.2.1.zip`
-- Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.2.1-files.txt`
-- Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.2.1.sha256`
-- ZIP size: 274,666 bytes
-- SHA-256: `10a7bcd2dcbd94e063bc895d5fd4acd5304c0b50aff0b2db34359e4b2765fc16`
+- Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.2.2.zip`
+- Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.2.2-files.txt`
+- Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.2.2.sha256`
+- ZIP size: 274,833 bytes
+- SHA-256: `0b6931bd0bfc221bd948f22feeb6350dafbebad6bac8a2bc5686a4f88a431b97`
 - ZIP entries: 18; every path and byte matched the verified `dist` tree.
 
 ## 19. Local installation
 
-1. Extract `release/FloatRead-v0.2.1.zip` into a persistent folder.
+1. Extract `release/FloatRead-v0.2.2.zip` into a persistent folder.
 2. Open `chrome://extensions` and enable Developer mode.
 3. Choose **Load unpacked** and select the extracted folder containing `manifest.json`.
 4. Open FloatRead Settings, choose DeepSeek, set `https://api.deepseek.com`, model `deepseek-v4-flash`, and enter the key using the preferred storage mode.
@@ -171,8 +174,8 @@ Use `MANUAL_TESTING.md` against the extracted production ZIP. For the reported i
 
 ## 21–22. Known limitations and incomplete work
 
-- Real X behavior still needs the owner's manual run; X can change its DOM and React can replace translated text nodes.
-- Direct page-text replacement is intentionally invasive under the V2 authorization. Clear restores nodes that still exist, but a site framework may destroy/recreate nodes before restoration.
+- Real X behavior still needs the owner's manual run. An attempted automated live-X inspection reached Cloudflare's security-verification page and was not bypassed; the dynamic React reset path was instead verified in real Chromium against a controlled fixture.
+- Direct page-text replacement is intentionally invasive under the V2 authorization. Same-node resets are immediately reapplied; Clear restores nodes that still exist, but a site framework may destroy/recreate nodes before restoration.
 - Translation is progressive around the viewport, not an eager crawl of the entire infinite timeline.
 - One page batch is non-streaming because it must return strict JSON for multiple segment IDs; precision-reading requests still stream.
 - Publisher name, GitHub/support URLs and store assets are provisional.

@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: V2.1 page-translation reliability patch — automated release complete; manual X acceptance pending
+- Current phase: V2.2 dynamic-page reliability patch — automated release complete; manual X acceptance pending
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -24,6 +24,8 @@ This file is the auditable project status source. A phase is only marked complet
 | 6     | Complete | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | 90 unit, 2 integration and 13 real extension E2E tests passed                   |
 | 7     | Complete | `2b4c95624715b0ff2715bb5532a29002bb75f212` | Full quality gate, audit, dist/ZIP verification and secret scans passed         |
 | V2    | Complete | `c69fec0c2822455e5b9e1dadd8404ceb01031898` | 95 unit, 2 integration, 14 Chromium E2E, live DeepSeek batch and package passed |
+| V2.1  | Complete | `44d6861`                                  | 96 unit, 2 integration, 14 Chromium E2E and DeepSeek JSON smoke passed          |
+| V2.2  | Complete | `85763347a7dece3ae68c54b9aac0eb5387cd1842` | 99 unit, 2 integration, 14 Chromium E2E and package passed                      |
 
 ## Phase 0 target
 
@@ -421,3 +423,34 @@ Release evidence:
 Project-loop conclusion: the reported gap was reproduced by a deterministic multiline-text case and the changed test now passes. Live X remains the external acceptance condition; if a specific body still fails, its structural pattern (longer than 6,000 characters, cross-node styling, hidden/collapsed content, or React replacement) should determine the next controlled change.
 
 Knowledge After for V2.1: the project knowledge query again returned `no_relevant_hit`, so nothing external was adopted. Project-local evidence retained: normalize text for Provider/cache semantics, but retain and compare the exact source string for safe asynchronous DOM write-back. This is not promoted outside the project until another DOM-localization consumer confirms the same failure mode.
+
+## V2.2 dynamic-page reliability round
+
+The owner reported remaining problems after 0.2.1. A live-X automated inspection was attempted in the configured Chrome environment, but `https://x.com/home` returned Cloudflare's security-verification page; it was not bypassed. Chrome's internal extensions page could not be programmatically claimed, so the owner's actually loaded extension version could not be independently read. The repository investigation therefore targeted remaining deterministic dynamic-page failure paths.
+
+Implemented and verified:
+
+- A translated text node reset by the host to its exact original is immediately changed back to the known local translation; no Background/API round trip is needed.
+- Page completion now retries malformed JSON or another retryable Provider failure once and only once. Non-retryable credential/configuration errors stop after one call.
+- Short English fragments inside semantic `lang` containers are eligible, and dialog/listbox/option/tooltip/footer UI roles are classified.
+- The bounded page protocol and long-form scanner now support 12 segments / 12,000 total characters, with matching 16,000-character result/storage limits.
+
+Verification:
+
+| Command                        | Actual result                                                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck` / `pnpm lint` | Passed                                                                                                            |
+| `pnpm test`                    | Passed: 19 files, 99 tests                                                                                        |
+| `pnpm test:integration`        | Passed: 2 files, 2 tests                                                                                          |
+| `pnpm test:e2e`                | Passed: 14 real Chromium extension tests; React-style source reset was restored within the 20 ms assertion window |
+| `pnpm package`                 | Passed: 18-entry production ZIP, release match, secret scans and production Chromium load                         |
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.2.2.zip`
+- Size: 274,833 bytes
+- SHA-256: `0b6931bd0bfc221bd948f22feeb6350dafbebad6bac8a2bc5686a4f88a431b97`
+
+Controlled test correction: the first post-change unit run retained the old oversized-batch fixture (7,200 characters). That value is valid under the new 12,000-character limit, so the assertion failed as expected. The fixture was changed to 13,200 characters; the complete 99-test run then passed.
+
+Project-loop conclusion: all remaining failure modes that can be deterministically reproduced without the owner's authenticated X page now have executable regression coverage. The next useful input is a concrete still-English example after confirming Chrome displays version 0.2.2; its length, DOM fragmentation and whether it is collapsed/hidden will decide the next change. Repeating generic scanner changes without that evidence would reduce attribution and may increase cost.
