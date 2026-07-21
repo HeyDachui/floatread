@@ -487,3 +487,7 @@ Release evidence:
 Controlled test correction: the first safety E2E run timed out waiting for the former **Resume** label after Stop. Stop itself had succeeded and later text stayed English. Version 0.2.3 deliberately disables the origin preference, so the correct next action is **Translate this page**. The assertion was corrected and the complete 15-test suite passed.
 
 Project-loop conclusion: 0.2.2 is rejected. Version 0.2.3 has formal artifacts, controlled functional operation and automated quality evidence. Real production readiness on authenticated X remains unknown until the owner completes the live-site check. Synchronous character-data contention must not be reintroduced.
+
+### Preliminary live-X owner feedback — 2026-07-21
+
+The owner used 0.2.3 for a short period and reported that it was substantially smoother than the previous version. This is positive real-environment evidence for the reduced mutation and batch pressure. It is recorded as preliminary feedback, not a complete manual pass: the owner has not yet explicitly confirmed the Stop-under-load, reload-stays-stopped, long-scroll coverage or no-crash checklist items. No code variable is changed on this evidence alone; the next useful acceptance evidence is those four targeted checks.
