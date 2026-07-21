@@ -461,6 +461,7 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
 
   await popup.getByRole("button", { name: /翻译当前页面|Translate this page/u }).click();
   await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
+  await expect(fixture.locator("#multiline")).toContainText("页面译文：");
 
   await fixture.evaluate(() => {
     const menu = document.createElement("div");
@@ -490,6 +491,9 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
   await popup.getByRole("button", { name: /清除译文|Clear translations/u }).click();
   await expect(fixture.locator("#source")).toHaveText(
     "We reset usage limits for affected Codex users.",
+  );
+  await expect(fixture.locator("#multiline")).toHaveText(
+    "This English release note has multiple spaces and 少量中文内容 for context.",
   );
   await expect(fixture.getByRole("menuitem")).toHaveText("Account settings");
 

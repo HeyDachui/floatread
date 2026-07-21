@@ -15,7 +15,7 @@ export const pageTranslationResponseSchema = z
         z
           .object({
             id: z.string().min(1).max(64),
-            text: z.string().min(1).max(4_000),
+            text: z.string().min(1).max(8_000),
           })
           .strict(),
       )
@@ -40,8 +40,11 @@ export function buildPageTranslationPrompt(segments: PageTranslationPromptSegmen
 4. 只输出 JSON，不要 Markdown 代码块或说明。`,
     userPrompt: JSON.stringify({ sourceSegments: segments }),
     maxOutputTokens: Math.min(
-      2_000,
-      Math.max(256, Math.ceil(segments.reduce((sum, item) => sum + item.text.length, 0) * 1.8)),
+      8_000,
+      Math.max(
+        512,
+        Math.ceil(segments.reduce((sum, item) => sum + item.text.length, 0) * 1.5) + 256,
+      ),
     ),
   };
 }

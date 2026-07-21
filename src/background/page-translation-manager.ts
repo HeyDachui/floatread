@@ -131,6 +131,7 @@ async function runBatch(
           userPrompt: prompt.userPrompt,
           maxOutputTokens: prompt.maxOutputTokens,
           temperature: 0,
+          responseFormat: "json_object",
         },
         profile,
         await getProviderSecret(profile.id, profile.secretStorageMode),

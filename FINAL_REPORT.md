@@ -1,14 +1,14 @@
-# FloatRead 0.2.0 final verification report
+# FloatRead 0.2.1 final verification report
 
 Report date: 2026-07-21
 
 Audited workspace: `E:\AI-900\FloatRead`
 
-Release version: `0.2.0`
+Release version: `0.2.1`
 
 ## 1. Completion overview
 
-FloatRead 0.2.0 is a runnable, tested and packaged Chrome Manifest V3 extension. Following the project owner's acceptance feedback, the primary flow is now user-enabled progressive page translation: currently visible and near-viewport English text is translated in bounded batches, dynamic menus remain translated while the feature is active, and selection-based precision reading remains available. Provider traffic and credentials stay inside trusted extension contexts; there is no FloatRead backend, account, telemetry, advertising or payment system.
+FloatRead 0.2.1 is a runnable, tested and packaged Chrome Manifest V3 extension. Following the project owner's acceptance feedback, the primary flow is now user-enabled progressive page translation: currently visible and near-viewport English text is translated in bounded batches, dynamic menus remain translated while the feature is active, and selection-based precision reading remains available. Patch 0.2.1 fixes multiline and English-dominant mixed-language bodies that could be scanned but rejected during write-back. Provider traffic and credentials stay inside trusted extension contexts; there is no FloatRead backend, account, telemetry, advertising or payment system.
 
 Automated delivery is complete. Human regression on the live X website and Chrome Web Store publication remain external acceptance work and are not reported as completed.
 
@@ -103,10 +103,10 @@ HTTP 400, 401, 403, 404, 408, 429, 5xx, timeout, abort, malformed response and n
 
 ## 8–10. Real API smoke matrix and credential confirmation
 
-| Provider/model                 | Connection     | Ordinary       | Stream         | Cancel         | V2 page batch    |
-| ------------------------------ | -------------- | -------------- | -------------- | -------------- | ---------------- |
-| DeepSeek / `deepseek-v4-flash` | Passed, 976 ms | Passed, 651 ms | Passed, 772 ms | Passed, 104 ms | Passed, 1,144 ms |
-| Other adapters                 | Not executed   | Not executed   | Not executed   | Not executed   | Not executed     |
+| Provider/model                 | Connection     | Ordinary       | Stream         | Cancel         | V2 page batch                       |
+| ------------------------------ | -------------- | -------------- | -------------- | -------------- | ----------------------------------- |
+| DeepSeek / `deepseek-v4-flash` | Passed, 976 ms | Passed, 651 ms | Passed, 772 ms | Passed, 104 ms | Passed again in JSON mode, 1,481 ms |
+| Other adapters                 | Not executed   | Not executed   | Not executed   | Not executed   | Not executed                        |
 
 Base URL: `https://api.deepseek.com`. The page test used two harmless segments and returned the exact two-segment JSON shape. The recorded evidence contains only durations, token/character counts and result types—not response bodies or credentials.
 
@@ -120,7 +120,7 @@ The ignored local key was read into `FLOATREAD_TEST_DEEPSEEK_KEY` only for each 
 | `pnpm format:check`               | Passed.                                                                                        |
 | `pnpm lint`                       | Passed with zero warnings.                                                                     |
 | `pnpm typecheck`                  | Passed.                                                                                        |
-| `pnpm test`                       | Passed: 19 files, 95 tests.                                                                    |
+| `pnpm test`                       | Passed: 19 files, 96 tests.                                                                    |
 | `pnpm test:integration`           | Passed: 2 files, 2 tests.                                                                      |
 | `pnpm test:e2e`                   | Passed: 14 real Chromium extension tests.                                                      |
 | `pnpm build` / `pnpm verify:dist` | Passed: 18 production files; file policy and production flags verified.                        |
@@ -149,16 +149,16 @@ Not executed:
 ## 16–18. Build artifacts
 
 - Production directory: `E:\AI-900\FloatRead\dist`
-- Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.2.0.zip`
-- Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.2.0-files.txt`
-- Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.2.0.sha256`
-- ZIP size: 274,619 bytes
-- SHA-256: `0e10539dfbc5e62d71aa17032716a56e5cb032d94f29492e2b477c280f61df98`
+- Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.2.1.zip`
+- Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.2.1-files.txt`
+- Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.2.1.sha256`
+- ZIP size: 274,666 bytes
+- SHA-256: `10a7bcd2dcbd94e063bc895d5fd4acd5304c0b50aff0b2db34359e4b2765fc16`
 - ZIP entries: 18; every path and byte matched the verified `dist` tree.
 
 ## 19. Local installation
 
-1. Extract `release/FloatRead-v0.2.0.zip` into a persistent folder.
+1. Extract `release/FloatRead-v0.2.1.zip` into a persistent folder.
 2. Open `chrome://extensions` and enable Developer mode.
 3. Choose **Load unpacked** and select the extracted folder containing `manifest.json`.
 4. Open FloatRead Settings, choose DeepSeek, set `https://api.deepseek.com`, model `deepseek-v4-flash`, and enter the key using the preferred storage mode.

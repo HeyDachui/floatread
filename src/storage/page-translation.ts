@@ -7,7 +7,7 @@ const MEMORY_LIMIT = 2_000;
 const memoryRecordSchema = z
   .object({
     key: z.string().regex(/^[a-f0-9]{64}$/u),
-    translation: z.string().min(1).max(4_000),
+    translation: z.string().min(1).max(8_000),
     updatedAt: z.number().int().nonnegative(),
   })
   .strict();

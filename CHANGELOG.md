@@ -2,6 +2,20 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.2.1] - 2026-07-21
+
+### Fixed
+
+- Translate multiline text nodes without dropping valid Provider results during safe write-back.
+- Include English-dominant mixed-language posts instead of rejecting every node containing Han characters.
+- Raise the supported page segment from 1,500 to 6,000 characters and increase the matching JSON output budget.
+- Request JSON-object responses from DeepSeek/OpenAI-compatible page batches for more reliable parsing.
+
+### Verified
+
+- Added regression coverage for multiline whitespace, mixed-language bodies and exact original restoration.
+- Re-ran the minimal DeepSeek page batch with JSON mode: 2 segments, 216 input tokens and 38 output tokens; no response body or credential recorded.
+
 ## [0.2.0] - 2026-07-21
 
 ### Changed

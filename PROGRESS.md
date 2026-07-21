@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: V2 page-translation redesign — automated release complete; manual X acceptance pending
+- Current phase: V2.1 page-translation reliability patch — automated release complete; manual X acceptance pending
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -390,3 +390,34 @@ Controlled failures:
 Project-loop conclusion for this round: the acceptance gap was product-level, not a selection-parser defect. Automated V2 delivery is complete; the remaining external acceptance gap is a human run on live X. Preserve the cancellation generation guard, bounded visible-page batches, Background-only credential boundary and exact-origin permissions in future iterations.
 
 Knowledge After for V2: the earlier query had `no_relevant_hit`, so no external knowledge candidate was adopted or rated. Project-local evidence retained: asynchronous cancellation needs both transport abort and generation-ID result rejection; direct text-node translation must discard detached-node records; and changing a product boundary requires replacing obsolete acceptance assertions instead of treating them as regressions. No external knowledge asset was created because these findings are currently specific to FloatRead's implementation and tests.
+
+## V2.1 missed-body reliability round
+
+Owner acceptance found that some post bodies remained untranslated. The controlled variable for this round was scanner/write-back reliability; per-origin authorization, viewport-bounded scanning, Background-only networking, exact translation memory and the stop/resume/clear contract remained unchanged.
+
+Root causes and changes:
+
+- The scanner normalized internal whitespace before sending a segment, but write-back compared the normalized text with the unnormalized live node. Multiline or repeated-space posts therefore received a valid result that was silently discarded. Each segment now retains the exact original string for equality checking and restoration.
+- The English heuristic rejected a whole node if it contained any Han character. It now accepts English-dominant mixed-language text while leaving Chinese-dominant nodes unchanged.
+- The silent per-node limit increased from 1,500 to 6,000 characters, the response/output bounds increased accordingly, and compatible page batches request JSON-object mode.
+
+Actual verification:
+
+| Command                        | Result                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck` / `pnpm lint` | Passed                                                                                                |
+| `pnpm test`                    | Passed: 19 files, 96 tests                                                                            |
+| `pnpm test:integration`        | Passed: 2 files, 2 tests                                                                              |
+| `pnpm test:e2e`                | Passed: 14 Chromium extension tests, including multiline/mixed-body translation and exact restoration |
+| `pnpm smoke:deepseek-page`     | Passed in 1,481 ms: JSON mode, 2 segments, 216 input / 38 output tokens; no body/key recorded         |
+| `pnpm package`                 | Passed: 18-entry production ZIP and production Chromium load                                          |
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.2.1.zip`
+- Size: 274,666 bytes
+- SHA-256: `10a7bcd2dcbd94e063bc895d5fd4acd5304c0b50aff0b2db34359e4b2765fc16`
+
+Project-loop conclusion: the reported gap was reproduced by a deterministic multiline-text case and the changed test now passes. Live X remains the external acceptance condition; if a specific body still fails, its structural pattern (longer than 6,000 characters, cross-node styling, hidden/collapsed content, or React replacement) should determine the next controlled change.
+
+Knowledge After for V2.1: the project knowledge query again returned `no_relevant_hit`, so nothing external was adopted. Project-local evidence retained: normalize text for Provider/cache semantics, but retain and compare the exact source string for safe asynchronous DOM write-back. This is not promoted outside the project until another DOM-localization consumer confirms the same failure mode.

@@ -56,6 +56,35 @@ describe("visible page scanner", () => {
       { text: "A detailed post about browser translation quality.", kind: "content" },
     ]);
   });
+
+  it("keeps the exact source for safe write-back and accepts English-dominant mixed text", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 400,
+      bottom: 40,
+      width: 400,
+      height: 40,
+      toJSON: () => ({}),
+    });
+    const article = document.createElement("article");
+    const multiline = document.createElement("p");
+    multiline.textContent = "First line\n  second line with extra spaces.";
+    const mixed = document.createElement("p");
+    mixed.textContent = "This English release note includes 少量中文内容 for context.";
+    article.append(multiline, mixed);
+    document.body.append(article);
+
+    const segments = collectVisiblePageSegments(new Set());
+    expect(segments[0]).toMatchObject({
+      text: "First line second line with extra spaces.",
+      original: "First line\n  second line with extra spaces.",
+      kind: "content",
+    });
+    expect(segments[1]?.text).toBe("This English release note includes 少量中文内容 for context.");
+  });
 });
 
 describe("persistent page translation state", () => {

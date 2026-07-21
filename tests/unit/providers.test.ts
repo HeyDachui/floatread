@@ -115,7 +115,7 @@ describe("Provider adapters", () => {
     const fetcher = fetchMock(Response.json({ choices: [{ message: { content: "OK" } }] }));
     vi.stubGlobal("fetch", fetcher);
     await deepSeekAdapter.complete(
-      REQUEST,
+      { ...REQUEST, responseFormat: "json_object" },
       profile("deepseek"),
       "sk-example-not-real",
       new AbortController().signal,
@@ -123,6 +123,7 @@ describe("Provider adapters", () => {
     const [, init] = fetcher.mock.calls[0] ?? [];
     expect(JSON.parse(String(init?.body))).toMatchObject({
       thinking: { type: "disabled" },
+      response_format: { type: "json_object" },
     });
   });
 

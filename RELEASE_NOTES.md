@@ -1,6 +1,6 @@
-# FloatRead 0.2.0 release notes
+# FloatRead 0.2.1 release notes
 
-FloatRead 0.2 changes the primary product flow from selection-only reading to user-enabled progressive page translation.
+FloatRead 0.2 changes the primary product flow from selection-only reading to user-enabled progressive page translation. Patch 0.2.1 fixes missed multiline and English-dominant mixed-language bodies, supports page segments up to 6,000 characters, and requests strict JSON mode from compatible Providers.
 
 ## Highlights
 
@@ -14,7 +14,7 @@ FloatRead 0.2 changes the primary product flow from selection-only reading to us
 
 ## Install
 
-Extract `release/FloatRead-v0.2.0.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
+Extract `release/FloatRead-v0.2.1.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
 
 ## Verification status
 

@@ -39,6 +39,9 @@ function requestInit(
       ],
       max_tokens: request.maxOutputTokens,
       ...(typeof request.temperature === "number" ? { temperature: request.temperature } : {}),
+      ...(request.responseFormat === "json_object"
+        ? { response_format: { type: "json_object" } }
+        : {}),
       ...(kind === "deepseek" ? { thinking: { type: "disabled" } } : {}),
       stream,
     }),

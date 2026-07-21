@@ -5,6 +5,7 @@ export interface PageTextSegment {
   text: string;
   kind: PageSegmentKind;
   node: Text;
+  original: string;
 }
 
 const BLOCKED_SELECTOR =
@@ -20,7 +21,8 @@ function looksEnglish(value: string): boolean {
   if (/^(?:https?:\/\/|www\.|@)[^\s]+$/iu.test(value)) return false;
   const latin = value.match(/[A-Za-z]/gu)?.length ?? 0;
   const han = value.match(/[\u3400-\u9fff]/gu)?.length ?? 0;
-  return latin >= 2 && han === 0 && latin / Math.max(1, value.length) >= 0.18;
+  if (han === 0) return latin >= 2 && latin / Math.max(1, value.length) >= 0.12;
+  return latin >= 8 && latin / (latin + han) >= 0.6;
 }
 
 function isVisible(element: HTMLElement, viewportMargin: number): boolean {
@@ -72,11 +74,12 @@ export function collectVisiblePageSegments(
     if (skipped.has(node)) continue;
     const element = node.parentElement;
     if (!element || element.closest(BLOCKED_SELECTOR)) continue;
-    const text = normalize(node.nodeValue ?? "");
-    if (!looksEnglish(text) || text.length > 1_500 || !isVisible(element, 280)) continue;
+    const original = node.nodeValue ?? "";
+    const text = normalize(original);
+    if (!looksEnglish(text) || text.length > 6_000 || !isVisible(element, 280)) continue;
     const kind = classify(element, text);
     if (!kind || characters + text.length > maxCharacters) continue;
-    segments.push({ id: `seg_${counter++}`, text, kind, node });
+    segments.push({ id: `seg_${counter++}`, text, kind, node, original });
     characters += text.length;
   }
   return segments;

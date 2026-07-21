@@ -223,7 +223,7 @@ export const GENERATION_PORT_NAME = "floatread-generation";
 const pageTranslationSegmentSchema = z
   .object({
     id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/u),
-    text: z.string().min(1).max(1_500),
+    text: z.string().min(1).max(6_000),
     kind: z.enum(["content", "ui"]),
   })
   .strict();
@@ -252,7 +252,7 @@ export const pageTranslationPortOutgoingSchema = z.discriminatedUnion("type", [
       type: z.literal("PAGE_SEGMENT_RESULT"),
       jobId: requestIdSchema,
       id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/u),
-      text: z.string().min(1).max(4_000),
+      text: z.string().min(1).max(8_000),
       cached: z.boolean(),
     })
     .strict(),

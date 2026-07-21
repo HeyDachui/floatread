@@ -67,9 +67,9 @@ function handleEvent(event: PageTranslationPortOutgoing): void {
   if (event.type === "PAGE_SEGMENT_RESULT") {
     const segment = pending.get(event.id);
     if (!segment || !segment.node.isConnected) return;
-    if ((segment.node.nodeValue ?? "").trim() !== segment.text) return;
+    if (segment.node.nodeValue !== segment.original) return;
     segment.node.nodeValue = event.text;
-    applied.set(segment.node, { original: segment.text, translation: event.text });
+    applied.set(segment.node, { original: segment.original, translation: event.text });
     publish({ status: "translating", translatedCount: translatedCount() });
     return;
   }

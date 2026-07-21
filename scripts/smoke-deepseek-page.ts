@@ -44,6 +44,7 @@ try {
       userPrompt: prompt.userPrompt,
       maxOutputTokens: prompt.maxOutputTokens,
       temperature: 0,
+      responseFormat: "json_object",
     },
     profile,
     key,

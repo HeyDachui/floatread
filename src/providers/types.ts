@@ -24,6 +24,7 @@ export interface ProviderRequest {
   userPrompt: string;
   maxOutputTokens: number;
   temperature?: number | undefined;
+  responseFormat?: "json_object" | undefined;
 }
 
 export type ProviderStreamEvent =

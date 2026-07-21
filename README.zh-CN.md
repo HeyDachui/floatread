@@ -2,7 +2,7 @@
 
 FloatRead 是一个开源、无开发者服务器、用户自带 API Key 的 Chromium 页面翻译助手。对当前网站开启一次后，它会随滚动翻译可见英文：推文/正文优先精翻，菜单与控件使用持久本地翻译记忆；选区精读保留为辅助功能。
 
-> 当前版本：`0.2.0`。源码中的发布者链接是集中管理的临时默认值；公开发布前应修改 `src/config/branding.ts`。
+> 当前版本：`0.2.1`。源码中的发布者链接是集中管理的临时默认值；公开发布前应修改 `src/config/branding.ts`。
 
 [English](README.md) · [隐私说明](PRIVACY.md) · [安全政策](SECURITY.md) · [人工测试](MANUAL_TESTING.md)
 
@@ -37,7 +37,7 @@ FloatRead 没有开发者后端、账号、支付、会员、广告、埋点、�
 
 ## 安装发布包
 
-1. 获取 `FloatRead-v0.2.0.zip`，并用相邻 `.sha256` 文件校验摘要。
+1. 获取 `FloatRead-v0.2.1.zip`，并用相邻 `.sha256` 文件校验摘要。
 2. 将 ZIP 解压到固定的本地目录。
 3. 打开 `chrome://extensions`，启用“开发者模式”，点击“加载已解压的扩展程序”，选择包含 `manifest.json` 的解压目录。
 4. 打开设置，添加 Provider；在提示后授予精确的接口域名权限，并测试连接。
