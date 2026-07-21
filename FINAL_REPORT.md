@@ -1,14 +1,16 @@
-# FloatRead 0.2.2 final verification report
+# FloatRead 0.2.3 safety verification report
 
 Report date: 2026-07-21
 
 Audited workspace: `E:\AI-900\FloatRead`
 
-Release version: `0.2.2`
+Release version: `0.2.3`
 
 ## 1. Completion overview
 
-FloatRead 0.2.2 is a runnable, tested and packaged Chrome Manifest V3 extension. Following the project owner's repeated acceptance feedback, the primary flow is user-enabled progressive page translation: currently visible and near-viewport English text is translated in bounded batches, dynamic menus remain translated while the feature is active, and selection-based precision reading remains available. The two reliability patches cover multiline/mixed-language bodies, React text-node resets, short language fragments, one bounded malformed-response retry and long-form posts up to the 12,000-character batch boundary. Provider traffic and credentials stay inside trusted extension contexts; there is no FloatRead backend, account, telemetry, advertising or payment system.
+FloatRead 0.2.3 is the safety replacement for 0.2.2. The owner observed an endless translating state, ineffective Stop and a page crash with 0.2.2. That report invalidated 0.2.2's production-readiness claim. Investigation identified synchronous same-text-node reapplication and high-frequency mutation rescans as a credible contention loop with React. Version 0.2.3 removes synchronous character-data writes, observes only inserted/removed nodes, coalesces scan scheduling, reduces normal batch pressure, aborts independently in Background, persists Stop for the origin and never automatically restarts translation after reload.
+
+The controlled Chromium path is runnable, tested and packaged. Live authenticated-X regression remains the final production-readiness gate and is not reported as passed. Provider traffic and credentials stay inside trusted extension contexts; there is no FloatRead backend, account, telemetry, advertising or payment system.
 
 Automated delivery is complete. Human regression on the live X website and Chrome Web Store publication remain external acceptance work and are not reported as completed.
 
@@ -65,15 +67,16 @@ FloatRead/
 | V2 redesign       | `c69fec0c2822455e5b9e1dadd8404ceb01031898` | implement progressive page translation      |
 | V2.1 reliability  | `44d6861`                                  | translate multiline and mixed page text     |
 | V2.2 reliability  | `85763347a7dece3ae68c54b9aac0eb5387cd1842` | harden dynamic page translation             |
+| V2.3 safety fix   | `83de8991bd8d34b71a6a6205cd79776634dfabee` | stop dynamic page translation safely        |
 
 ## 5. Key architecture decisions
 
 - The owner-authorized V2 boundary is recorded separately in `docs/V2_PRODUCT_BOUNDARY.md`; the V1 source specification remains unchanged as historical evidence.
-- The scanner processes only visible and near-viewport eligible text, caps each batch at 12 segments/12,000 characters and does not preload an infinite timeline.
+- The scanner processes only visible and near-viewport eligible text. Normal batches are capped at 6 segments/6,000 characters; a single long eligible node may use the 12,000-character protocol ceiling. It does not preload an infinite timeline.
 - Text is classified as content or UI. Exact, validated IDs map Provider results back to text nodes; malformed or partial JSON is rejected.
 - Content cannot choose Provider URLs, headers, models, prompts or credentials. Background reconstructs requests and owns permission, fetch, abort and retry behavior.
-- Cancellation uses both `AbortController` and generation IDs so buffered late completion messages cannot revive stopped work. A malformed or retryable page completion is retried at most once; non-retryable failures are not retried.
-- If the host React application resets the same connected text node to its exact original value, Content reapplies the known local translation immediately without a new Provider request.
+- Cancellation uses `AbortController`, generation IDs and an independent Background abort path so buffered late completion messages cannot revive stopped work. Stop also disables the origin preference, and reload never auto-starts page translation. A malformed or retryable page completion is retried at most once; non-retryable failures are not retried.
+- Dynamic observation is limited to child-list changes. Scan timers coalesce, and FloatRead never synchronously fights the host over character-data mutations. A host reset may remain original until a later safe child-list or viewport rescan.
 - Production Shadow DOM is closed; the E2E-only build opens it for assertions. Production Mock behavior is compiled out.
 - UI strategy is code-native and operational: the Popup exposes page state and controls, the companion supplies contextual actions, and the larger resizable result panel remains dedicated to precision reading. Existing tokenized skins and restrained state feedback were preserved.
 
@@ -117,25 +120,25 @@ The ignored local key was read into `FLOATREAD_TEST_DEEPSEEK_KEY` only for each 
 
 ## 11–13. Executed tests and unexecuted checks
 
-| Command                           | Actual result                                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm audit`                      | Passed; no known vulnerabilities.                                                              |
-| `pnpm format:check`               | Passed.                                                                                        |
-| `pnpm lint`                       | Passed with zero warnings.                                                                     |
-| `pnpm typecheck`                  | Passed.                                                                                        |
-| `pnpm test`                       | Passed: 19 files, 99 tests.                                                                    |
-| `pnpm test:integration`           | Passed: 2 files, 2 tests.                                                                      |
-| `pnpm test:e2e`                   | Passed: 14 real Chromium extension tests.                                                      |
-| `pnpm build` / `pnpm verify:dist` | Passed: 18 production files; file policy and production flags verified.                        |
-| `pnpm package`                    | Passed: rebuild, dist validation, two secret scans, ZIP validation and production Chrome load. |
-| `pnpm test:release-load`          | Passed: MV3 worker and three extension pages loaded in real Chromium.                          |
-| `pnpm smoke:deepseek`             | Passed: connection, ordinary, stream and cancel.                                               |
-| `pnpm smoke:deepseek-page`        | Passed: strict two-segment page batch.                                                         |
-| Two `package:zip` runs            | Passed with identical SHA-256.                                                                 |
+| Command                           | Actual result                                                                                      |
+| --------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `pnpm audit`                      | Passed; no known vulnerabilities.                                                                  |
+| `pnpm format:check`               | Passed.                                                                                            |
+| `pnpm lint`                       | Passed with zero warnings.                                                                         |
+| `pnpm typecheck`                  | Passed.                                                                                            |
+| `pnpm test`                       | Passed: 19 files, 99 tests.                                                                        |
+| `pnpm test:integration`           | Passed: 2 files, 2 tests.                                                                          |
+| `pnpm test:e2e`                   | Passed: 15 real Chromium extension tests, including a 5 ms mutation storm, Stop and reload safety. |
+| `pnpm build` / `pnpm verify:dist` | Passed: 18 production files; file policy and production flags verified.                            |
+| `pnpm package`                    | Passed: rebuild, dist validation, two secret scans, ZIP validation and production Chrome load.     |
+| `pnpm test:release-load`          | Passed: MV3 worker and three extension pages loaded in real Chromium.                              |
+| `pnpm smoke:deepseek`             | Passed: connection, ordinary, stream and cancel.                                                   |
+| `pnpm smoke:deepseek-page`        | Passed: strict two-segment page batch.                                                             |
+| Two `package:zip` runs            | Passed with identical SHA-256.                                                                     |
 
 Not executed:
 
-- The live-X human checklist remains unchecked. The E2E page fixture verifies layout isolation, translation, dynamic menus, stop/resume and restoration, but is not represented as live-X acceptance.
+- The live-X human checklist remains unchecked. The E2E page fixture verifies layout isolation, translation, dynamic menus, mutation-pressure Stop, reload safety and restoration, but is not represented as live-X acceptance.
 - Chrome Web Store upload/review and store screenshots require the publisher account and finalized branding.
 - OpenAI, Anthropic, Gemini, OpenAI Compatible and Ollama were adapter-tested, not live-key-tested.
 
@@ -152,21 +155,22 @@ Not executed:
 ## 16–18. Build artifacts
 
 - Production directory: `E:\AI-900\FloatRead\dist`
-- Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.2.2.zip`
-- Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.2.2-files.txt`
-- Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.2.2.sha256`
-- ZIP size: 274,833 bytes
-- SHA-256: `0b6931bd0bfc221bd948f22feeb6350dafbebad6bac8a2bc5686a4f88a431b97`
+- Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.2.3.zip`
+- Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.2.3-files.txt`
+- Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.2.3.sha256`
+- ZIP size: 274,999 bytes
+- SHA-256: `f665f1de544b44ae9749d615acbf50871c75282099ff7dc17af2734f8160d087`
 - ZIP entries: 18; every path and byte matched the verified `dist` tree.
 
 ## 19. Local installation
 
-1. Extract `release/FloatRead-v0.2.2.zip` into a persistent folder.
-2. Open `chrome://extensions` and enable Developer mode.
-3. Choose **Load unpacked** and select the extracted folder containing `manifest.json`.
-4. Open FloatRead Settings, choose DeepSeek, set `https://api.deepseek.com`, model `deepseek-v4-flash`, and enter the key using the preferred storage mode.
-5. Grant only the displayed exact Provider-origin permission.
-6. Open X, click the companion without selecting text to start page translation; use Popup or the companion menu to stop, resume or clear.
+1. Disable and remove 0.2.2; do not continue running it on X.
+2. Extract `release/FloatRead-v0.2.3.zip` into a persistent folder.
+3. Open `chrome://extensions` and enable Developer mode.
+4. Choose **Load unpacked** and select the extracted folder containing `manifest.json`; confirm Chrome displays version 0.2.3, then hard-refresh X.
+5. Open FloatRead Settings, choose DeepSeek, set `https://api.deepseek.com`, model `deepseek-v4-flash`, and enter the key using the preferred storage mode.
+6. Grant only the displayed exact Provider-origin permission.
+7. Open X and manually start page translation. Stop must abort the active batch and remain stopped after reload; translation starts again only after an explicit user action.
 
 ## 20. Human acceptance
 
@@ -174,14 +178,14 @@ Use `MANUAL_TESTING.md` against the extracted production ZIP. For the reported i
 
 ## 21–22. Known limitations and incomplete work
 
-- Real X behavior still needs the owner's manual run. An attempted automated live-X inspection reached Cloudflare's security-verification page and was not bypassed; the dynamic React reset path was instead verified in real Chromium against a controlled fixture.
-- Direct page-text replacement is intentionally invasive under the V2 authorization. Same-node resets are immediately reapplied; Clear restores nodes that still exist, but a site framework may destroy/recreate nodes before restoration.
+- Real X behavior still needs the owner's manual run. An attempted automated live-X inspection reached Cloudflare's security-verification page and was not bypassed. Controlled Chromium fixtures cover mutation pressure, cancellation and reload safety, but do not establish live-X production readiness.
+- Direct page-text replacement is intentionally invasive under the V2 authorization. FloatRead no longer immediately rewrites same-node host resets; a reset may remain English until a safe child-list or viewport rescan. Clear restores nodes that still exist, but a site framework may destroy/recreate nodes before restoration.
 - Translation is progressive around the viewport, not an eager crawl of the entire infinite timeline.
 - One page batch is non-streaming because it must return strict JSON for multiple segment IDs; precision-reading requests still stream.
 - Publisher name, GitHub/support URLs and store assets are provisional.
 - Firefox/Safari, Chrome Web Store submission and other Providers' real-key smoke tests are not completed.
 
-No V2 core path uses a fixed production demo. Automated coverage is complete for the current scope; the live-site manual checklist is the remaining acceptance gate.
+No V2 core path uses a fixed production demo. Version 0.2.2 is rejected and superseded. Version 0.2.3 passes the controlled functional and quality gates; the live-site manual checklist is the remaining production-readiness gate.
 
 ## 23. Suggested next release
 

@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: V2.2 dynamic-page reliability patch — automated release complete; manual X acceptance pending
+- Current phase: V2.3 dynamic-page safety replacement — automated release complete; manual X acceptance pending
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -26,6 +26,7 @@ This file is the auditable project status source. A phase is only marked complet
 | V2    | Complete | `c69fec0c2822455e5b9e1dadd8404ceb01031898` | 95 unit, 2 integration, 14 Chromium E2E, live DeepSeek batch and package passed |
 | V2.1  | Complete | `44d6861`                                  | 96 unit, 2 integration, 14 Chromium E2E and DeepSeek JSON smoke passed          |
 | V2.2  | Complete | `85763347a7dece3ae68c54b9aac0eb5387cd1842` | 99 unit, 2 integration, 14 Chromium E2E and package passed                      |
+| V2.3  | Complete | `83de8991bd8d34b71a6a6205cd79776634dfabee` | 99 unit, 2 integration, 15 Chromium E2E and safety package passed               |
 
 ## Phase 0 target
 
@@ -454,3 +455,35 @@ Release evidence:
 Controlled test correction: the first post-change unit run retained the old oversized-batch fixture (7,200 characters). That value is valid under the new 12,000-character limit, so the assertion failed as expected. The fixture was changed to 13,200 characters; the complete 99-test run then passed.
 
 Project-loop conclusion: all remaining failure modes that can be deterministically reproduced without the owner's authenticated X page now have executable regression coverage. The next useful input is a concrete still-English example after confirming Chrome displays version 0.2.2; its length, DOM fragmentation and whether it is collapsed/hidden will decide the next change. Repeating generic scanner changes without that evidence would reduce attribution and may increase cost.
+
+## V2.3 crash and unstoppable-loop safety round
+
+The owner reported that 0.2.2 stayed in the translating state, Stop had no effect and the page crashed. This real acceptance result invalidates 0.2.2's production-readiness claim; 0.2.2 is rejected and superseded by 0.2.3.
+
+Root cause and safety changes:
+
+- Immediate character-data reapplication could contend with React in a write/reset loop. It was removed; dynamic observation now watches child-list changes only.
+- Mutation scans now coalesce behind the first scheduled timer instead of continually clearing and rescheduling it.
+- Normal batches are reduced to 6 segments / 6,000 characters; one long eligible node may still use the 12,000-character protocol ceiling.
+- Stop disables the origin preference, Background aborts its active job independently, and Content cancels its local generation. Reload never auto-starts translation.
+
+Verification:
+
+| Command                        | Actual result                                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck` / `pnpm lint` | Passed                                                                                              |
+| `pnpm test`                    | Passed: 19 files, 99 tests                                                                          |
+| `pnpm test:integration`        | Passed: 2 files, 2 tests                                                                            |
+| `pnpm test:e2e`                | Passed: 15 real Chromium extension tests, including a 5 ms mutation storm and two reload assertions |
+| `pnpm format:check`            | Passed                                                                                              |
+| `pnpm package`                 | Passed: 18-entry production ZIP, release match, secret scans and production Chromium load           |
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.2.3.zip`
+- Size: 274,999 bytes
+- SHA-256: `f665f1de544b44ae9749d615acbf50871c75282099ff7dc17af2734f8160d087`
+
+Controlled test correction: the first safety E2E run timed out waiting for the former **Resume** label after Stop. Stop itself had succeeded and later text stayed English. Version 0.2.3 deliberately disables the origin preference, so the correct next action is **Translate this page**. The assertion was corrected and the complete 15-test suite passed.
+
+Project-loop conclusion: 0.2.2 is rejected. Version 0.2.3 has formal artifacts, controlled functional operation and automated quality evidence. Real production readiness on authenticated X remains unknown until the owner completes the live-site check. Synchronous character-data contention must not be reintroduced.
