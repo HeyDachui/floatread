@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { createGenerationClient, type GenerationClient } from "../content/generation-client";
 import { createSelectionManager, type SelectionSnapshot } from "../content/selection-manager";
+import {
+  clearPageTranslation,
+  getPageTranslationState,
+  pausePageTranslation,
+  startPageTranslation,
+  subscribePageTranslation,
+  type PageTranslationState,
+} from "../content/page-translator";
 import { rememberLastResult } from "../content/last-result";
 import type { InitialCompanionAction } from "../content/mount";
 import { createTranslator } from "../i18n/catalog";
@@ -50,6 +58,8 @@ export function FloatingCompanion({
   const [visualFeedback, setVisualFeedback] = useState<"success" | "error" | null>(null);
   const [focusPanelOnOpen, setFocusPanelOnOpen] = useState(false);
   const [communityImageUrl, setCommunityImageUrl] = useState<string | undefined>(undefined);
+  const [pageTranslation, setPageTranslation] =
+    useState<PageTranslationState>(getPageTranslationState());
   const t = useMemo(() => createTranslator(bootstrap.locale), [bootstrap.locale]);
   const modeLabels: Array<{ mode: ReaderMode; label: string; description: string }> = [
     { mode: "natural_zh", label: t("modeNatural"), description: t("modeNaturalDesc") },
@@ -73,9 +83,13 @@ export function FloatingCompanion({
   );
   const visualPoint = dragPoint ?? snappedPoint;
   const isGenerating = readerState.value === "requesting" || readerState.value === "streaming";
-  const visualState = isGenerating
-    ? "thinking"
-    : (visualFeedback ?? (selection ? "ready" : "idle"));
+  const isPageTranslating =
+    pageTranslation.status === "scanning" || pageTranslation.status === "translating";
+  const isPageActive = isPageTranslating || pageTranslation.status === "watching";
+  const visualState =
+    isGenerating || isPageTranslating
+      ? "thinking"
+      : (visualFeedback ?? (selection ? "ready" : "idle"));
   const skinState = visualState as SkinState;
 
   useEffect(() => {
@@ -121,6 +135,12 @@ export function FloatingCompanion({
     manager.captureNow();
     return () => manager.destroy();
   }, []);
+
+  useEffect(() => subscribePageTranslation(setPageTranslation), []);
+
+  useEffect(() => {
+    if (bootstrap.pageTranslationEnabled) startPageTranslation();
+  }, [bootstrap.pageTranslationEnabled]);
 
   useEffect(() => {
     const onResize = (): void => setViewportVersion((version) => version + 1);
@@ -190,7 +210,17 @@ export function FloatingCompanion({
 
   const activateCompanion = (keyboard = false): void => {
     if (!selection) {
-      showHint(t("selectFirst"));
+      if (isPageActive) {
+        pausePageTranslation();
+        showHint(t("pageTranslationPaused", String(pageTranslation.translatedCount)));
+      } else {
+        void chrome.runtime.sendMessage({
+          type: "SET_PAGE_TRANSLATION_PREFERENCE",
+          enabled: true,
+        });
+        startPageTranslation();
+        showHint(t("pageTranslationStarting"));
+      }
       return;
     }
     setContextMenuOpen(false);
@@ -282,6 +312,27 @@ export function FloatingCompanion({
     void chrome.runtime.sendMessage({ type: "UPDATE_COMPANION_POSITION", position: reset });
   };
 
+  const beginPageTranslation = (): void => {
+    void chrome.runtime.sendMessage({ type: "SET_PAGE_TRANSLATION_PREFERENCE", enabled: true });
+    startPageTranslation();
+    setActionMenuOpen(false);
+    setContextMenuOpen(false);
+    showHint(t("pageTranslationStarting"));
+  };
+
+  const stopPageTranslation = (): void => {
+    pausePageTranslation();
+    setActionMenuOpen(false);
+    setContextMenuOpen(false);
+    showHint(t("pageTranslationPaused", String(pageTranslation.translatedCount)));
+  };
+
+  const removePageTranslations = (): void => {
+    void chrome.runtime.sendMessage({ type: "SET_PAGE_TRANSLATION_PREFERENCE", enabled: false });
+    clearPageTranslation();
+    setContextMenuOpen(false);
+  };
+
   const sideClass = position.edge === "left" ? "fr-side-left" : "fr-side-right";
 
   return (
@@ -326,6 +377,15 @@ export function FloatingCompanion({
           aria-label={t("actionsLabel")}
         >
           <div className="fr-menu-kicker">{t("actionsQuestion")}</div>
+          <button
+            className="fr-mode-button fr-page-translate-button"
+            type="button"
+            role="menuitem"
+            onClick={isPageActive ? stopPageTranslation : beginPageTranslation}
+          >
+            <span>{t(isPageActive ? "pausePageTranslation" : "translatePage")}</span>
+            <small>{t("translatePageDesc")}</small>
+          </button>
           {modeLabels.map((item) => (
             <button
               key={item.mode}
@@ -343,6 +403,18 @@ export function FloatingCompanion({
 
       {contextMenuOpen ? (
         <div className="fr-context-menu" role="menu" aria-label={t("companionMenu")}>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={isPageActive ? stopPageTranslation : beginPageTranslation}
+          >
+            {t(isPageActive ? "pausePageTranslation" : "resumePageTranslation")}
+          </button>
+          {pageTranslation.translatedCount > 0 ? (
+            <button type="button" role="menuitem" onClick={removePageTranslations}>
+              {t("clearPageTranslation")}
+            </button>
+          ) : null}
           <button type="button" role="menuitem" onClick={hideCompanion}>
             {t("hidePage")}
           </button>
@@ -378,7 +450,7 @@ export function FloatingCompanion({
           bootstrap.appearance.motionEnabled ? bootstrap.skin.motions[skinState] : "none"
         }
         type="button"
-        aria-label={selection ? t("companionReady") : t("companionWaiting")}
+        aria-label={selection ? t("companionReady") : t("translatePage")}
         aria-expanded={actionMenuOpen || contextMenuOpen || readerState.value !== "idle"}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -401,7 +473,11 @@ export function FloatingCompanion({
       >
         <CompanionArtwork state={skinState} communityImageUrl={communityImageUrl} />
         <span className="fr-visually-hidden" aria-live="polite">
-          {selection ? t("selectionReady") : t("selectionWaiting")}
+          {selection
+            ? t("selectionReady")
+            : isPageActive
+              ? t("pageTranslationWatching", String(pageTranslation.translatedCount))
+              : t("translatePage")}
         </span>
       </button>
     </div>

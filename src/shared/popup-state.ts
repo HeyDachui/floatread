@@ -8,6 +8,14 @@ export const popupStateSchema = z
     currentOrigin: z.string().max(2_048).nullable(),
     sitePaused: z.boolean(),
     companionVisible: z.boolean(),
+    pageTranslation: z
+      .object({
+        enabled: z.boolean(),
+        active: z.boolean(),
+        status: z.enum(["idle", "scanning", "translating", "watching", "paused", "error"]),
+        translatedCount: z.number().int().nonnegative(),
+      })
+      .strict(),
     provider: z
       .object({
         configured: z.boolean(),

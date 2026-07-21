@@ -10,13 +10,15 @@ FloatRead 是一个不依赖开发者后端的本地浏览器扩展。项目不�
 
 ## Data processed
 
-- Selected text: read only after a user action and sent directly to the user-selected AI Provider when generation is requested.
+- Visible page text: read and sent directly to the selected AI Provider only after the user enables page translation for that origin. Processing is limited to visible/near-visible segments and continues progressively while enabled.
+- Selected text: read only after a separate precision-reading action.
 - Provider response: displayed in FloatRead's isolated panel and optionally cached locally according to settings.
 - Settings and Provider profile: stored locally by Chrome. Profiles contain Base URL/model metadata but not the key itself.
 - API key: stored only in the user-selected session/local mode, or retained temporarily in Service Worker memory for enter-each-time mode.
+- Page translation preference and memory: enabled origins plus bounded hashed translation records are stored locally so repeated menu labels can be reused.
 - Skin packages: validated and stored locally; imports contain no permitted network URL or executable content.
 
-FloatRead does not read browser history, downloads, cookies, unrelated tabs, the full page, the X timeline or unselected page content.
+FloatRead does not read browser history, downloads, cookies or unrelated tabs. It does not preload an infinite X timeline. Once page translation is enabled for an origin, currently visible and near-viewport unselected text is intentionally processed; disabling or clearing that site stops this behavior.
 
 ## API keys
 
@@ -28,11 +30,13 @@ API Key 只保存在用户选择的本地或会话存储中，FloatRead 不会�
 
 ## Third parties
 
-When the user requests generation, selected text and request instructions are sent directly to the configured Provider. Provider handling, retention, billing and jurisdiction are governed by that Provider and the endpoint owner. FloatRead does not insert advertising or promotional text into requests, model output or webpages.
+When page translation is enabled, bounded visible text batches and fixed translation instructions are sent directly to the configured Provider. Selection precision modes send only the chosen text. Provider handling, retention, billing and jurisdiction are governed by that Provider and the endpoint owner. FloatRead does not insert advertising or promotional text into requests, model output or webpages.
 
 ## Local cache and deletion
 
-Cache keys are stable hashes of normalized text, reading mode, Provider kind/origin, model and Prompt version. Cached records contain generated text and metadata, never credentials. Users can set expiry/capacity, clear the cache, remove Provider credentials, delete imported skins or restore defaults from Settings.
+Cache keys are stable hashes of normalized text, reading mode/segment kind, Provider kind/origin, model and Prompt version. Cached records contain generated text and metadata, never credentials. Page UI memory is bounded to 2,000 hashed records. Users can stop/clear page translation, clear the result cache, remove Provider credentials, delete imported skins or restore defaults from Settings.
+
+开启某个网站的页面翻译后，FloatRead 会处理当前可见及接近视口的未选中文字，并随滚动渐进处理新内容；不会预读无限时间线。停止会取消当前批次，清除会恢复仍存在的原文节点并关闭该网站的持续翻译偏好。
 
 ## Permissions and changes
 

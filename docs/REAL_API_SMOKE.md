@@ -21,6 +21,7 @@ This record contains no credential, Authorization header, selected private text 
 | Ordinary generation          | Passed |   651 ms | 24 characters; 317 input / 12 output tokens |
 | Streaming generation         | Passed |   772 ms | Stream completed; 24 characters             |
 | Cancellation                 | Passed |   104 ms | `ABORTED`                                   |
+| V2 page batch                | Passed | 1,144 ms | 2 segments; 196 input / 38 output tokens    |
 
 ## Controlled initial failure and fix
 
@@ -31,3 +32,5 @@ DeepSeek V4 defaults to Thinking mode and counts reasoning plus final-answer tok
 ## Credential handling
 
 The key was never printed, copied into source, saved in a tracked file, put into Chrome settings, or included in test output. Each shell invocation removed all three smoke-test environment variables in a `finally` block. The ignored source file remains local so the project owner can revoke or remove it.
+
+The V2 page-batch smoke used `Account settings` plus the fixed public test sentence. The record stores only segment count and output character lengths (4 and 23), not the returned translations.

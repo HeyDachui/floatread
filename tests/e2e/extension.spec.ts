@@ -26,6 +26,23 @@ async function selectFixtureSource(page: Page): Promise<void> {
   });
 }
 
+function currentExtensionId(): string {
+  const worker = context.serviceWorkers()[0];
+  if (!worker) throw new Error("extension service worker missing");
+  return new URL(worker.url()).host;
+}
+
+async function currentTabId(page: Page): Promise<number> {
+  const worker = context.serviceWorkers()[0];
+  if (!worker) throw new Error("extension service worker missing");
+  await page.bringToFront();
+  return worker.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (typeof tab?.id !== "number") throw new Error("active tab missing");
+    return tab.id;
+  });
+}
+
 test.beforeAll(async () => {
   const fixture = await readFile(fixturePath);
   server = createServer((request, response) => {
@@ -115,16 +132,23 @@ test("selection changes ready state and the companion remains visible after drag
   await page.close();
 });
 
-test("shows a short hint and makes no generation when nothing is selected", async () => {
+test("starts visible-page translation when the companion is used without a selection", async () => {
   const page = await context.newPage();
   await page.goto(fixtureUrl);
   const host = page.locator("floatread-root");
   await host.waitFor({ state: "attached" });
-  await host.locator("button.fr-companion").click();
+  const companion = host.locator("button.fr-companion");
+  await companion.click();
   await expect(host.getByRole("status")).toHaveText(
-    /先选中一段需要理解的文字。|Select some text to understand first\./u,
+    /正在翻译可见页面|Translating the visible page/u,
   );
+  await expect(page.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
   await expect(host.locator(".fr-result-panel")).toHaveCount(0);
+  await companion.click({ button: "right" });
+  await host.getByRole("menuitem", { name: /清除页面译文|Clear page translations/u }).click();
+  await expect(page.locator("#source")).toHaveText(
+    "We reset usage limits for affected Codex users.",
+  );
   await page.close();
 });
 
@@ -227,6 +251,11 @@ test("supports keyboard-first mode selection and reduced-motion rendering", asyn
   await expect(companion).toHaveAttribute("aria-label", readyLabel);
   await companion.focus();
   await page.keyboard.press("Enter");
+  const pageTranslationItem = host.getByRole("menuitem", {
+    name: /翻译当前页面|Translate this page/u,
+  });
+  await expect(pageTranslationItem).toBeFocused();
+  await page.keyboard.press("Tab");
   const firstMode = host.getByRole("menuitem", { name: naturalMode });
   await expect(firstMode).toBeFocused();
   await page.keyboard.press("Enter");
@@ -419,4 +448,51 @@ test("previews and applies a built-in skin to an open page without reloading it"
   await expect(host.locator("img.fr-community-art")).toBeAttached();
   await optionsPage.close();
   await fixturePage.close();
+});
+
+test("translates visible page text, follows dynamic menus, stops, resumes, and restores", async () => {
+  const fixture = await context.newPage();
+  await fixture.goto(fixtureUrl);
+  const tabId = await currentTabId(fixture);
+  const popup = await context.newPage();
+  await popup.goto(
+    `chrome-extension://${currentExtensionId()}/src/popup/index.html?targetTabId=${tabId}`,
+  );
+
+  await popup.getByRole("button", { name: /翻译当前页面|Translate this page/u }).click();
+  await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
+
+  await fixture.evaluate(() => {
+    const menu = document.createElement("div");
+    menu.setAttribute("role", "menu");
+    const item = document.createElement("button");
+    item.setAttribute("role", "menuitem");
+    item.textContent = "Account settings";
+    menu.append(item);
+    document.body.append(menu);
+  });
+  await expect(fixture.getByRole("menuitem")).toHaveText("账户设置");
+
+  await popup.getByRole("button", { name: /停止|Stop/u }).click();
+  await fixture.evaluate(() => {
+    const paragraph = document.createElement("p");
+    paragraph.id = "after-stop";
+    paragraph.textContent = "This text appeared after page translation stopped.";
+    document.body.append(paragraph);
+  });
+  await fixture.waitForTimeout(500);
+  await expect(fixture.locator("#after-stop")).toHaveText(
+    "This text appeared after page translation stopped.",
+  );
+
+  await popup.getByRole("button", { name: /继续|Resume/u }).click();
+  await expect(fixture.locator("#after-stop")).toContainText("页面译文：");
+  await popup.getByRole("button", { name: /清除译文|Clear translations/u }).click();
+  await expect(fixture.locator("#source")).toHaveText(
+    "We reset usage limits for affected Codex users.",
+  );
+  await expect(fixture.getByRole("menuitem")).toHaveText("Account settings");
+
+  await popup.close();
+  await fixture.close();
 });

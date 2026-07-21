@@ -21,7 +21,9 @@ Extension pages (trusted UI)
   └─ Onboarding
 ```
 
-The Content Script may read only the user's current text selection after local selection events and may request generation only after an explicit FloatRead action. It never receives credentials, arbitrary network destinations or request headers.
+The Content Script has two explicit modes. Precision reading captures only the user's current selection. Page translation starts only after a persistent per-origin user action, then scans visible/near-visible English text and observes dynamic DOM changes while active. It never receives credentials, arbitrary network destinations or request headers.
+
+Page segments are classified as `content` or `ui`, bounded to 12 segments / 6,000 characters per batch, and sent through a separately validated Port. Background rebuilds a strict JSON translation prompt, checks a hashed local translation memory, calls the active Provider for misses, validates the exact returned ID set and sends text results back. Content applies results only to still-current text nodes and discards every result from a cancelled or superseded job.
 
 All Provider requests originate in the Background Service Worker. The Background reconstructs prompts and network requests from validated internal settings; page-controlled messages cannot supply URLs, headers, models or executable prompt instructions.
 

@@ -301,12 +301,17 @@
 
 .fr-result-panel {
   position: fixed;
-  top: max(8px, min(var(--fr-companion-y), calc(100vh - min(620px, 68vh) - 8px)));
+  top: max(8px, min(var(--fr-companion-y), calc(100vh - min(720px, 78vh) - 8px)));
   left: calc(var(--fr-companion-x) + var(--fr-companion-size) + 12px);
   display: flex;
   width: min(var(--fr-panel-width), calc(100vw - 16px));
-  max-height: min(620px, 68vh);
+  min-width: min(320px, calc(100vw - 16px));
+  height: min(720px, 78vh);
+  min-height: min(300px, calc(100vh - 16px));
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
   overflow: hidden;
+  resize: both;
   flex-direction: column;
   border: 1px solid var(--fr-border);
   border-radius: var(--fr-panel-radius, var(--fr-radius));
@@ -737,6 +742,8 @@
     right: auto;
     left: 8px;
     width: calc(100vw - 16px);
+    height: min(680px, calc(100vh - 16px));
+    resize: vertical;
     transform: none;
   }
 }

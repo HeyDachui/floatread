@@ -41,7 +41,9 @@ export function PopupApp(): React.JSX.Element {
 
   useEffect(() => {
     void load();
-    // Initial popup load only.
+    const timer = setInterval(() => void load(), 750);
+    return () => clearInterval(timer);
+    // Popup lifetime polling keeps page-translation progress current.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -140,6 +142,66 @@ export function PopupApp(): React.JSX.Element {
                 }
               >
                 {t(state.companionVisible ? "popupHide" : "popupShow")}
+              </button>
+            </div>
+          </section>
+
+          <section className="popup-card translator-card">
+            <div className="popup-row">
+              <div>
+                <span className="row-label">{t("popupPageTranslation")}</span>
+                <strong>
+                  {t(
+                    state.pageTranslation.status === "translating" ||
+                      state.pageTranslation.status === "scanning"
+                      ? "popupTranslationRunning"
+                      : state.pageTranslation.status === "watching"
+                        ? "popupTranslationWatching"
+                        : state.pageTranslation.status === "paused"
+                          ? "popupTranslationPaused"
+                          : state.pageTranslation.status === "error"
+                            ? "popupTranslationError"
+                            : "popupTranslationOff",
+                  )}
+                </strong>
+                <small>
+                  {t("popupTranslatedCount", String(state.pageTranslation.translatedCount))}
+                </small>
+              </div>
+              <span className="translation-pulse" data-active={state.pageTranslation.active} />
+            </div>
+            <div className="popup-actions two-up">
+              <button
+                type="button"
+                className="button primary"
+                disabled={busy || !state.supportedPage || !state.globalEnabled || state.sitePaused}
+                onClick={() =>
+                  void update({
+                    type: "CONTROL_PAGE_TRANSLATION_CURRENT",
+                    action: state.pageTranslation.active ? "pause" : "start",
+                  })
+                }
+              >
+                {t(
+                  state.pageTranslation.active
+                    ? "popupPauseTranslation"
+                    : state.pageTranslation.enabled
+                      ? "popupResumeTranslation"
+                      : "popupStartTranslation",
+                )}
+              </button>
+              <button
+                type="button"
+                className="button subtle"
+                disabled={
+                  busy ||
+                  (!state.pageTranslation.enabled && state.pageTranslation.translatedCount === 0)
+                }
+                onClick={() =>
+                  void update({ type: "CONTROL_PAGE_TRANSLATION_CURRENT", action: "clear" })
+                }
+              >
+                {t("popupClearTranslations")}
               </button>
             </div>
           </section>

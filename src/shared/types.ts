@@ -31,5 +31,6 @@ export interface PublicBootstrap {
   providerConfigured: boolean;
   providerLabel?: string | undefined;
   locale: UiLocale;
+  pageTranslationEnabled: boolean;
 }
 import type { RuntimeSkinDefinition } from "../skins/types";

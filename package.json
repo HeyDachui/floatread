@@ -1,6 +1,6 @@
 {
   "name": "floatread",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Open-source, serverless BYOK reading companion for Chromium browsers.",
   "type": "module",
@@ -25,6 +25,7 @@
     "verify:dist": "tsx scripts/verify-dist.ts",
     "scan:secrets": "tsx scripts/secret-scan.ts",
     "smoke:deepseek": "tsx scripts/smoke-deepseek.ts",
+    "smoke:deepseek-page": "tsx scripts/smoke-deepseek-page.ts",
     "package:zip": "tsx scripts/package-extension.ts",
     "verify:release": "tsx scripts/verify-release.ts",
     "package": "pnpm build && pnpm verify:dist && pnpm scan:secrets && pnpm package:zip && pnpm verify:release && pnpm test:release-load && pnpm scan:secrets",

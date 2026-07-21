@@ -13,6 +13,7 @@ import {
   saveProviderProfile,
 } from "../storage/providers";
 import { deleteProviderSecret, getProviderSecret, saveProviderSecret } from "../storage/secrets";
+import { isPageTranslationEnabled, setPageTranslationEnabled } from "../storage/page-translation";
 import {
   getSettings,
   restoreDefaultSettings,
@@ -53,12 +54,44 @@ async function getPopupState(targetTabId?: number): Promise<unknown> {
   const tab = await getTargetTab(targetTabId);
   const supportedPage = isInjectableUrl(tab?.url);
   let companionVisible = false;
+  let pageTranslationStatus:
+    | {
+        active: boolean;
+        status: "idle" | "scanning" | "translating" | "watching" | "paused" | "error";
+        translatedCount: number;
+      }
+    | undefined;
   if (typeof tab?.id === "number" && supportedPage) {
     try {
       const response = (await chrome.tabs.sendMessage(tab.id, {
         type: "GET_COMPANION_STATUS",
-      })) as { visible?: unknown } | undefined;
+      })) as
+        | {
+            visible?: unknown;
+            pageTranslation?: {
+              active?: unknown;
+              status?: unknown;
+              translatedCount?: unknown;
+            };
+          }
+        | undefined;
       companionVisible = response?.visible === true;
+      const pageState = response?.pageTranslation;
+      if (
+        typeof pageState?.active === "boolean" &&
+        typeof pageState.status === "string" &&
+        ["idle", "scanning", "translating", "watching", "paused", "error"].includes(
+          pageState.status,
+        ) &&
+        typeof pageState.translatedCount === "number"
+      ) {
+        pageTranslationStatus = {
+          active: pageState.active,
+          status: pageState.status as
+            "idle" | "scanning" | "translating" | "watching" | "paused" | "error",
+          translatedCount: pageState.translatedCount,
+        };
+      }
     } catch {
       companionVisible = false;
     }
@@ -67,12 +100,19 @@ async function getPopupState(targetTabId?: number): Promise<unknown> {
     ? await getProviderProfile(settings.activeProviderId)
     : undefined;
   const skin = await getRuntimeSkin(settings.activeSkinId);
+  const pageTranslationEnabled = await isPageTranslationEnabled(tab?.url);
   return {
     globalEnabled: settings.enabled,
     supportedPage,
     currentOrigin: pageOrigin(tab?.url),
     sitePaused: await isSitePaused(tab?.url),
     companionVisible,
+    pageTranslation: {
+      enabled: pageTranslationEnabled,
+      active: pageTranslationStatus?.active ?? false,
+      status: pageTranslationStatus?.status ?? (pageTranslationEnabled ? "paused" : "idle"),
+      translatedCount: pageTranslationStatus?.translatedCount ?? 0,
+    },
     provider: profile
       ? { configured: true, label: profile.displayName, model: profile.model }
       : { configured: false },
@@ -250,6 +290,19 @@ export async function routeTrustedProviderMessage(
       await deleteInstalledSkin(message.skinId);
       await refreshCompanions();
       return { ok: true };
+    }
+    case "CONTROL_PAGE_TRANSLATION_CURRENT": {
+      const tab = await getTargetTab(message.targetTabId);
+      if (!tab || !isInjectableUrl(tab.url)) {
+        return {
+          ok: false,
+          error: { code: "INVALID_MESSAGE", message: "Current page cannot be translated." },
+        };
+      }
+      if (message.action === "start") await setPageTranslationEnabled(tab.url, true);
+      if (message.action === "clear") await setPageTranslationEnabled(tab.url, false);
+      await injectAndSend(tab, { type: "CONTROL_PAGE_TRANSLATION", action: message.action });
+      return { ok: true, data: await getPopupState(message.targetTabId) };
     }
   }
 }

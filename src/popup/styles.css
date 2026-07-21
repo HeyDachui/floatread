@@ -173,6 +173,28 @@ body {
   box-shadow: 0 0 0 5px rgba(66, 188, 124, 0.12);
 }
 
+.translator-card {
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--popup-accent) 8%, white), transparent 72%),
+    rgba(255, 255, 255, 0.96);
+}
+
+.translation-pulse {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--popup-accent) 36%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--popup-accent) 10%, transparent);
+}
+
+.translation-pulse[data-active="true"] {
+  border-width: 7px;
+  border-color: color-mix(in srgb, var(--popup-accent) 22%, transparent);
+  background: var(--popup-accent);
+}
+
 .popup-actions {
   display: grid;
   gap: 8px;
@@ -253,6 +275,16 @@ body {
   .popup-card {
     border-color: #303a4b;
     background: rgba(25, 30, 40, 0.96);
+  }
+
+  .translator-card {
+    background:
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--popup-accent) 12%, transparent),
+        transparent 72%
+      ),
+      rgba(25, 30, 40, 0.96);
   }
 
   .popup-master strong,

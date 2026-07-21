@@ -20,6 +20,7 @@ export const contentToBackgroundSchema = z.discriminatedUnion("type", [
     })
     .strict(),
   z.object({ type: z.literal("GET_ACTIVE_SKIN_ASSET"), state: skinStateSchema }).strict(),
+  z.object({ type: z.literal("SET_PAGE_TRANSLATION_PREFERENCE"), enabled: z.boolean() }).strict(),
 ]);
 
 export type ContentToBackgroundMessage = z.infer<typeof contentToBackgroundSchema>;
@@ -93,6 +94,13 @@ export const trustedToBackgroundSchema = z.discriminatedUnion("type", [
   z
     .object({ type: z.literal("DELETE_INSTALLED_SKIN"), skinId: z.string().min(1).max(64) })
     .strict(),
+  z
+    .object({
+      type: z.literal("CONTROL_PAGE_TRANSLATION_CURRENT"),
+      action: z.enum(["start", "pause", "clear"]),
+      targetTabId: z.number().int().positive().optional(),
+    })
+    .strict(),
 ]);
 
 export type TrustedToBackgroundMessage = z.infer<typeof trustedToBackgroundSchema>;
@@ -118,6 +126,12 @@ export const backgroundToContentSchema = z.discriminatedUnion("type", [
     })
     .strict(),
   z.object({ type: z.literal("COPY_LAST_RESULT") }).strict(),
+  z
+    .object({
+      type: z.literal("CONTROL_PAGE_TRANSLATION"),
+      action: z.enum(["start", "pause", "clear"]),
+    })
+    .strict(),
 ]);
 
 export type BackgroundToContentMessage = z.infer<typeof backgroundToContentSchema>;
@@ -205,3 +219,53 @@ export const generationPortOutgoingSchema = z.discriminatedUnion("type", [
 ]);
 
 export const GENERATION_PORT_NAME = "floatread-generation";
+
+const pageTranslationSegmentSchema = z
+  .object({
+    id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/u),
+    text: z.string().min(1).max(1_500),
+    kind: z.enum(["content", "ui"]),
+  })
+  .strict();
+
+export const pageTranslationPortIncomingSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("PAGE_TRANSLATE_BATCH"),
+      jobId: requestIdSchema,
+      segments: z.array(pageTranslationSegmentSchema).min(1).max(12),
+    })
+    .strict()
+    .superRefine((value, context) => {
+      const total = value.segments.reduce((sum, segment) => sum + segment.text.length, 0);
+      if (total > 6_000) context.addIssue({ code: "custom", message: "Batch is too large." });
+    }),
+  z.object({ type: z.literal("PAGE_TRANSLATE_CANCEL"), jobId: requestIdSchema }).strict(),
+]);
+
+export type PageTranslationPortIncoming = z.infer<typeof pageTranslationPortIncomingSchema>;
+
+export const pageTranslationPortOutgoingSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("PAGE_BATCH_START"), jobId: requestIdSchema }).strict(),
+  z
+    .object({
+      type: z.literal("PAGE_SEGMENT_RESULT"),
+      jobId: requestIdSchema,
+      id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/u),
+      text: z.string().min(1).max(4_000),
+      cached: z.boolean(),
+    })
+    .strict(),
+  z.object({ type: z.literal("PAGE_BATCH_DONE"), jobId: requestIdSchema }).strict(),
+  z.object({ type: z.literal("PAGE_BATCH_CANCELLED"), jobId: requestIdSchema }).strict(),
+  z
+    .object({
+      type: z.literal("PAGE_BATCH_ERROR"),
+      jobId: requestIdSchema,
+      error: publicErrorSchema,
+    })
+    .strict(),
+]);
+
+export type PageTranslationPortOutgoing = z.infer<typeof pageTranslationPortOutgoingSchema>;
+export const PAGE_TRANSLATION_PORT_NAME = "floatread-page-translation";

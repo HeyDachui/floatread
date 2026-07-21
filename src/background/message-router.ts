@@ -6,6 +6,7 @@ import {
 import { getSkinStateAsset } from "../skins/storage";
 import { isSitePaused } from "../storage/site-pauses";
 import { getPublicBootstrap, getSettings, updateCompanionPosition } from "../storage/settings";
+import { isPageTranslationEnabled, setPageTranslationEnabled } from "../storage/page-translation";
 import { routeTrustedProviderMessage } from "./provider-controller";
 
 async function routeMessage(
@@ -32,6 +33,7 @@ async function routeMessage(
       const effectiveBootstrap = {
         ...bootstrap,
         enabled: bootstrap.enabled && !(await isSitePaused(sender.tab?.url ?? sender.url)),
+        pageTranslationEnabled: await isPageTranslationEnabled(sender.tab?.url ?? sender.url),
       };
       return {
         ok: true,
@@ -61,6 +63,9 @@ async function routeMessage(
       }
       return { ok: true, data: { dataUrl: `data:${asset.mime};base64,${btoa(binary)}` } };
     }
+    case "SET_PAGE_TRANSLATION_PREFERENCE":
+      await setPageTranslationEnabled(sender.tab?.url ?? sender.url, parsed.data.enabled);
+      return { ok: true };
   }
 }
 

@@ -14,6 +14,7 @@ function installChrome(): { sendMessage: ReturnType<typeof vi.fn> } {
     currentOrigin: "https://example.com",
     sitePaused: false,
     companionVisible: true,
+    pageTranslation: { enabled: false, active: false, status: "idle", translatedCount: 0 },
     provider: { configured: false },
     skin: { id: native.id, name: native.name, panel: native.panel },
   };

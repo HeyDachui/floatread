@@ -1,6 +1,6 @@
 # Provider architecture
 
-FloatRead sends model requests directly from its Manifest V3 Background Service Worker to the Provider selected by the user. The Content Script can send only selected text, a reading mode and a request ID. It cannot choose a URL or headers and cannot read credentials.
+FloatRead sends model requests directly from its Manifest V3 Background Service Worker to the Provider selected by the user. The Content Script can submit runtime-validated precision-reading requests or bounded page-translation segments after the user enables translation for that origin. It cannot choose a URL, headers, model, system prompt or credentials, and it cannot read credentials.
 
 ## Adapter matrix
 

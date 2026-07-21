@@ -49,3 +49,11 @@
 - Date: 2026-07-20
 - Decision: automated Chromium E2E is reported as E2E, `MANUAL_TESTING.md` remains an unchecked human checklist, and no real Provider is marked passed without confirmed credential ownership and a live request.
 - Reason: written tests, Mock traffic and unexecuted manual steps are different evidence classes.
+
+## D-009 — V2 page translation supersedes selection-only boundary
+
+- Date: 2026-07-21
+- Decision: after hands-on acceptance, the project owner explicitly authorized full visible-page translation, precision treatment for main content, persistent menu translation and dynamic DOM observation. Selection reading remains secondary.
+- Reason: selection-first behavior duplicated existing tools, Ctrl+A cannot represent an infinite virtualized X timeline, and the actual need is continuous reading rather than isolated excerpts.
+- Controls retained: explicit per-origin enable, visible/near-visible bounds, Background-only Provider calls, strict batch schemas, local translation memory, stop/clear, no developer server or telemetry.
+- Consequence: FloatRead intentionally replaces visible text nodes and can change wrapping; V1 claims that unselected page text is never read and X display is never changed no longer apply.

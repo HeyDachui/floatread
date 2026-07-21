@@ -767,8 +767,8 @@ export function OptionsApp(): React.JSX.Element {
             <input
               aria-label={t("companionSize", String(appearance.companionSize))}
               type="range"
-              min={40}
-              max={96}
+              min={32}
+              max={120}
               value={appearance.companionSize}
               onChange={(event) =>
                 setAppearance({ ...appearance, companionSize: Number(event.target.value) })
@@ -799,7 +799,7 @@ export function OptionsApp(): React.JSX.Element {
               aria-label={t("panelWidth", String(appearance.panelWidth))}
               type="range"
               min={320}
-              max={520}
+              max={760}
               value={appearance.panelWidth}
               onChange={(event) =>
                 setAppearance({ ...appearance, panelWidth: Number(event.target.value) })

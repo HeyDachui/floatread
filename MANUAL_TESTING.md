@@ -10,19 +10,24 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - Production ZIP SHA-256:
 - Test Provider/model (no key):
 
-## X isolation and user action
+## X page translation and user action
 
 - [ ] On X Home, exactly one `floatread-root` exists and the companion is visible.
-- [ ] No button or result is inserted into any post.
-- [ ] Post heights, font, color, spacing, layout and scrolling remain unchanged.
-- [ ] No FloatRead global stylesheet is attached to the host document.
-- [ ] With no user action, DevTools shows no AI Provider request.
-- [ ] With no selection, companion/context menu/shortcut sends no page content.
-- [ ] Select English text and click the companion; only the selected text is used.
-- [ ] Disabling/pausing/removing FloatRead completely removes its host node.
+- [ ] Before page translation is enabled, DevTools shows no AI Provider request and no host text changes.
+- [ ] Clicking the companion with no selection enables translation for the current origin and translates visible text.
+- [ ] Visible tweet/article text is translated naturally; navigation/menu/button text is concise.
+- [ ] Infinite timeline content outside the visible/near-visible window is not preloaded.
+- [ ] Scrolling progressively translates newly visible posts.
+- [ ] Opening a dynamic menu translates its text; reopening the same menu uses local translation memory.
+- [ ] Stop immediately prevents new translations and late results cannot restart processing.
+- [ ] Resume processes text that appeared while stopped.
+- [ ] Clear restores surviving original text nodes and disables the site's translation preference.
+- [ ] No FloatRead global stylesheet is attached to the host document; companion UI remains in its Shadow DOM.
+- [ ] Select English text and choose a precision mode; only the selection is used for that precision request.
 
 ## Reading workflow
 
+- [ ] Page batches contain at most 12 segments / 6,000 characters and malformed JSON is reported.
 - [ ] Natural Chinese produces faithful natural Chinese without invented information.
 - [ ] Key Points covers meaning, relevance and omissions; inference is labeled.
 - [ ] Explain Terms stays grounded in current text.
@@ -40,7 +45,8 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] The companion snaps to left and right edges and restores its position after reload.
 - [ ] It cannot remain outside the visible viewport.
 - [ ] Resizing the window and changing page zoom corrects its coordinates.
-- [ ] Size and opacity settings update without page reload.
+- [ ] Companion size adjusts across 32–120px without leaving the viewport.
+- [ ] Result width adjusts up to 760px and the panel can be resized in both dimensions.
 - [ ] Clicking outside collapses the result panel.
 - [ ] The panel avoids all viewport edges; long text scrolls internally.
 - [ ] Keyboard Enter/Space opens actions, focus enters the menu, Escape closes, and controls have visible focus.
@@ -52,6 +58,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Default-mode shortcut runs only for a valid current selection.
 - [ ] Toggle shortcut shows/removes the companion.
 - [ ] Popup shows actual Provider/model/skin/page state.
+- [ ] Popup shows live page-translation status/count and Start/Stop/Resume/Clear all work.
 - [ ] Global pause immediately removes all open companions and resume restores allowed pages.
 - [ ] Current-site pause uses only the origin and does not affect another site.
 - [ ] Current-page hide/show works without changing site/global state.
@@ -82,7 +89,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.1.0.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.2.0.zip`, not `dist-e2e`.
 - [ ] `manifest.json` is MV3, version matches, CSP is local-only and permissions match `docs/PERMISSIONS.md`.
 - [ ] ZIP inventory contains no tests, source maps, `.env`, `.secrets`, logs, `node_modules` or unrelated screenshots.
 - [ ] `pnpm scan:secrets` and `pnpm verify:release` pass after packaging.

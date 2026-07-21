@@ -68,6 +68,19 @@ describe("reader state machine", () => {
     expect(state).toMatchObject({ value: "cancelled", output: "partial" });
   });
 
+  it("never revives a cancelled request when buffered stream events arrive late", () => {
+    let state = readerReducer(INITIAL_READER_STATE, {
+      type: "START",
+      requestId: REQUEST_ID,
+      mode: "natural_zh",
+      originalText: "source",
+    });
+    state = readerReducer(state, { type: "CANCEL", requestId: REQUEST_ID });
+    state = readerReducer(state, { type: "STREAM_DELTA", requestId: REQUEST_ID, text: "late" });
+    state = readerReducer(state, { type: "STREAM_DONE", requestId: REQUEST_ID });
+    expect(state).toMatchObject({ value: "cancelled", output: "" });
+  });
+
   it("exposes a structured public error", () => {
     const error = publicError("RATE_LIMITED", "请求过多。", true);
     const state = readerReducer(started(), {

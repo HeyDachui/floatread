@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: Phase 7 and authorized DeepSeek smoke — complete
+- Current phase: V2 page-translation redesign — implementation and automated verification in progress
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -36,7 +36,7 @@ This file is the auditable project status source. A phase is only marked complet
 - All project mutations are confined to this independent repository root.
 - The nested repository avoids mixing FloatRead commits with unrelated parent-workspace material.
 - The local API credential stays under ignored `.secrets/`; it is not read before the real-provider checkpoint.
-- Version follows the specification: `0.1.0`.
+- V1 followed the specification at `0.1.0`; the owner-authorized page-translation redesign advances the release to `0.2.0`.
 - License follows the specification: MIT.
 - Brand links use centralized replaceable defaults until the publisher supplies final identities.
 - Production Shadow DOM is compiled as `closed`; E2E builds may compile it as `open`.
@@ -340,3 +340,38 @@ The user confirmed `deepseek-v4-flash` on 2026-07-21. With the default `https://
 | Cancellation        | Passed in 104 ms with `ABORTED`                               |
 
 The first pre-fix connection returned `INVALID_RESPONSE` in 808 ms and did not proceed to other requests. Full details and credential-handling evidence are in `docs/REAL_API_SMOKE.md`. No other Provider used a real credential.
+
+## V2 page-translation redesign
+
+Owner acceptance on 2026-07-21 replaced the selection-only primary flow. The new object boundary is recorded in `docs/V2_PRODUCT_BOUNDARY.md`; BYOK, Background-only networking, credential isolation, no backend and no telemetry remain unchanged.
+
+Implemented so far:
+
+- No-selection companion click and Popup controls start user-authorized per-origin page translation.
+- Visible/near-visible semantic text scanner with `content` versus `ui` classification; no private X `data-testid` dependency.
+- Bounded batches (12 segments / 6,000 characters), strict JSON response parsing and exact ID-set validation.
+- Background-only Provider request, exact host permission and persistent 2,000-record hashed translation memory.
+- Restricted MutationObserver plus scroll/resize progression while active; no infinite timeline preloading.
+- Stop/Resume/Clear state machine with generation IDs that discard every late result after cancellation.
+- Precision-reading cancellation reducer now ignores buffered delta/done events after `CANCEL`.
+- Companion size range expanded to 32–120px; result panel setting expanded to 760px and direct two-dimensional resize.
+- Popup live progress and current-origin translation preference.
+
+Verification at this checkpoint:
+
+| Command                           | Actual result                                                           |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| `pnpm typecheck`                  | Passed                                                                  |
+| `pnpm lint`                       | Passed with zero warnings                                               |
+| `pnpm test`                       | Passed: 19 files, 95 tests                                              |
+| `pnpm test:integration`           | Passed: 2 files, 2 tests                                                |
+| `pnpm exec playwright test`       | Passed: 14 real Chromium extension tests                                |
+| `pnpm build` + `pnpm verify:dist` | Passed: 18 production files; production Mock removed                    |
+| `pnpm smoke:deepseek-page`        | Passed: strict two-segment JSON batch in 1,144 ms; no body/key recorded |
+
+Controlled failures:
+
+- The first page-scanner unit test exposed an empty JSDOM opacity string being coerced to zero; visibility now excludes opacity only when the computed value is explicitly present and zero.
+- Two old E2E assertions encoded the superseded product boundary (no-selection click should show a selection hint; first keyboard item should be Natural Chinese). They were updated to assert the new page-translation primary path and still verify keyboard access to precision modes.
+
+Project-loop conclusion for this round: the acceptance gap was product-level, not a selection-parser defect. The next release is only complete after docs, production package and manual X verification are updated. The human X regression remains intentionally unchecked.

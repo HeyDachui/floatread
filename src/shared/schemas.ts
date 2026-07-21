@@ -22,9 +22,9 @@ export const cachePolicySchema = z
 
 export const appearanceOverridesSchema = z
   .object({
-    companionSize: z.number().min(40).max(96),
+    companionSize: z.number().min(32).max(120),
     companionOpacity: z.number().min(0.35).max(1),
-    panelWidth: z.number().min(320).max(520),
+    panelWidth: z.number().min(320).max(760),
     panelOpacity: z.number().min(0.72).max(1),
     fontScale: z.number().min(0.85).max(1.25),
     cornerRadius: z.number().min(8).max(24),
@@ -46,5 +46,6 @@ export const publicBootstrapSchema = z
     providerConfigured: z.boolean(),
     providerLabel: z.string().min(1).optional(),
     locale: uiLocaleSchema,
+    pageTranslationEnabled: z.boolean(),
   })
   .strict();

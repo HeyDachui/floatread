@@ -3,6 +3,7 @@ import {
   contentToBackgroundSchema,
   generationPortIncomingSchema,
   generationPortOutgoingSchema,
+  pageTranslationPortIncomingSchema,
 } from "../../src/shared/messages";
 
 describe("content message protocol", () => {
@@ -21,6 +22,36 @@ describe("content message protocol", () => {
         type: "UPDATE_COMPANION_POSITION",
         position: { edge: "left", yRatio: 2 },
         apiKey: "must-not-cross-the-boundary",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("page translation port protocol", () => {
+  it("accepts bounded typed segments and rejects credentials or oversized batches", () => {
+    expect(
+      pageTranslationPortIncomingSchema.safeParse({
+        type: "PAGE_TRANSLATE_BATCH",
+        jobId: "page-job-123456",
+        segments: [{ id: "seg_0", text: "Home", kind: "ui" }],
+      }).success,
+    ).toBe(true);
+    expect(
+      pageTranslationPortIncomingSchema.safeParse({
+        type: "PAGE_TRANSLATE_BATCH",
+        jobId: "page-job-123456",
+        segments: [{ id: "seg_0", text: "Home", kind: "ui", apiKey: "forbidden" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      pageTranslationPortIncomingSchema.safeParse({
+        type: "PAGE_TRANSLATE_BATCH",
+        jobId: "page-job-123456",
+        segments: Array.from({ length: 12 }, (_, index) => ({
+          id: `seg_${index}`,
+          text: "x".repeat(600),
+          kind: "content",
+        })),
       }).success,
     ).toBe(false);
   });

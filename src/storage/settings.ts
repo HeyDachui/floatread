@@ -168,5 +168,6 @@ export async function getPublicBootstrap(): Promise<PublicBootstrap> {
     companionPosition: settings.companionPosition,
     providerConfigured: settings.activeProviderId !== null,
     locale,
+    pageTranslationEnabled: false,
   };
 }

@@ -1,8 +1,8 @@
 # FloatRead
 
-FloatRead is an open-source, serverless, bring-your-own-key reading companion for Chromium browsers. Select English text, invoke the floating companion, and receive concise Chinese help without changing the host page's content or layout.
+FloatRead is an open-source, serverless, bring-your-own-key page translator for Chromium browsers. Enable it once for a site to translate visible English content as you scroll; main posts receive precision translation, while menus and controls reuse persistent local translation memory. Selection reading remains available for deeper analysis.
 
-> Current release: `0.1.0`. The publisher links bundled in this source tree are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
+> Current release: `0.2.0`. The publisher links bundled in this source tree are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
 
 [简体中文](README.zh-CN.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Manual testing](MANUAL_TESTING.md)
 
@@ -11,6 +11,9 @@ FloatRead is an open-source, serverless, bring-your-own-key reading companion fo
 - Natural Chinese: faithful, natural translation without invented information.
 - Key points: what the text says, why it matters, what it omits, and clearly labeled inference.
 - Explain terms: plain-Chinese explanations grounded in the selected text.
+- One-click visible-page translation with progressive processing as the user scrolls.
+- Precision translation for article/post content and concise translation for navigation, menus and buttons.
+- Persistent, bounded local translation memory so repeated UI labels do not call the model again.
 - Floating companion with drag, edge snap, viewport correction, sizing, opacity and six built-in skins.
 - Streaming output, cancel, retry, copy, original-text view and bounded local cache.
 - Popup controls, per-site/global pause, context menu, keyboard shortcuts and onboarding.
@@ -19,11 +22,13 @@ FloatRead is an open-source, serverless, bring-your-own-key reading companion fo
 
 FloatRead has no developer server, account, payment, analytics, advertising or telemetry system. Provider requests go directly from the extension's Background Service Worker to the endpoint the user configures.
 
-## It does not rebuild X
+## How page translation works
 
-FloatRead never inserts buttons or results into posts, changes post height, scans the timeline, depends on X's internal selectors, or injects global page CSS. A page receives one fixed-position `floatread-root`; all FloatRead UI lives in its closed Shadow DOM. Pausing or hiding FloatRead removes that host completely.
+After the user explicitly enables the current origin, FloatRead scans only visible and near-viewport English text. It uses semantic HTML roles rather than X's private `data-testid` values, batches at most 12 bounded segments, and translates new visible content as the user scrolls. It never preloads an infinite timeline.
 
-No AI request is made until the user explicitly acts on a current text selection. Unselected page content is not collected.
+Translations replace visible text-node values and can change wrapping. A restricted observer detects dynamic posts and menus; it does not modify React event handlers or X business state. Stop aborts the active batch and preserves completed translations; Clear restores surviving original text nodes and disables the site's persistent translation preference.
+
+No page AI request is made until the user explicitly enables translation for that origin. Selection-only precision modes remain separate user actions. See the [V2 product boundary](docs/V2_PRODUCT_BOUNDARY.md).
 
 ## Screenshots
 
@@ -31,7 +36,7 @@ Release screenshots are intentionally not fabricated. Maintainers should capture
 
 ## Install a release build
 
-1. Obtain `FloatRead-v0.1.0.zip` and verify its SHA-256 against the adjacent `.sha256` file.
+1. Obtain `FloatRead-v0.2.0.zip` and verify its SHA-256 against the adjacent `.sha256` file.
 2. Extract the ZIP to a permanent local folder.
 3. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. Open FloatRead settings, add a Provider, grant the exact endpoint origin when prompted, and test the connection.
@@ -71,21 +76,21 @@ See [Provider configuration](docs/PROVIDERS.md) for protocols, defaults and Olla
 
 ## Permissions
 
-| Permission                                 | Why it exists                                                                                  |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `storage`                                  | Local settings, site pauses, cache, skin metadata/assets and user-selected credential storage. |
-| `contextMenus`                             | User-triggered selection actions for the three reading modes.                                  |
-| `activeTab`                                | Temporary access to the current non-X page after an explicit toolbar/shortcut action.          |
-| `scripting`                                | Mount or remove the single companion host after that user gesture.                             |
-| `https://x.com/*`, `https://twitter.com/*` | Show the companion on X without relying on internal post selectors.                            |
-| Optional HTTPS origins                     | Direct requests to the Provider origin selected by the user; requested only when configured.   |
-| Optional localhost origins                 | Local Ollama or a local proxy controlled by the user.                                          |
+| Permission                                 | Why it exists                                                                                |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `storage`                                  | Settings, site/page-translation preferences, caches, skins and selected credential storage.  |
+| `contextMenus`                             | User-triggered selection actions for the three reading modes.                                |
+| `activeTab`                                | Temporary access to the current non-X page after an explicit toolbar/shortcut action.        |
+| `scripting`                                | Mount or remove the single companion host after that user gesture.                           |
+| `https://x.com/*`, `https://twitter.com/*` | User-enabled progressive translation of visible X text without private post selectors.       |
+| Optional HTTPS origins                     | Direct requests to the Provider origin selected by the user; requested only when configured. |
+| Optional localhost origins                 | Local Ollama or a local proxy controlled by the user.                                        |
 
 FloatRead does not request history, cookies, downloads, broad tab access, webRequest or permanent `<all_urls>`. See the [full permission rationale](docs/PERMISSIONS.md).
 
 ## Privacy and security
 
-Selected text and model output may be sent to the Provider chosen by the user under that Provider's terms. FloatRead has no developer-operated receiving server and collects no analytics. Model output is rendered as text, external JSON is schema-validated, skin packages cannot contain executable content, and production artifacts are scanned for secrets and remote code.
+Visible page text is sent only after page translation is enabled for that origin; selected text is sent only after a precision-reading action. Both go directly to the Provider chosen by the user under that Provider's terms. FloatRead has no developer-operated receiving server and collects no analytics. Model output is rendered as text, external JSON is schema-validated, skin packages cannot contain executable content, and production artifacts are scanned for secrets and remote code.
 
 Read [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md) and the [threat model](docs/THREAT_MODEL.md). Do not report a vulnerability in a public issue.
 

@@ -43,6 +43,15 @@ function isMatchingRequest(
   return state.value !== "idle" && state.requestId === requestId;
 }
 
+function isActiveRequest(
+  state: ReaderState,
+  requestId: string,
+): state is Extract<ReaderState, { value: "requesting" | "streaming" }> {
+  return (
+    (state.value === "requesting" || state.value === "streaming") && state.requestId === requestId
+  );
+}
+
 export function readerReducer(state: ReaderState, event: ReaderEvent): ReaderState {
   switch (event.type) {
     case "START":
@@ -54,7 +63,7 @@ export function readerReducer(state: ReaderState, event: ReaderEvent): ReaderSta
         output: "",
       };
     case "STREAM_START":
-      if (!isMatchingRequest(state, event.requestId)) return state;
+      if (!isActiveRequest(state, event.requestId)) return state;
       return {
         ...state,
         value: "streaming",
@@ -62,7 +71,7 @@ export function readerReducer(state: ReaderState, event: ReaderEvent): ReaderSta
         cached: event.cached,
       };
     case "STREAM_DELTA":
-      if (!isMatchingRequest(state, event.requestId)) return state;
+      if (!isActiveRequest(state, event.requestId)) return state;
       return {
         ...state,
         value: "streaming",
@@ -74,7 +83,7 @@ export function readerReducer(state: ReaderState, event: ReaderEvent): ReaderSta
         cached: "cached" in state ? state.cached : false,
       };
     case "STREAM_DONE":
-      if (!isMatchingRequest(state, event.requestId)) return state;
+      if (!isActiveRequest(state, event.requestId)) return state;
       return {
         ...state,
         value: "success",

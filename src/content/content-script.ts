@@ -2,6 +2,12 @@ import { backgroundToContentSchema } from "../shared/messages";
 import { clearLastResult, copyLastResult } from "./last-result";
 import { isFloatReadMounted, mountFloatRead, unmountFloatRead } from "./mount";
 import { readSelectedText, validateSelectedText } from "./selection-manager";
+import {
+  clearPageTranslation,
+  getPageTranslationState,
+  pausePageTranslation,
+  startPageTranslation,
+} from "./page-translator";
 
 type FloatReadGlobal = typeof globalThis & {
   __FLOATREAD_CONTENT_INSTALLED__?: true;
@@ -20,6 +26,7 @@ if (window.top === window && !floatReadGlobal.__FLOATREAD_CONTENT_INSTALLED__) {
         void mountFloatRead().then(() => sendResponse({ visible: isFloatReadMounted() }));
         return true;
       case "HIDE_COMPANION":
+        clearPageTranslation();
         unmountFloatRead();
         clearLastResult();
         break;
@@ -34,7 +41,17 @@ if (window.top === window && !floatReadGlobal.__FLOATREAD_CONTENT_INSTALLED__) {
         void mountFloatRead().then(() => sendResponse({ visible: isFloatReadMounted() }));
         return true;
       case "GET_COMPANION_STATUS":
-        sendResponse({ visible: isFloatReadMounted() });
+        {
+          const pageState = getPageTranslationState();
+          sendResponse({
+            visible: isFloatReadMounted(),
+            pageTranslation: {
+              active: ["scanning", "translating", "watching"].includes(pageState.status),
+              status: pageState.status,
+              translatedCount: pageState.translatedCount,
+            },
+          });
+        }
         break;
       case "RUN_SELECTION": {
         const validation = validateSelectedText(parsed.data.text ?? readSelectedText());
@@ -61,6 +78,18 @@ if (window.top === window && !floatReadGlobal.__FLOATREAD_CONTENT_INSTALLED__) {
         return true;
       case "COPY_LAST_RESULT":
         void copyLastResult();
+        break;
+      case "CONTROL_PAGE_TRANSLATION":
+        if (parsed.data.action === "start") {
+          void mountFloatRead().then(() => {
+            startPageTranslation();
+            sendResponse({ visible: isFloatReadMounted() });
+          });
+          return true;
+        }
+        if (parsed.data.action === "pause") pausePageTranslation();
+        else clearPageTranslation();
+        sendResponse({ visible: isFloatReadMounted() });
         break;
     }
   });

@@ -2,7 +2,7 @@
 
 ## Protected assets
 
-- User-selected text and generated results.
+- User-selected text, user-authorized visible page text and generated results.
 - Provider credentials and local Provider profiles.
 - Host permissions granted by the user.
 - Integrity of extension code, settings, cache and skin packages.
@@ -20,13 +20,14 @@
 | Community skin → extension UI      | Executable content, traversal, decompression bomb, spoofed images | Strict Zod schema, entry count/size limits, normalized paths, signature and dimension checks, PNG/WebP only |
 | Build/release                      | Secret or remote-code inclusion                                   | deterministic file allowlist checks, source/dist/ZIP secret scan, no source maps in release                 |
 | User action → Provider cost        | Accidental or repeated usage                                      | explicit trigger, length cap, one request per tab, global cap, cancel, cache, no silent retries             |
+| Dynamic page → page translator     | Infinite scanning, stale DOM writes, cancellation race            | per-origin opt-in, viewport bounds, batch caps, semantic filtering, job generations, exact-node checks      |
 
 ## Security invariants
 
 1. Content Script cannot read or receive an API Key.
 2. Background never accepts a network URL, header, model or raw system prompt from Content.
-3. No model request happens without a user action and a valid selection.
+3. No model request happens without a valid selection action or a persistent explicit page-translation enable action for that origin.
 4. Model output and imported metadata never reach an HTML execution sink.
 5. Production packages contain no remote executable code, secrets, tests, environment files or source maps.
 
-These invariants are enforced by unit/integration/E2E tests plus production dist, release inventory and secret scans. DeepSeek has one explicitly authorized real-Provider smoke record; other adapters have protocol tests only. Mock coverage is never treated as live-Provider evidence.
+These invariants are enforced by unit/integration/E2E tests plus production dist, release inventory and secret scans. Page translation adds bounded visible-DOM observation and in-place text replacement under the owner-approved V2 boundary. DeepSeek has explicitly authorized real-Provider ordinary, stream, cancel and strict page-batch smoke records; other adapters have protocol tests only.
