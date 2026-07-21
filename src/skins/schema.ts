@@ -78,10 +78,23 @@ export const runtimeSkinSchema = z
     id: z.string().min(1).max(64),
     name: z.string().min(1).max(80),
     source: z.enum(["builtin", "community"]),
-    variant: z.enum(["native", "lens", "glass-orb", "pixel-bot", "ink", "terminal", "community"]),
+    variant: z.enum([
+      "pet",
+      "native",
+      "lens",
+      "glass-orb",
+      "pixel-bot",
+      "ink",
+      "terminal",
+      "community",
+    ]),
     motions: z.record(skinStateSchema, motionPresetSchema),
     panel: skinManifestV1Schema.shape.panel,
     availableAssets: z.array(skinStateSchema).max(5),
+    builtinAssetPath: z
+      .string()
+      .regex(/^pets\/[a-z0-9-_]+\/[a-z0-9-_]+\.webp$/u)
+      .optional(),
   })
   .strict();
 

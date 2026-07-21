@@ -27,7 +27,7 @@ describe("settings migrations", () => {
         unknownLegacyField: "ignored",
       }),
     ).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       enabled: false,
       defaultMode: "key_points",
       cache: DEFAULT_SETTINGS.cache,

@@ -81,7 +81,7 @@ export async function getRuntimeSkin(id: string): Promise<RuntimeSkinDefinition>
   const builtin = getBuiltinSkin(id);
   if (builtin) return builtin;
   const installed = (await listInstalledSkins()).find((skin) => skin.manifest.id === id);
-  return installed ? toRuntimeSkin(installed) : (getBuiltinSkin("native") as RuntimeSkinDefinition);
+  return installed ? toRuntimeSkin(installed) : (getBuiltinSkin("mochi") as RuntimeSkinDefinition);
 }
 
 export async function installSkinPackage(pkg: ValidatedSkinPackage): Promise<void> {

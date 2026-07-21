@@ -121,6 +121,219 @@
   margin: 20px 0 0 250px;
 }
 
+.provider-simple-card,
+.language-card,
+.behavior-card,
+.skin-card,
+.usage-history-card,
+.cache-card,
+.about-card {
+  margin: 20px 0 0;
+}
+
+.provider-simple-card .card-heading p,
+.language-card .card-heading p,
+.usage-history-card .card-heading p {
+  max-width: 680px;
+  margin: 6px 0 0;
+  color: #68778d;
+  line-height: 1.55;
+}
+
+.advanced-settings {
+  padding: 12px 14px;
+  border: 1px solid #dfe5ef;
+  border-radius: 12px;
+  background: #f7f9fc;
+}
+
+.advanced-settings summary {
+  color: #53627a;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.advanced-grid,
+.language-builder {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.language-builder fieldset {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.language-builder legend,
+.target-language > span {
+  margin-bottom: 8px;
+  color: #53627a;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.language-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 8px;
+}
+
+.language-row select,
+.target-language select {
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid #d6deea;
+  border-radius: 11px;
+  background: white;
+  color: #1f2e46;
+  font: inherit;
+}
+
+.target-language {
+  display: grid;
+  align-content: start;
+}
+
+.language-add,
+.language-remove {
+  min-height: 42px;
+  border: 1px solid color-mix(in srgb, var(--option-accent) 35%, #d6deea);
+  border-radius: 11px;
+  background: var(--option-accent-soft);
+  color: var(--option-accent);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.pet-creator {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.pet-drop-zone {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  min-height: 180px;
+  padding: 22px;
+  border: 1px dashed color-mix(in srgb, var(--option-accent) 45%, #d6deea);
+  border-radius: 16px;
+  background: linear-gradient(145deg, var(--option-accent-soft), #fff 72%);
+}
+
+.pet-drop-zone p {
+  max-width: 420px;
+  color: #68778d;
+  line-height: 1.55;
+}
+
+.pet-preview-editor {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid #dfe5ef;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.pet-preview-field {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    linear-gradient(45deg, #e8edf4 25%, transparent 25%) 0 0 / 20px 20px,
+    linear-gradient(-45deg, #e8edf4 25%, transparent 25%) 0 10px / 20px 20px,
+    linear-gradient(45deg, transparent 75%, #e8edf4 75%) 10px -10px / 20px 20px,
+    linear-gradient(-45deg, transparent 75%, #e8edf4 75%) -10px 0 / 20px 20px,
+    white;
+}
+
+.pet-preview-field img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
+
+.pet-editor-controls {
+  display: grid;
+  align-content: center;
+  gap: 14px;
+}
+
+.pet-editor-controls label {
+  display: grid;
+  gap: 7px;
+  color: #53627a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.usage-history {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.usage-session-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(300px, 1.5fr);
+  gap: 10px 20px;
+  padding: 15px 16px;
+  border: 1px solid #e2e7ef;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.usage-session-row > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.usage-session-row span,
+.usage-session-row small,
+.empty-state {
+  color: #718096;
+  font-size: 11px;
+}
+
+.usage-session-row dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.usage-session-row dl div {
+  display: grid;
+  gap: 2px;
+}
+
+.usage-session-row dt {
+  color: #718096;
+  font-size: 10px;
+}
+
+.usage-session-row dd {
+  margin: 0;
+  color: #1c2a40;
+  font-weight: 800;
+}
+
+.usage-session-row small {
+  grid-column: 1 / -1;
+}
+
 .behavior-controls {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

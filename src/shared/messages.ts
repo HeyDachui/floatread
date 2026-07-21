@@ -4,6 +4,7 @@ import { providerProfileSchema } from "../providers/schemas";
 import { appearanceOverridesSchema, cachePolicySchema } from "./schemas";
 import { skinStateSchema } from "../skins/schema";
 import { companionPositionSchema, readerModeSchema } from "./schemas";
+import { translationLanguageSchema, translationPreferencesSchema } from "../translation/languages";
 
 export const contentToBackgroundSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("GET_PUBLIC_BOOTSTRAP") }).strict(),
@@ -47,6 +48,8 @@ export const trustedToBackgroundSchema = z.discriminatedUnion("type", [
     .object({ type: z.literal("TEST_PROVIDER_CONNECTION"), profileId: z.string().min(8).max(64) })
     .strict(),
   z.object({ type: z.literal("GET_CACHE_STATUS") }).strict(),
+  z.object({ type: z.literal("GET_USAGE_SESSIONS") }).strict(),
+  z.object({ type: z.literal("CLEAR_USAGE_SESSIONS") }).strict(),
   z
     .object({
       type: z.literal("GET_POPUP_STATE"),
@@ -54,6 +57,13 @@ export const trustedToBackgroundSchema = z.discriminatedUnion("type", [
     })
     .strict(),
   z.object({ type: z.literal("GET_READING_PREFERENCES") }).strict(),
+  z.object({ type: z.literal("GET_TRANSLATION_PREFERENCES") }).strict(),
+  z
+    .object({
+      type: z.literal("UPDATE_TRANSLATION_PREFERENCES"),
+      translation: translationPreferencesSchema,
+    })
+    .strict(),
   z
     .object({
       type: z.literal("UPDATE_READING_PREFERENCES"),
@@ -225,14 +235,30 @@ const pageTranslationSegmentSchema = z
     id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/u),
     text: z.string().min(1).max(12_000),
     kind: z.enum(["content", "ui"]),
+    sourceLanguage: translationLanguageSchema,
   })
   .strict();
 
 export const pageTranslationPortIncomingSchema = z.discriminatedUnion("type", [
   z
     .object({
+      type: z.literal("PAGE_TRANSLATION_SESSION_START"),
+      sessionId: z.string().uuid(),
+      translation: translationPreferencesSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("PAGE_TRANSLATION_SESSION_END"),
+      sessionId: z.string().uuid(),
+      reason: z.enum(["stopped", "cleared", "error", "page_closed"]),
+    })
+    .strict(),
+  z
+    .object({
       type: z.literal("PAGE_TRANSLATE_BATCH"),
       jobId: requestIdSchema,
+      sessionId: z.string().uuid(),
       segments: z.array(pageTranslationSegmentSchema).min(1).max(12),
     })
     .strict()
@@ -240,7 +266,13 @@ export const pageTranslationPortIncomingSchema = z.discriminatedUnion("type", [
       const total = value.segments.reduce((sum, segment) => sum + segment.text.length, 0);
       if (total > 12_000) context.addIssue({ code: "custom", message: "Batch is too large." });
     }),
-  z.object({ type: z.literal("PAGE_TRANSLATE_CANCEL"), jobId: requestIdSchema }).strict(),
+  z
+    .object({
+      type: z.literal("PAGE_TRANSLATE_CANCEL"),
+      jobId: requestIdSchema,
+      sessionId: z.string().uuid(),
+    })
+    .strict(),
 ]);
 
 export type PageTranslationPortIncoming = z.infer<typeof pageTranslationPortIncomingSchema>;

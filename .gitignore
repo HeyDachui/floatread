@@ -6,6 +6,8 @@ release/
 playwright-report/
 test-results/
 coverage/
+tmp/
+output/playwright/
 
 # Local-only secrets and environment files
 .secrets/

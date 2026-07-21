@@ -114,6 +114,30 @@
   pointer-events: none;
 }
 
+.fr-companion-layer:is([data-skin="pet"], [data-skin="community"]) .fr-companion {
+  border: 0;
+  border-radius: 22%;
+  background: transparent;
+  box-shadow: none;
+}
+
+.fr-companion-layer:is([data-skin="pet"], [data-skin="community"])
+  .fr-companion:is(:hover, :focus-visible) {
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--fr-accent) 20%, transparent);
+}
+
+.fr-companion-layer:is([data-skin="pet"], [data-skin="community"]) .fr-community-art {
+  border-radius: 0;
+  filter: drop-shadow(0 8px 9px rgba(0, 0, 0, 0.2));
+  transition: transform 110ms ease;
+}
+
+.fr-companion-layer:is([data-skin="pet"], [data-skin="community"])
+  .fr-companion:active
+  .fr-community-art {
+  transform: translateY(3%) scale(0.9, 1.08);
+}
+
 .fr-companion-layer[data-skin="native"] .fr-companion {
   border: 0;
   background: var(--fr-accent);
@@ -242,23 +266,27 @@
   background: var(--fr-accent);
 }
 
-.fr-companion[data-motion="float"] .fr-artwork {
+.fr-companion[data-motion="breathe"] :is(.fr-artwork, .fr-community-art) {
+  animation: fr-breathe 3.2s ease-in-out infinite;
+}
+
+.fr-companion[data-motion="float"] :is(.fr-artwork, .fr-community-art) {
   animation: fr-float 2.8s ease-in-out infinite;
 }
 
-.fr-companion[data-motion="bounce"] .fr-artwork {
+.fr-companion[data-motion="bounce"] :is(.fr-artwork, .fr-community-art) {
   animation: fr-bounce 600ms ease-out;
 }
 
-.fr-companion[data-motion="shake"] .fr-artwork {
+.fr-companion[data-motion="shake"] :is(.fr-artwork, .fr-community-art) {
   animation: fr-shake 420ms ease-in-out;
 }
 
-.fr-companion[data-motion="pulse"] .fr-artwork {
+.fr-companion[data-motion="pulse"] :is(.fr-artwork, .fr-community-art) {
   animation: fr-pulse 1.7s ease-in-out infinite;
 }
 
-.fr-companion[data-motion="spin"] .fr-artwork {
+.fr-companion[data-motion="spin"] :is(.fr-artwork, .fr-community-art) {
   animation: fr-spin 1.8s linear infinite;
 }
 
@@ -731,8 +759,10 @@
     animation: none;
   }
 
-  .fr-artwork {
+  .fr-artwork,
+  .fr-community-art {
     animation: none !important;
+    transition: none !important;
   }
 }
 

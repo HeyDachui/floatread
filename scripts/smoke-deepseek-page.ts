@@ -26,11 +26,12 @@ const profile: ProviderProfile = {
   updatedAt: 0,
 };
 const segments = [
-  { id: "ui_0", kind: "ui" as const, text: "Account settings" },
+  { id: "ui_0", kind: "ui" as const, text: "Account settings", sourceLanguage: "en" as const },
   {
     id: "content_0",
     kind: "content" as const,
     text: "We reset usage limits for affected Codex users.",
+    sourceLanguage: "en" as const,
   },
 ];
 const prompt = buildPageTranslationPrompt(segments);

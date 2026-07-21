@@ -40,10 +40,11 @@ export interface RuntimeSkinDefinition {
   id: string;
   name: string;
   source: "builtin" | "community";
-  variant: "native" | "lens" | "glass-orb" | "pixel-bot" | "ink" | "terminal" | "community";
+  variant: "pet" | "native" | "lens" | "glass-orb" | "pixel-bot" | "ink" | "terminal" | "community";
   motions: Record<SkinState, MotionPreset>;
   panel: SkinPanelTokens;
   availableAssets: SkinState[];
+  builtinAssetPath?: string | undefined;
 }
 
 export interface InstalledSkin {

@@ -8,12 +8,17 @@ import {
 } from "../shared/schemas";
 import type { AppearanceOverrides, CompanionPosition, PublicBootstrap } from "../shared/types";
 import { getRuntimeSkin } from "../skins/storage";
+import {
+  DEFAULT_TRANSLATION_PREFERENCES,
+  translationPreferencesSchema,
+  type TranslationPreferences,
+} from "../translation/languages";
 
 const SETTINGS_KEY = "appSettings";
 
 export const appSettingsSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     enabled: z.boolean(),
     defaultMode: readerModeSchema,
     clickBehavior: clickBehaviorSchema,
@@ -23,20 +28,21 @@ export const appSettingsSchema = z
     cache: cachePolicySchema,
     companionPosition: companionPositionSchema,
     locale: z.enum(["auto", "zh_CN", "en"]),
+    translation: translationPreferencesSchema,
   })
   .strict();
 
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   enabled: true,
   defaultMode: "natural_zh",
   clickBehavior: "show_actions",
   activeProviderId: null,
-  activeSkinId: "native",
+  activeSkinId: "mochi",
   appearance: {
-    companionSize: 58,
+    companionSize: 76,
     companionOpacity: 0.9,
     panelWidth: 380,
     panelOpacity: 0.96,
@@ -57,7 +63,23 @@ export const DEFAULT_SETTINGS: AppSettings = {
     yRatio: 0.62,
   },
   locale: "auto",
+  translation: DEFAULT_TRANSLATION_PREFERENCES,
 };
+
+const appSettingsV1Schema = z
+  .object({
+    schemaVersion: z.literal(1),
+    enabled: z.boolean(),
+    defaultMode: readerModeSchema,
+    clickBehavior: clickBehaviorSchema,
+    activeProviderId: z.string().min(1).nullable(),
+    activeSkinId: z.string().min(1),
+    appearance: appearanceOverridesSchema,
+    cache: cachePolicySchema,
+    companionPosition: companionPositionSchema,
+    locale: z.enum(["auto", "zh_CN", "en"]),
+  })
+  .strict();
 
 const legacySettingsV0Schema = z
   .object({
@@ -74,6 +96,9 @@ const legacySettingsV0Schema = z
 export function migrateAppSettings(raw: unknown): AppSettings | null {
   const current = appSettingsSchema.safeParse(raw);
   if (current.success) return current.data;
+  const v1 = appSettingsV1Schema.safeParse(raw);
+  if (v1.success)
+    return { ...v1.data, schemaVersion: 2, translation: DEFAULT_TRANSLATION_PREFERENCES };
   const legacy = legacySettingsV0Schema.safeParse(raw);
   if (!legacy.success) return null;
   return {
@@ -119,6 +144,15 @@ export async function updateReadingPreferences(
   const settings = await getSettings();
   const next = appSettingsSchema.parse({ ...settings, ...preferences });
   await chrome.storage.local.set({ [SETTINGS_KEY]: next });
+}
+
+export async function updateTranslationPreferences(
+  translation: TranslationPreferences,
+): Promise<void> {
+  const settings = await getSettings();
+  await chrome.storage.local.set({
+    [SETTINGS_KEY]: appSettingsSchema.parse({ ...settings, translation }),
+  });
 }
 
 export async function restoreDefaultSettings(): Promise<void> {
@@ -169,5 +203,6 @@ export async function getPublicBootstrap(): Promise<PublicBootstrap> {
     providerConfigured: settings.activeProviderId !== null,
     locale,
     pageTranslationEnabled: false,
+    translation: settings.translation,
   };
 }

@@ -11,7 +11,7 @@ import {
 } from "../content/page-translator";
 import { rememberLastResult } from "../content/last-result";
 import type { InitialCompanionAction } from "../content/mount";
-import { createTranslator } from "../i18n/catalog";
+import { createTranslator, type MessageKey } from "../i18n/catalog";
 import {
   clampPoint,
   pointToPosition,
@@ -22,6 +22,7 @@ import type { CompanionPosition, PublicBootstrap, ReaderMode } from "../shared/t
 import type { BackgroundResponse } from "../shared/messages";
 import { skinAssetResponseSchema } from "../skins/schema";
 import type { SkinState } from "../skins/types";
+import { TRANSLATION_LANGUAGE_KEYS } from "../translation/languages";
 import { CompanionArtwork } from "./CompanionArtwork";
 import { isDragGesture } from "./drag-controller";
 import { ResultPanel } from "./ResultPanel";
@@ -57,7 +58,7 @@ export function FloatingCompanion({
   const [readerState, dispatch] = useReducer(readerReducer, INITIAL_READER_STATE);
   const [visualFeedback, setVisualFeedback] = useState<"success" | "error" | null>(null);
   const [focusPanelOnOpen, setFocusPanelOnOpen] = useState(false);
-  const [communityImageUrl, setCommunityImageUrl] = useState<string | undefined>(undefined);
+  const [skinImageUrl, setSkinImageUrl] = useState<string | undefined>(undefined);
   const [pageTranslation, setPageTranslation] =
     useState<PageTranslationState>(getPageTranslationState());
   const t = useMemo(() => createTranslator(bootstrap.locale), [bootstrap.locale]);
@@ -93,8 +94,8 @@ export function FloatingCompanion({
   const skinState = visualState as SkinState;
 
   useEffect(() => {
-    if (bootstrap.skin.source !== "community") {
-      setCommunityImageUrl(undefined);
+    if (bootstrap.skin.availableAssets.length === 0) {
+      setSkinImageUrl(undefined);
       return;
     }
     let current = true;
@@ -102,15 +103,15 @@ export function FloatingCompanion({
       .sendMessage({ type: "GET_ACTIVE_SKIN_ASSET", state: skinState })
       .then((response: BackgroundResponse) => {
         const parsed = response.ok ? skinAssetResponseSchema.safeParse(response.data) : null;
-        if (current) setCommunityImageUrl(parsed?.success ? parsed.data.dataUrl : undefined);
+        if (current) setSkinImageUrl(parsed?.success ? parsed.data.dataUrl : undefined);
       })
       .catch(() => {
-        if (current) setCommunityImageUrl(undefined);
+        if (current) setSkinImageUrl(undefined);
       });
     return () => {
       current = false;
     };
-  }, [bootstrap.skin.source, skinState]);
+  }, [bootstrap.skin.availableAssets.length, skinState]);
 
   useEffect(() => {
     generationClient.current = createGenerationClient((event) => dispatch(event));
@@ -218,7 +219,7 @@ export function FloatingCompanion({
           type: "SET_PAGE_TRANSLATION_PREFERENCE",
           enabled: true,
         });
-        startPageTranslation();
+        startPageTranslation(bootstrap.translation);
         showHint(t("pageTranslationStarting"));
       }
       return;
@@ -314,7 +315,7 @@ export function FloatingCompanion({
 
   const beginPageTranslation = (): void => {
     void chrome.runtime.sendMessage({ type: "SET_PAGE_TRANSLATION_PREFERENCE", enabled: true });
-    startPageTranslation();
+    startPageTranslation(bootstrap.translation);
     setActionMenuOpen(false);
     setContextMenuOpen(false);
     showHint(t("pageTranslationStarting"));
@@ -378,6 +379,16 @@ export function FloatingCompanion({
           aria-label={t("actionsLabel")}
         >
           <div className="fr-menu-kicker">{t("actionsQuestion")}</div>
+          {(pageTranslation.detectedLanguages?.length ?? 0) > 0 ? (
+            <div className="fr-detected-languages">
+              {t(
+                "detectedLanguages",
+                pageTranslation.detectedLanguages
+                  ?.map((language) => t(TRANSLATION_LANGUAGE_KEYS[language] as MessageKey))
+                  .join("、") ?? "",
+              )}
+            </div>
+          ) : null}
           <button
             className="fr-mode-button fr-page-translate-button"
             type="button"
@@ -472,7 +483,7 @@ export function FloatingCompanion({
           setContextMenuOpen((open) => !open);
         }}
       >
-        <CompanionArtwork state={skinState} communityImageUrl={communityImageUrl} />
+        <CompanionArtwork state={skinState} imageUrl={skinImageUrl} />
         <span className="fr-visually-hidden" aria-live="polite">
           {selection
             ? t("selectionReady")

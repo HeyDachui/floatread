@@ -1,5 +1,5 @@
 import { createServer, type Server } from "node:http";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium, expect, test, type BrowserContext, type Page } from "@playwright/test";
 
@@ -26,24 +26,8 @@ async function selectFixtureSource(page: Page): Promise<void> {
   });
 }
 
-function currentExtensionId(): string {
-  const worker = context.serviceWorkers()[0];
-  if (!worker) throw new Error("extension service worker missing");
-  return new URL(worker.url()).host;
-}
-
-async function currentTabId(page: Page): Promise<number> {
-  const worker = context.serviceWorkers()[0];
-  if (!worker) throw new Error("extension service worker missing");
-  await page.bringToFront();
-  return worker.evaluate(async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (typeof tab?.id !== "number") throw new Error("active tab missing");
-    return tab.id;
-  });
-}
-
 test.beforeAll(async () => {
+  await mkdir(resolve(projectRoot, "output/playwright"), { recursive: true });
   const fixture = await readFile(fixturePath);
   server = createServer((request, response) => {
     if (request.url === "/") {
@@ -103,6 +87,10 @@ test("adds only one isolated host without changing fixture layout", async () => 
   expect(evidence.sourceAttributes).toEqual(evidence.baseline.sourceAttributes);
   expect(evidence.sourceBox).toEqual(evidence.baseline.sourceBox);
   expect(evidence.shadowOpen).toBe(true);
+  await page.screenshot({
+    path: resolve(projectRoot, "output/playwright/default-pet-page.png"),
+    fullPage: true,
+  });
   await page.close();
 });
 
@@ -263,7 +251,7 @@ test("supports keyboard-first mode selection and reduced-motion rendering", asyn
     "我们已重置受影响的 Codex 用户的使用限额。",
   );
   const animationName = await host
-    .locator(".fr-artwork")
+    .locator(".fr-artwork, .fr-community-art")
     .evaluate((element) => getComputedStyle(element).animationName);
   expect(animationName).toBe("none");
   await page.close();
@@ -314,16 +302,25 @@ test("switches the settings interface between English and Simplified Chinese", a
   await page.goto(`chrome-extension://${extensionId}/src/options/index.html`);
   const localeSelect = page.getByLabel(/界面语言|Interface language/u);
   await localeSelect.selectOption("zh_CN");
+  await expect(localeSelect).toHaveValue("zh_CN");
   await expect(page.getByRole("heading", { name: "FloatRead 设置" })).toBeVisible();
   await localeSelect.selectOption("en");
   await expect(page.getByRole("heading", { name: "FloatRead settings" })).toBeVisible();
+  await page.getByRole("button", { name: /添加一种语言|Add a language/u }).click();
+  const sourceLanguages = page.locator(".language-row select");
+  await expect(sourceLanguages).toHaveCount(2);
+  await sourceLanguages.nth(1).selectOption("ja");
+  await page.getByRole("button", { name: /保存翻译语言|Save translation languages/u }).click();
+  await expect(page.getByRole("status")).toContainText(
+    /翻译语言已保存|Translation languages saved/u,
+  );
   await localeSelect.selectOption("auto");
   await page.getByRole("button", { name: /保存阅读设置|Save reading settings/u }).click();
   await expect(page.getByRole("status")).toContainText(/界面语言已保存|interface language saved/u);
   await page.close();
 });
 
-test("uses the Popup to pause, resume, hide, and show the current site", async () => {
+test("uses the simplified Popup to pause and resume the current site", async () => {
   const worker = context.serviceWorkers()[0];
   if (!worker) throw new Error("extension service worker missing");
   const extensionId = new URL(worker.url()).host;
@@ -348,6 +345,10 @@ test("uses the Popup to pause, resume, hide, and show the current site", async (
     `chrome-extension://${extensionId}/src/popup/index.html?targetTabId=${fixtureTabId}`,
   );
   await expect(popupPage.getByText(/此网站可用|Available on this site/u)).toBeVisible();
+  await popupPage.screenshot({
+    path: resolve(projectRoot, "output/playwright/simplified-popup.png"),
+    fullPage: true,
+  });
   const globalSwitch = popupPage.getByRole("checkbox");
   await globalSwitch.uncheck();
   await expect(host).toHaveCount(0);
@@ -356,10 +357,6 @@ test("uses the Popup to pause, resume, hide, and show the current site", async (
   await popupPage.getByRole("button", { name: /暂停此网站|Pause this site/u }).click();
   await expect(host).toHaveCount(0);
   await popupPage.getByRole("button", { name: /恢复此网站|Resume this site/u }).click();
-  await host.waitFor({ state: "attached" });
-  await popupPage.getByRole("button", { name: /在当前页隐藏|Hide on this page/u }).click();
-  await expect(host).toHaveCount(0);
-  await popupPage.getByRole("button", { name: /在当前页显示|Show on this page/u }).click();
   await host.waitFor({ state: "attached" });
   await popupPage.close();
   await fixturePage.close();
@@ -375,7 +372,7 @@ test("saves a session-only Provider without revealing its API key", async () => 
   const keyInput = page.getByLabel("API Key");
   await expect(keyInput).toHaveAttribute("type", "password");
   await keyInput.fill("sk-example-not-a-real-key");
-  await page.getByLabel(/显示名称|Display name/u).fill("Local test profile");
+  await page.getByLabel(/模型名|Model/u).fill("deepseek-test-model");
   await page.getByRole("button", { name: /^(?:保存|Save)$/u }).click();
   await expect(page.getByRole("status")).toContainText(
     /已保存并设为当前 Provider|Saved and set as active/u,
@@ -383,13 +380,14 @@ test("saves a session-only Provider without revealing its API key", async () => 
 
   await page.reload();
   await expect(page.getByLabel("API Key")).toHaveValue("");
-  await expect(page.getByText("Local test profile")).toBeVisible();
+  await expect(page.getByLabel(/模型名|Model/u)).toHaveValue("deepseek-test-model");
 
   await page.getByRole("radio", { name: /持久保存在本机|Persist on this device/u }).check();
   await expect(
     page.getByText(/浏览器调试权限的人仍可能读取|browser debugging access may still read/u),
   ).toBeVisible();
-  await page.getByLabel("Base URL").fill("http://remote.example.com/v1");
+  await page.getByText(/高级设置|Advanced settings/u).click();
+  await page.getByLabel(/服务地址|Service address/u).fill("http://remote.example.com/v1");
   await page.getByRole("button", { name: /^(?:保存|Save)$/u }).click();
   await expect(page.getByRole("status")).toContainText("远程 Provider 必须使用 HTTPS");
   await page.close();
@@ -413,7 +411,11 @@ test("previews and applies a built-in skin to an open page without reloading it"
   await expect(
     optionsPage.getByRole("heading", { name: /皮肤与实时预览|Skins and live preview/u }),
   ).toBeVisible();
-  await expect(optionsPage.locator(".skin-choice")).toHaveCount(6);
+  await optionsPage.screenshot({
+    path: resolve(projectRoot, "output/playwright/settings-and-pet-module.png"),
+    fullPage: true,
+  });
+  await expect(optionsPage.locator(".skin-choice")).toHaveCount(7);
   await optionsPage.getByRole("button", { name: /Terminal/u }).click();
   await expect(optionsPage.locator(".skin-preview-stage")).toHaveAttribute("data-skin", "terminal");
   await optionsPage.getByLabel(/助手大小|Companion size/u).fill("72");
@@ -435,7 +437,7 @@ test("previews and applies a built-in skin to an open page without reloading it"
   expect(download.suggestedFilename()).toBe("terminal.floatread-skin");
   const packagePath = await download.path();
   if (!packagePath) throw new Error("exported skin package path missing");
-  await optionsPage.locator('input[type="file"]').setInputFiles({
+  await optionsPage.locator('input[accept*="application/zip"]').setInputFiles({
     name: "terminal.floatread-skin",
     mimeType: "application/zip",
     buffer: await readFile(packagePath),
@@ -443,23 +445,61 @@ test("previews and applies a built-in skin to an open page without reloading it"
   await expect(optionsPage.getByRole("status")).toContainText(
     /已安全导入并应用 Terminal Export|Safely imported and applied Terminal Export/u,
   );
-  await expect(optionsPage.locator(".skin-choice")).toHaveCount(7);
+  await expect(optionsPage.locator(".skin-choice")).toHaveCount(8);
   await expect(host.locator(".fr-companion-layer")).toHaveAttribute("data-skin", "community");
   await expect(host.locator("img.fr-community-art")).toBeAttached();
   await optionsPage.close();
   await fixturePage.close();
 });
 
+test("turns one local PNG into an animated custom pet", async () => {
+  const worker = context.serviceWorkers()[0];
+  if (!worker) throw new Error("extension service worker missing");
+  const extensionId = new URL(worker.url()).host;
+  const optionsPage = await context.newPage();
+  await optionsPage.goto(`chrome-extension://${extensionId}/src/options/index.html`);
+  const pngDataUrl = await optionsPage.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 96;
+    canvas.height = 96;
+    const context2d = canvas.getContext("2d");
+    if (!context2d) throw new Error("canvas context missing");
+    context2d.fillStyle = "#ffffff";
+    context2d.fillRect(0, 0, 96, 96);
+    context2d.fillStyle = "#2d3440";
+    context2d.beginPath();
+    context2d.arc(48, 52, 28, 0, Math.PI * 2);
+    context2d.fill();
+    context2d.fillStyle = "#f2a65a";
+    context2d.fillRect(32, 18, 12, 24);
+    context2d.fillRect(52, 18, 12, 24);
+    return canvas.toDataURL("image/png");
+  });
+  await optionsPage.locator('input[accept*="image/png"]').setInputFiles({
+    name: "test-pet.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(pngDataUrl.split(",")[1] ?? "", "base64"),
+  });
+  await expect(optionsPage.locator(".pet-preview-editor img")).toBeVisible();
+  await optionsPage.getByLabel(/宠物名称|Pet name/u).fill("测试宠物");
+  await optionsPage.getByRole("button", { name: /使用这个宠物|Use this pet/u }).click();
+  await expect(optionsPage.getByRole("status")).toContainText(
+    /已创建并启用宠物“测试宠物”|Created and enabled “测试宠物”/u,
+  );
+  await expect(optionsPage.getByRole("button", { name: /测试宠物/u })).toBeVisible();
+  await optionsPage.close();
+});
+
 test("translates visible page text, follows dynamic menus, stops, resumes, and restores", async () => {
+  const worker = context.serviceWorkers()[0];
+  if (!worker) throw new Error("extension service worker missing");
   const fixture = await context.newPage();
   await fixture.goto(fixtureUrl);
-  const tabId = await currentTabId(fixture);
-  const popup = await context.newPage();
-  await popup.goto(
-    `chrome-extension://${currentExtensionId()}/src/popup/index.html?targetTabId=${tabId}`,
-  );
+  const host = fixture.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+  const companion = host.locator("button.fr-companion");
 
-  await popup.getByRole("button", { name: /翻译当前页面|Translate this page/u }).click();
+  await companion.click();
   await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
   await expect(fixture.locator("#multiline")).toContainText("页面译文：");
   const hostResetValue = await fixture.evaluate(async () => {
@@ -498,7 +538,18 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
     }, 5);
     setTimeout(() => clearInterval(storm), 1_000);
   });
-  await popup.getByRole("button", { name: /停止|Stop/u }).click();
+  await companion.click();
+  await expect
+    .poll(async () =>
+      worker.evaluate(async () => {
+        const stored = await chrome.storage.local.get("translationUsageSessionsV1");
+        const sessions = stored.translationUsageSessionsV1 as
+          Array<{ endedAt: number | null; endReason: string | null; requests: number }> | undefined;
+        const latest = sessions?.[0];
+        return latest ? { endReason: latest.endReason, hasRequests: latest.requests > 0 } : null;
+      }),
+    )
+    .toEqual({ endReason: "stopped", hasRequests: true });
   await fixture.evaluate(() => {
     const paragraph = document.createElement("p");
     paragraph.id = "after-stop";
@@ -510,9 +561,10 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
     "This text appeared after page translation stopped.",
   );
 
-  await popup.getByRole("button", { name: /翻译当前页面|Translate this page/u }).click();
+  await companion.click();
   await expect(fixture.locator("#after-stop")).toContainText("页面译文：");
-  await popup.getByRole("button", { name: /清除译文|Clear translations/u }).click();
+  await companion.click({ button: "right" });
+  await host.getByRole("menuitem", { name: /清除页面译文|Clear page translations/u }).click();
   await expect(fixture.locator("#source")).toHaveText(
     "We reset usage limits for affected Codex users.",
   );
@@ -521,21 +573,29 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
   );
   await expect(fixture.getByRole("menuitem")).toHaveText("Account settings");
 
-  await popup.close();
   await fixture.close();
 });
 
 test("never auto-restarts page translation after a reload and persists Stop", async () => {
   const fixture = await context.newPage();
   await fixture.goto(fixtureUrl);
-  const tabId = await currentTabId(fixture);
-  const popup = await context.newPage();
-  await popup.goto(
-    `chrome-extension://${currentExtensionId()}/src/popup/index.html?targetTabId=${tabId}`,
+  let host = fixture.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+
+  await host.locator("button.fr-companion").click();
+  await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
+
+  await fixture.reload();
+  host = fixture.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+  await fixture.waitForTimeout(900);
+  await expect(fixture.locator("#source")).toHaveText(
+    "We reset usage limits for affected Codex users.",
   );
 
-  await popup.getByRole("button", { name: /翻译当前页面|Translate this page/u }).click();
+  await host.locator("button.fr-companion").click();
   await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
+  await host.locator("button.fr-companion").click();
 
   await fixture.reload();
   await fixture.locator("floatread-root").waitFor({ state: "attached" });
@@ -544,17 +604,5 @@ test("never auto-restarts page translation after a reload and persists Stop", as
     "We reset usage limits for affected Codex users.",
   );
 
-  await popup.getByRole("button", { name: /继续|Resume/u }).click();
-  await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
-  await popup.getByRole("button", { name: /停止|Stop/u }).click();
-
-  await fixture.reload();
-  await fixture.locator("floatread-root").waitFor({ state: "attached" });
-  await fixture.waitForTimeout(900);
-  await expect(fixture.locator("#source")).toHaveText(
-    "We reset usage limits for affected Codex users.",
-  );
-
-  await popup.close();
   await fixture.close();
 });

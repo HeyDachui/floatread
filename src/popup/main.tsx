@@ -1,6 +1,5 @@
 import { StrictMode, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { BRANDING } from "../config/branding";
 import { createTranslator, resolveUiLocale } from "../i18n/catalog";
 import type { BackgroundResponse } from "../shared/messages";
 import { popupStateSchema, type PopupState } from "../shared/popup-state";
@@ -117,109 +116,58 @@ export function PopupApp(): React.JSX.Element {
                 </strong>
                 {state.currentOrigin ? <small>{state.currentOrigin}</small> : null}
               </div>
-              <span className="status-dot" data-active={state.companionVisible} />
+              <span className="status-dot" data-active={state.supportedPage && !state.sitePaused} />
             </div>
-            <div className="popup-actions two-up">
+            <div className="popup-actions">
               <button
                 type="button"
-                className="button subtle"
-                disabled={busy || !state.supportedPage}
+                className="button primary"
+                disabled={busy || !state.supportedPage || !state.globalEnabled}
                 onClick={() =>
                   void update({ type: "SET_SITE_PAUSED_CURRENT", paused: !state.sitePaused })
                 }
               >
                 {t(state.sitePaused ? "popupResumeSite" : "popupPauseSite")}
               </button>
-              <button
-                type="button"
-                className="button primary"
-                disabled={busy || !state.supportedPage || !state.globalEnabled || state.sitePaused}
-                onClick={() =>
-                  void update({
-                    type: "SET_CURRENT_TAB_COMPANION",
-                    visible: !state.companionVisible,
-                  })
-                }
-              >
-                {t(state.companionVisible ? "popupHide" : "popupShow")}
-              </button>
             </div>
           </section>
 
-          <section className="popup-card translator-card">
-            <div className="popup-row">
-              <div>
-                <span className="row-label">{t("popupPageTranslation")}</span>
-                <strong>
-                  {t(
-                    state.pageTranslation.status === "translating" ||
-                      state.pageTranslation.status === "scanning"
-                      ? "popupTranslationRunning"
-                      : state.pageTranslation.status === "watching"
-                        ? "popupTranslationWatching"
-                        : state.pageTranslation.status === "paused"
-                          ? "popupTranslationPaused"
-                          : state.pageTranslation.status === "error"
-                            ? "popupTranslationError"
-                            : "popupTranslationOff",
-                  )}
-                </strong>
-                <small>
-                  {t("popupTranslatedCount", String(state.pageTranslation.translatedCount))}
-                </small>
+          <section className="popup-card usage-card">
+            <span className="row-label">
+              {t(state.usage?.endedAt === null ? "usageCurrent" : "usageLast")}
+            </span>
+            {state.usage ? (
+              <div className="usage-summary">
+                <div>
+                  <strong>{state.usage.inputTokens.toLocaleString()}</strong>
+                  <span>{t("usageInput")}</span>
+                </div>
+                <div>
+                  <strong>{state.usage.outputTokens.toLocaleString()}</strong>
+                  <span>{t("usageOutput")}</span>
+                </div>
+                <div className="usage-total">
+                  <strong>
+                    {(state.usage.inputTokens + state.usage.outputTokens).toLocaleString()}
+                  </strong>
+                  <span>{t("usageTotal")}</span>
+                </div>
               </div>
-              <span className="translation-pulse" data-active={state.pageTranslation.active} />
-            </div>
-            <div className="popup-actions two-up">
-              <button
-                type="button"
-                className="button primary"
-                disabled={busy || !state.supportedPage || !state.globalEnabled || state.sitePaused}
-                onClick={() =>
-                  void update({
-                    type: "CONTROL_PAGE_TRANSLATION_CURRENT",
-                    action: state.pageTranslation.active ? "pause" : "start",
-                  })
-                }
-              >
-                {t(
-                  state.pageTranslation.active
-                    ? "popupPauseTranslation"
-                    : state.pageTranslation.enabled
-                      ? "popupResumeTranslation"
-                      : "popupStartTranslation",
-                )}
-              </button>
-              <button
-                type="button"
-                className="button subtle"
-                disabled={
-                  busy ||
-                  (!state.pageTranslation.enabled && state.pageTranslation.translatedCount === 0)
-                }
-                onClick={() =>
-                  void update({ type: "CONTROL_PAGE_TRANSLATION_CURRENT", action: "clear" })
-                }
-              >
-                {t("popupClearTranslations")}
-              </button>
-            </div>
+            ) : (
+              <strong>{t("usageEmpty")}</strong>
+            )}
+            {state.usage ? (
+              <small>
+                {t("usageRequests", String(state.usage.requests))} ·{" "}
+                {t("usageCacheHits", String(state.usage.cacheHits))}
+              </small>
+            ) : null}
           </section>
 
-          <section className="popup-card compact">
+          <section className="popup-card compact skin-summary">
             <div className="summary-item">
-              <span>{t("popupProvider")}</span>
-              <strong>{state.provider.label ?? t("popupNotConfigured")}</strong>
-              <small>
-                {state.provider.configured
-                  ? `${state.provider.model ?? ""} · ${t("popupConfigured")}`
-                  : t("popupNotConfigured")}
-              </small>
-            </div>
-            <div className="summary-item">
-              <span>{t("popupSkin")}</span>
+              <span>{t("currentSkinSimple")}</span>
               <strong>{state.skin.name}</strong>
-              <small>{state.skin.id}</small>
             </div>
           </section>
         </>
@@ -234,10 +182,7 @@ export function PopupApp(): React.JSX.Element {
       </div>
       <footer className="popup-footer">
         <button type="button" onClick={() => void chrome.runtime.openOptionsPage()}>
-          {t("popupSettings")}
-        </button>
-        <button type="button" onClick={() => void chrome.tabs.create({ url: BRANDING.githubUrl })}>
-          {t("popupGithub")}
+          {t("openSettingsSimple")}
         </button>
       </footer>
     </main>

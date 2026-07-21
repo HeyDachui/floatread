@@ -33,31 +33,40 @@ describe("page translation port protocol", () => {
       pageTranslationPortIncomingSchema.safeParse({
         type: "PAGE_TRANSLATE_BATCH",
         jobId: "page-job-123456",
-        segments: [{ id: "seg_0", text: "Home", kind: "ui" }],
+        sessionId: "b8cb7e62-092f-4b61-a729-fd85c675eb20",
+        segments: [{ id: "seg_0", text: "Home", kind: "ui", sourceLanguage: "en" }],
       }).success,
     ).toBe(true);
     expect(
       pageTranslationPortIncomingSchema.safeParse({
         type: "PAGE_TRANSLATE_BATCH",
         jobId: "page-job-123456",
-        segments: [{ id: "seg_0", text: "Home", kind: "ui", apiKey: "forbidden" }],
+        sessionId: "b8cb7e62-092f-4b61-a729-fd85c675eb20",
+        segments: [
+          { id: "seg_0", text: "Home", kind: "ui", sourceLanguage: "en", apiKey: "forbidden" },
+        ],
       }).success,
     ).toBe(false);
     expect(
       pageTranslationPortIncomingSchema.safeParse({
         type: "PAGE_TRANSLATE_BATCH",
         jobId: "page-job-123456",
-        segments: [{ id: "seg_0", text: "x".repeat(12_001), kind: "content" }],
+        sessionId: "b8cb7e62-092f-4b61-a729-fd85c675eb20",
+        segments: [
+          { id: "seg_0", text: "x".repeat(12_001), kind: "content", sourceLanguage: "en" },
+        ],
       }).success,
     ).toBe(false);
     expect(
       pageTranslationPortIncomingSchema.safeParse({
         type: "PAGE_TRANSLATE_BATCH",
         jobId: "page-job-123456",
+        sessionId: "b8cb7e62-092f-4b61-a729-fd85c675eb20",
         segments: Array.from({ length: 12 }, (_, index) => ({
           id: `seg_${index}`,
           text: "x".repeat(1_100),
           kind: "content",
+          sourceLanguage: "en",
         })),
       }).success,
     ).toBe(false);

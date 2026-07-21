@@ -27,6 +27,10 @@ function builtin(
   name: string,
   variant: RuntimeSkinDefinition["variant"],
   panel: Partial<SkinPanelTokens>,
+  options: {
+    assetPath?: string;
+    motions?: RuntimeSkinDefinition["motions"];
+  } = {},
 ): RuntimeSkinDefinition {
   return {
     schemaVersion: 1,
@@ -34,13 +38,30 @@ function builtin(
     name,
     source: "builtin",
     variant,
-    motions: DEFAULT_MOTIONS,
+    motions: options.motions ?? DEFAULT_MOTIONS,
     panel: { ...basePanel, ...panel },
-    availableAssets: [],
+    availableAssets: options.assetPath ? ["idle", "ready", "thinking", "success", "error"] : [],
+    ...(options.assetPath ? { builtinAssetPath: options.assetPath } : {}),
   };
 }
 
 export const BUILTIN_SKINS: RuntimeSkinDefinition[] = [
+  builtin(
+    "mochi",
+    "Mochi",
+    "pet",
+    { accent: "#F39A52", background: "#17130FF7", border: "#F5C58A42" },
+    {
+      assetPath: "pets/mochi/mochi.webp",
+      motions: {
+        idle: "breathe",
+        ready: "pulse",
+        thinking: "float",
+        success: "bounce",
+        error: "shake",
+      },
+    },
+  ),
   builtin("native", "Native", "native", { accent: "#4F8CFF" }),
   builtin("lens", "Lens", "lens", { accent: "#FFB44A", background: "#17130FF7" }),
   builtin("glass-orb", "Glass Orb", "glass-orb", {

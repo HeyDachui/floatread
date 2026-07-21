@@ -17,6 +17,7 @@ function installChrome(): { sendMessage: ReturnType<typeof vi.fn> } {
     pageTranslation: { enabled: false, active: false, status: "idle", translatedCount: 0 },
     provider: { configured: false },
     skin: { id: native.id, name: native.name, panel: native.panel },
+    usage: null,
   };
   const sendMessage = vi.fn(async (message: { type: string }) => {
     if (message.type === "LIST_RUNTIME_SKINS") return { ok: true, data: BUILTIN_SKINS };
@@ -24,7 +25,11 @@ function installChrome(): { sendMessage: ReturnType<typeof vi.fn> } {
   });
   vi.stubGlobal("chrome", {
     i18n: { getUILanguage: () => "en-US" },
-    runtime: { sendMessage, openOptionsPage: vi.fn(async () => undefined) },
+    runtime: {
+      sendMessage,
+      openOptionsPage: vi.fn(async () => undefined),
+      getURL: (path: string) => `chrome-extension://test/${path}`,
+    },
     tabs: { create: vi.fn(async () => undefined) },
     storage: { local: { set: vi.fn(async () => undefined) } },
   });

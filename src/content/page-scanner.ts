@@ -1,3 +1,10 @@
+import {
+  DEFAULT_TRANSLATION_PREFERENCES,
+  detectTextLanguage,
+  type TranslationLanguage,
+  type TranslationPreferences,
+} from "../translation/languages";
+
 export type PageSegmentKind = "content" | "ui";
 
 export interface PageTextSegment {
@@ -6,6 +13,12 @@ export interface PageTextSegment {
   kind: PageSegmentKind;
   node: Text;
   original: string;
+  sourceLanguage: TranslationLanguage;
+}
+
+export interface PageScanResult {
+  segments: PageTextSegment[];
+  detectedLanguages: TranslationLanguage[];
 }
 
 const BLOCKED_SELECTOR =
@@ -15,14 +28,6 @@ const UI_SELECTOR =
 
 function normalize(value: string): string {
   return value.normalize("NFC").replace(/\s+/gu, " ").trim();
-}
-
-function looksEnglish(value: string): boolean {
-  if (/^(?:https?:\/\/|www\.|@)[^\s]+$/iu.test(value)) return false;
-  const latin = value.match(/[A-Za-z]/gu)?.length ?? 0;
-  const han = value.match(/[\u3400-\u9fff]/gu)?.length ?? 0;
-  if (han === 0) return latin >= 2 && latin / Math.max(1, value.length) >= 0.12;
-  return latin >= 8 && latin / (latin + han) >= 0.6;
 }
 
 function isVisible(element: HTMLElement, viewportMargin: number): boolean {
@@ -55,18 +60,20 @@ function classify(element: HTMLElement, text: string): PageSegmentKind | null {
   return text.length >= 24 ? "content" : null;
 }
 
-export function collectVisiblePageSegments(
+export function collectVisiblePageScan(
   skipped: ReadonlySet<Text>,
   documentRef: Document = document,
   limit = 6,
   maxCharacters = 6_000,
-): PageTextSegment[] {
+  preferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES,
+): PageScanResult {
   const root = documentRef.body;
-  if (!root) return [];
+  if (!root) return { segments: [], detectedLanguages: [] };
   const walker = documentRef.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const segments: PageTextSegment[] = [];
   let characters = 0;
   let counter = 0;
+  const detected = new Set<TranslationLanguage>();
   let current = walker.nextNode();
   while (current && segments.length < limit) {
     const node = current as Text;
@@ -76,18 +83,45 @@ export function collectVisiblePageSegments(
     if (!element || element.closest(BLOCKED_SELECTOR)) continue;
     const original = node.nodeValue ?? "";
     const text = normalize(original);
-    if (!looksEnglish(text) || text.length > 12_000 || !isVisible(element, 280)) continue;
+    if (
+      /^(?:https?:\/\/|www\.|@)[^\s]+$/iu.test(text) ||
+      text.length > 12_000 ||
+      !isVisible(element, 280)
+    )
+      continue;
+    const languageContainer = element.closest("[lang]");
+    const sourceLanguage = detectTextLanguage(
+      text,
+      languageContainer?.getAttribute("lang") ?? documentRef.documentElement.lang,
+    );
+    if (!sourceLanguage) continue;
+    detected.add(sourceLanguage);
+    if (
+      sourceLanguage === preferences.targetLanguage ||
+      !preferences.sourceLanguages.includes(sourceLanguage)
+    )
+      continue;
     const kind = classify(element, text);
     if (!kind) continue;
     if (characters + text.length > maxCharacters) {
       if (segments.length === 0 && text.length <= 12_000) {
-        segments.push({ id: `seg_${counter++}`, text, kind, node, original });
+        segments.push({ id: `seg_${counter++}`, text, kind, node, original, sourceLanguage });
         break;
       }
       continue;
     }
-    segments.push({ id: `seg_${counter++}`, text, kind, node, original });
+    segments.push({ id: `seg_${counter++}`, text, kind, node, original, sourceLanguage });
     characters += text.length;
   }
-  return segments;
+  return { segments, detectedLanguages: [...detected] };
+}
+
+export function collectVisiblePageSegments(
+  skipped: ReadonlySet<Text>,
+  documentRef: Document = document,
+  limit = 6,
+  maxCharacters = 6_000,
+  preferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES,
+): PageTextSegment[] {
+  return collectVisiblePageScan(skipped, documentRef, limit, maxCharacters, preferences).segments;
 }

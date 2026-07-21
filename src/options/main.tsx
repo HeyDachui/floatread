@@ -1,10 +1,10 @@
-import { StrictMode, useEffect, useMemo, useState } from "react";
+import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { cacheStatusSchema } from "../cache/schemas";
 import type { CachePolicy, CacheStats } from "../cache/types";
 import { CompanionArtwork } from "../companion/CompanionArtwork";
 import { BRANDING } from "../config/branding";
-import { createTranslator, resolveUiLocale } from "../i18n/catalog";
+import { createTranslator, resolveUiLocale, type MessageKey } from "../i18n/catalog";
 import { createProviderProfile, PROVIDER_DEFAULTS, validateProviderUrl } from "../providers/config";
 import { connectionTestResultSchema, providerProfilesSchema } from "../providers/schemas";
 import type {
@@ -22,17 +22,28 @@ import { SkinImportError, validateSkinPackage } from "../skins/package-validator
 import { runtimeSkinSchema } from "../skins/schema";
 import { getInstalledSkinManifest, getSkinAsset, installSkinPackage } from "../skins/storage";
 import type { RuntimeSkinDefinition, SkinState } from "../skins/types";
+import { createCustomPetPackage } from "../pets/custom-pet";
+import { preparePetImage, type PreparedPetImage } from "../pets/image-processor";
+import { usageSessionSchema, type UsageSession } from "../storage/usage";
+import {
+  DEFAULT_TRANSLATION_PREFERENCES,
+  TRANSLATION_LANGUAGES,
+  TRANSLATION_LANGUAGE_KEYS,
+  translationPreferencesSchema,
+  type TranslationLanguage,
+  type TranslationPreferences,
+} from "../translation/languages";
 import "../companion/styles.css";
 import "../shared/page.css";
 import "./styles.css";
 
 const PROVIDER_ORDER: ProviderKind[] = [
-  "openai",
-  "openai_compatible",
   "deepseek",
+  "openai",
   "anthropic",
   "gemini",
   "ollama",
+  "openai_compatible",
 ];
 
 const DEFAULT_CACHE_POLICY: CachePolicy = {
@@ -43,7 +54,7 @@ const DEFAULT_CACHE_POLICY: CachePolicy = {
 };
 
 const DEFAULT_APPEARANCE: AppearanceOverrides = {
-  companionSize: 58,
+  companionSize: 76,
   companionOpacity: 0.9,
   panelWidth: 380,
   panelOpacity: 0.96,
@@ -77,8 +88,8 @@ function updated(profile: ProviderProfile, patch: Partial<ProviderProfile>): Pro
 }
 
 export function OptionsApp(): React.JSX.Element {
-  const [profiles, setProfiles] = useState<ProviderProfile[]>([]);
-  const [draft, setDraft] = useState<ProviderProfile>(() => createProviderProfile("openai"));
+  const [, setProfiles] = useState<ProviderProfile[]>([]);
+  const [draft, setDraft] = useState<ProviderProfile>(() => createProviderProfile("deepseek"));
   const [secret, setSecret] = useState("");
   const [status, setStatus] = useState<string>("");
   const [busy, setBusy] = useState(false);
@@ -90,19 +101,42 @@ export function OptionsApp(): React.JSX.Element {
     expiredRemoved: 0,
   });
   const [skins, setSkins] = useState<RuntimeSkinDefinition[]>([]);
-  const [activeSkinId, setActiveSkinIdState] = useState("native");
-  const [previewSkinId, setPreviewSkinId] = useState("native");
+  const [activeSkinId, setActiveSkinIdState] = useState("mochi");
+  const [previewSkinId, setPreviewSkinId] = useState("mochi");
   const [previewState, setPreviewState] = useState<SkinState>("idle");
   const [previewImageUrl, setPreviewImageUrl] = useState<string | undefined>(undefined);
   const [appearance, setAppearance] = useState<AppearanceOverrides>(DEFAULT_APPEARANCE);
   const [reading, setReading] = useState<ReadingPreferences>(DEFAULT_READING);
+  const [translation, setTranslation] = useState<TranslationPreferences>(
+    DEFAULT_TRANSLATION_PREFERENCES,
+  );
+  const [usageSessions, setUsageSessions] = useState<UsageSession[]>([]);
+  const [petName, setPetName] = useState("");
+  const [petTolerance, setPetTolerance] = useState(28);
+  const [petSourceFile, setPetSourceFile] = useState<File | null>(null);
+  const [preparedPet, setPreparedPet] = useState<PreparedPetImage | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const readingTouched = useRef(false);
+  const translationTouched = useRef(false);
 
   const requiresSecret = PROVIDER_DEFAULTS[draft.kind].requiresSecret;
   const urlValidation = useMemo(() => validateProviderUrl(draft), [draft]);
   const previewSkin = skins.find((skin) => skin.id === previewSkinId) ?? skins[0];
   const activeSkin = skins.find((skin) => skin.id === activeSkinId);
   const optionsLocale = reading.locale === "auto" ? resolveUiLocale() : reading.locale;
+  const dateLocale = optionsLocale === "zh_CN" ? "zh-CN" : "en";
   const t = useMemo(() => createTranslator(optionsLocale), [optionsLocale]);
+  const providerName = (kind: ProviderKind): string => {
+    const names: Record<ProviderKind, [string, string]> = {
+      deepseek: ["DeepSeek（推荐）", "DeepSeek (recommended)"],
+      openai: ["OpenAI", "OpenAI"],
+      anthropic: ["Claude", "Claude"],
+      gemini: ["Gemini", "Gemini"],
+      ollama: ["Ollama（本机）", "Ollama (local)"],
+      openai_compatible: ["自定义 AI 服务", "Custom AI service"],
+    };
+    return names[kind][optionsLocale === "zh_CN" ? 0 : 1];
+  };
 
   const loadProfiles = async (preferredId?: string): Promise<void> => {
     const response = await send({ type: "LIST_PROVIDER_PROFILES" });
@@ -147,25 +181,55 @@ export function OptionsApp(): React.JSX.Element {
   const loadReadingPreferences = async (): Promise<void> => {
     const response = await send({ type: "GET_READING_PREFERENCES" });
     const parsed = response.ok ? readingPreferencesSchema.safeParse(response.data) : null;
-    if (parsed?.success) setReading(parsed.data);
+    if (parsed?.success && !readingTouched.current) setReading(parsed.data);
+  };
+
+  const loadTranslationPreferences = async (): Promise<void> => {
+    const response = await send({ type: "GET_TRANSLATION_PREFERENCES" });
+    const parsed = response.ok ? translationPreferencesSchema.safeParse(response.data) : null;
+    if (parsed?.success && !translationTouched.current) setTranslation(parsed.data);
+  };
+
+  const loadUsage = async (): Promise<void> => {
+    const response = await send({ type: "GET_USAGE_SESSIONS" });
+    const parsed = response.ok
+      ? usageSessionSchema.array().max(100).safeParse(response.data)
+      : null;
+    if (parsed?.success) setUsageSessions(parsed.data);
   };
 
   useEffect(() => {
-    void loadProfiles();
-    void loadCacheStatus();
-    void loadSkins();
-    void loadReadingPreferences();
+    let current = true;
+    void Promise.all([
+      loadProfiles(),
+      loadCacheStatus(),
+      loadSkins(),
+      loadReadingPreferences(),
+      loadTranslationPreferences(),
+      loadUsage(),
+    ]).finally(() => {
+      if (current) setHydrated(true);
+    });
+    return () => {
+      current = false;
+    };
     // Initial extension-page hydration only; later mutations refresh their own sections.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!previewSkin || previewSkin.source !== "community") {
+    if (!previewSkin || previewSkin.availableAssets.length === 0) {
       setPreviewImageUrl(undefined);
       return;
     }
     let objectUrl: string | undefined;
     let current = true;
+    if (previewSkin.builtinAssetPath) {
+      setPreviewImageUrl(chrome.runtime.getURL(previewSkin.builtinAssetPath));
+      return () => {
+        current = false;
+      };
+    }
     void getInstalledSkinManifest(previewSkin.id).then(async (manifest) => {
       if (!manifest) return;
       const path = manifest.assets[previewState] ?? manifest.assets.idle;
@@ -179,6 +243,13 @@ export function OptionsApp(): React.JSX.Element {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [previewSkin, previewState]);
+
+  useEffect(
+    () => () => {
+      if (preparedPet) URL.revokeObjectURL(preparedPet.previewUrl);
+    },
+    [preparedPet],
+  );
 
   const saveCachePolicy = async (): Promise<void> => {
     setBusy(true);
@@ -237,10 +308,30 @@ export function OptionsApp(): React.JSX.Element {
     }
   };
 
+  const saveTranslationPreferences = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      const response = await send({ type: "UPDATE_TRANSLATION_PREFERENCES", translation });
+      setStatus(t(response.ok ? "statusTranslationSaved" : "statusReadingFailed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clearUsage = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      await send({ type: "CLEAR_USAGE_SESSIONS" });
+      await loadUsage();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const restoreSkinDefaults = async (): Promise<void> => {
     setAppearance(DEFAULT_APPEARANCE);
     await saveAppearance(DEFAULT_APPEARANCE);
-    await activateSkin("native");
+    await activateSkin("mochi");
     setStatus(t("statusDefaultsRestored"));
   };
 
@@ -264,6 +355,43 @@ export function OptionsApp(): React.JSX.Element {
             ? error.message
             : t("statusUnknownError");
       setStatus(t("statusSkinImportFailed", reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const prepareCustomPet = async (file: File, tolerance = petTolerance): Promise<void> => {
+    setBusy(true);
+    try {
+      const next = await preparePetImage(file, tolerance);
+      if (preparedPet) URL.revokeObjectURL(preparedPet.previewUrl);
+      setPetSourceFile(file);
+      setPreparedPet(next);
+      if (!petName) setPetName(file.name.replace(/\.[^.]+$/u, "").slice(0, 80));
+      setStatus(t("statusPetPrepared"));
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : t("statusUnknownError"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const installCustomPet = async (): Promise<void> => {
+    if (!preparedPet) return;
+    setBusy(true);
+    try {
+      const pkg = createCustomPetPackage({
+        name: petName,
+        bytes: preparedPet.bytes,
+        width: preparedPet.width,
+        height: preparedPet.height,
+      });
+      await installSkinPackage(pkg);
+      await loadSkins();
+      await activateSkin(pkg.manifest.id);
+      setStatus(t("statusPetInstalled", pkg.manifest.name));
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : t("statusUnknownError"));
     } finally {
       setBusy(false);
     }
@@ -294,8 +422,8 @@ export function OptionsApp(): React.JSX.Element {
     try {
       await send({ type: "DELETE_INSTALLED_SKIN", skinId: skin.id });
       await loadSkins();
-      setPreviewSkinId("native");
-      setActiveSkinIdState(activeSkinId === skin.id ? "native" : activeSkinId);
+      setPreviewSkinId("mochi");
+      setActiveSkinIdState(activeSkinId === skin.id ? "mochi" : activeSkinId);
       setStatus(t("statusSkinDeleted"));
     } finally {
       setBusy(false);
@@ -363,26 +491,21 @@ export function OptionsApp(): React.JSX.Element {
     }
   };
 
-  const remove = async (): Promise<void> => {
-    setBusy(true);
-    try {
-      await send({ type: "DELETE_PROVIDER_PROFILE", profileId: draft.id });
-      const next = createProviderProfile("openai");
-      setDraft(next);
-      setSecret("");
-      setTestResult(null);
-      await loadProfiles();
-      setStatus(t("statusDeletedProfile"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const clearSecret = async (): Promise<void> => {
     await send({ type: "CLEAR_PROVIDER_SECRET", profileId: draft.id });
     setSecret("");
     setStatus(t("statusClearedCredential"));
   };
+
+  if (!hydrated) {
+    return (
+      <main className="options-shell" aria-busy="true">
+        <div className="empty-state" role="status">
+          {t("popupLoading")}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main
@@ -400,223 +523,301 @@ export function OptionsApp(): React.JSX.Element {
     >
       <header className="options-hero">
         <div>
-          <div className="eyebrow">LOCAL-FIRST READING COMPANION</div>
           <h1>{t("settingsTitle")}</h1>
           <p>{t("settingsIntro")}</p>
         </div>
         <div className="privacy-chip">{t("privacyChip")}</div>
       </header>
 
-      <div className="options-grid">
-        <aside className="profile-rail" aria-label={t("profileList")}>
-          <div className="section-label">PROVIDERS</div>
-          {profiles.map((profile) => (
-            <button
-              key={profile.id}
-              type="button"
-              className={profile.id === draft.id ? "profile-card active" : "profile-card"}
-              onClick={() => {
-                setDraft(profile);
+      <section className="settings-card provider-simple-card" aria-labelledby="provider-title">
+        <div className="card-heading">
+          <div>
+            <h2 id="provider-title">{t("aiService")}</h2>
+            <p>{t("aiServiceIntro")}</p>
+          </div>
+          <span className="connection-dot" data-ok={testResult?.ok ?? false}>
+            {t(testResult?.ok ? "verified" : "unverified")}
+          </span>
+        </div>
+
+        <div className="form-grid">
+          <label>
+            <span>{t("aiService")}</span>
+            <select
+              value={draft.kind}
+              onChange={(event) => {
+                const kind = event.target.value as ProviderKind;
+                const preset = PROVIDER_DEFAULTS[kind];
+                setDraft(
+                  updated(draft, {
+                    kind,
+                    displayName: preset.displayName,
+                    baseUrl: preset.baseUrl,
+                    model: preset.modelExample,
+                  }),
+                );
                 setSecret("");
                 setTestResult(null);
               }}
             >
-              <strong>{profile.displayName}</strong>
-              <span>{profile.model}</span>
-            </button>
-          ))}
+              {PROVIDER_ORDER.map((kind) => (
+                <option key={kind} value={kind}>
+                  {providerName(kind)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>{t("modelName")}</span>
+            <input
+              value={draft.model}
+              spellCheck={false}
+              onChange={(event) => setDraft(updated(draft, { model: event.target.value }))}
+            />
+            <small>{t("modelHint")}</small>
+          </label>
+
+          <fieldset className="wide-field storage-modes">
+            <legend>{t("keyStorage")}</legend>
+            {(
+              [
+                ["session", t("onboardingSession"), t("sessionDetail")],
+                ["local", t("onboardingLocal"), t("localDetail")],
+                ["prompt_each_time", t("onboardingPrompt"), t("promptDetail")],
+              ] as Array<[SecretStorageMode, string, string]>
+            ).map(([mode, title, detail]) => (
+              <label key={mode} className="radio-card">
+                <input
+                  type="radio"
+                  name="storage-mode"
+                  value={mode}
+                  checked={draft.secretStorageMode === mode}
+                  onChange={() => setDraft(updated(draft, { secretStorageMode: mode }))}
+                />
+                <span>
+                  <strong>{title}</strong>
+                  <small>{detail}</small>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+
+          {requiresSecret ? (
+            <label className="wide-field">
+              <span>API Key</span>
+              <input
+                type="password"
+                value={secret}
+                autoComplete="new-password"
+                placeholder={t("keyPlaceholder")}
+                onChange={(event) => setSecret(event.target.value)}
+              />
+              {draft.secretStorageMode === "local" ? (
+                <small className="risk-note">{t("keyRisk")}</small>
+              ) : null}
+            </label>
+          ) : (
+            <div className="wide-field local-note">{t("ollamaNoKey")}</div>
+          )}
+
+          <details className="wide-field advanced-settings">
+            <summary>{t("advancedSettings")}</summary>
+            <div className="advanced-grid">
+              <label>
+                <span>{t("serviceAddress")}</span>
+                <input
+                  value={draft.baseUrl}
+                  spellCheck={false}
+                  onChange={(event) => setDraft(updated(draft, { baseUrl: event.target.value }))}
+                />
+                <small>
+                  {urlValidation.valid
+                    ? t("exactPermission", urlValidation.url.origin)
+                    : urlValidation.error.message}
+                </small>
+              </label>
+              <label>
+                <span>{t("connectionTimeout")}</span>
+                <select
+                  value={draft.timeoutMs}
+                  onChange={(event) =>
+                    setDraft(updated(draft, { timeoutMs: Number(event.target.value) }))
+                  }
+                >
+                  <option value={30_000}>{t("seconds", "30")}</option>
+                  <option value={60_000}>{t("seconds", "60")}</option>
+                  <option value={120_000}>{t("seconds", "120")}</option>
+                </select>
+              </label>
+            </div>
+          </details>
+        </div>
+
+        <div className="status-line" role="status" aria-live="polite">
+          {status}
+        </div>
+
+        <div className="form-actions">
           <button
             type="button"
-            className="add-profile"
-            onClick={() => {
-              setDraft(createProviderProfile("openai"));
-              setSecret("");
-              setTestResult(null);
-              setStatus(t("statusNewProfile"));
-            }}
+            className="button ghost"
+            disabled={busy}
+            onClick={() => void clearSecret()}
           >
-            {t("newProfile")}
+            {t("clearCredential")}
           </button>
-        </aside>
+          <span className="action-spacer" />
+          <button
+            type="button"
+            className="button secondary"
+            disabled={busy}
+            onClick={() => void save()}
+          >
+            {t("save")}
+          </button>
+          <button
+            type="button"
+            className="button primary"
+            disabled={busy}
+            onClick={() => void authorizeAndTest()}
+          >
+            {t(busy ? "processing" : "saveAndTest")}
+          </button>
+        </div>
+      </section>
 
-        <section className="settings-card" aria-labelledby="provider-title">
-          <div className="card-heading">
-            <div>
-              <div className="section-label">ACTIVE PROVIDER</div>
-              <h2 id="provider-title">{t("connectOwnAi")}</h2>
-            </div>
-            <span className="connection-dot" data-ok={testResult?.ok ?? false}>
-              {t(testResult?.ok ? "verified" : "unverified")}
-            </span>
-          </div>
-
-          <div className="form-grid">
-            <label>
-              <span>{t("providerType")}</span>
-              <select
-                value={draft.kind}
-                onChange={(event) => {
-                  const kind = event.target.value as ProviderKind;
-                  const preset = PROVIDER_DEFAULTS[kind];
-                  setDraft(
-                    updated(draft, {
-                      kind,
-                      displayName: preset.displayName,
-                      baseUrl: preset.baseUrl,
-                      model: preset.modelExample,
-                    }),
-                  );
-                  setSecret("");
-                  setTestResult(null);
-                }}
-              >
-                {PROVIDER_ORDER.map((kind) => (
-                  <option key={kind} value={kind}>
-                    {PROVIDER_DEFAULTS[kind].displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>{t("displayName")}</span>
-              <input
-                value={draft.displayName}
-                maxLength={80}
-                onChange={(event) => setDraft(updated(draft, { displayName: event.target.value }))}
-              />
-            </label>
-
-            <label className="wide-field">
-              <span>Base URL</span>
-              <input
-                value={draft.baseUrl}
-                spellCheck={false}
-                onChange={(event) => setDraft(updated(draft, { baseUrl: event.target.value }))}
-              />
-              <small>
-                {urlValidation.valid
-                  ? t("exactPermission", urlValidation.url.origin)
-                  : urlValidation.error.message}
-              </small>
-            </label>
-
-            <label>
-              <span>{t("modelName")}</span>
-              <input
-                value={draft.model}
-                spellCheck={false}
-                onChange={(event) => setDraft(updated(draft, { model: event.target.value }))}
-              />
-              <small>{t("modelHint")}</small>
-            </label>
-
-            <label>
-              <span>{t("timeout")}</span>
-              <select
-                value={draft.timeoutMs}
-                onChange={(event) =>
-                  setDraft(updated(draft, { timeoutMs: Number(event.target.value) }))
-                }
-              >
-                <option value={30_000}>{t("seconds", "30")}</option>
-                <option value={60_000}>{t("seconds", "60")}</option>
-                <option value={120_000}>{t("seconds", "120")}</option>
-              </select>
-            </label>
-
-            <fieldset className="wide-field storage-modes">
-              <legend>{t("keyStorage")}</legend>
-              {(
-                [
-                  ["session", t("onboardingSession"), t("sessionDetail")],
-                  ["local", t("onboardingLocal"), t("localDetail")],
-                  ["prompt_each_time", t("onboardingPrompt"), t("promptDetail")],
-                ] as Array<[SecretStorageMode, string, string]>
-              ).map(([mode, title, detail]) => (
-                <label key={mode} className="radio-card">
-                  <input
-                    type="radio"
-                    name="storage-mode"
-                    value={mode}
-                    checked={draft.secretStorageMode === mode}
-                    onChange={() => setDraft(updated(draft, { secretStorageMode: mode }))}
-                  />
-                  <span>
-                    <strong>{title}</strong>
-                    <small>{detail}</small>
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-
-            {requiresSecret ? (
-              <label className="wide-field">
-                <span>API Key</span>
-                <input
-                  type="password"
-                  value={secret}
-                  autoComplete="new-password"
-                  placeholder={t("keyPlaceholder")}
-                  onChange={(event) => setSecret(event.target.value)}
-                />
-                {draft.secretStorageMode === "local" ? (
-                  <small className="risk-note">{t("keyRisk")}</small>
-                ) : null}
-              </label>
-            ) : (
-              <div className="wide-field local-note">{t("ollamaNoKey")}</div>
-            )}
-          </div>
-
-          <div className="status-line" role="status" aria-live="polite">
-            {status}
-          </div>
-
-          <div className="form-actions">
-            <button
-              type="button"
-              className="button ghost"
-              disabled={busy}
-              onClick={() => void clearSecret()}
-            >
-              {t("clearCredential")}
-            </button>
-            {profiles.some((profile) => profile.id === draft.id) ? (
-              <button
-                type="button"
-                className="button danger"
-                disabled={busy}
-                onClick={() => void remove()}
-              >
-                {t("deleteProfile")}
-              </button>
-            ) : null}
-            <span className="action-spacer" />
-            <button
-              type="button"
-              className="button secondary"
-              disabled={busy}
-              onClick={() => void save()}
-            >
-              {t("save")}
-            </button>
-            <button
-              type="button"
-              className="button primary"
-              disabled={busy}
-              onClick={() => void authorizeAndTest()}
-            >
-              {t(busy ? "processing" : "authorizeTest")}
-            </button>
-          </div>
-        </section>
-      </div>
-
-      <section className="settings-card behavior-card" aria-labelledby="behavior-title">
+      <section
+        className="settings-card language-card"
+        aria-labelledby="translation-title"
+        onChangeCapture={() => {
+          translationTouched.current = true;
+        }}
+      >
         <div className="card-heading">
           <div>
-            <div className="section-label">READING & ACCESSIBILITY</div>
+            <h2 id="translation-title">{t("translationLanguagesTitle")}</h2>
+            <p>{t("translationLanguagesIntro")}</p>
+          </div>
+        </div>
+        <div className="language-builder">
+          <fieldset>
+            <legend>{t("translateTheseLanguages")}</legend>
+            {translation.sourceLanguages.map((language, index) => (
+              <div className="language-row" key={`${language}-${index}`}>
+                <select
+                  aria-label={`${t("translateTheseLanguages")} ${index + 1}`}
+                  value={language}
+                  onChange={(event) => {
+                    const next = [...translation.sourceLanguages];
+                    next[index] = event.target.value as TranslationLanguage;
+                    if (
+                      new Set(next).size !== next.length ||
+                      next.includes(translation.targetLanguage)
+                    )
+                      return;
+                    setTranslation({ ...translation, sourceLanguages: next });
+                  }}
+                >
+                  {TRANSLATION_LANGUAGES.filter(
+                    (item) =>
+                      item === language ||
+                      (!translation.sourceLanguages.includes(item) &&
+                        item !== translation.targetLanguage),
+                  ).map((item) => (
+                    <option key={item} value={item}>
+                      {t(TRANSLATION_LANGUAGE_KEYS[item] as MessageKey)}
+                    </option>
+                  ))}
+                </select>
+                {index === 0 && translation.sourceLanguages.length < 5 ? (
+                  <button
+                    type="button"
+                    className="language-add"
+                    aria-label={t("addLanguage")}
+                    onClick={() => {
+                      const candidate = TRANSLATION_LANGUAGES.find(
+                        (item) =>
+                          item !== translation.targetLanguage &&
+                          !translation.sourceLanguages.includes(item),
+                      );
+                      if (candidate)
+                        setTranslation({
+                          ...translation,
+                          sourceLanguages: [...translation.sourceLanguages, candidate],
+                        });
+                    }}
+                  >
+                    +
+                  </button>
+                ) : index > 0 ? (
+                  <button
+                    type="button"
+                    className="language-remove"
+                    aria-label={t("removeLanguage")}
+                    onClick={() =>
+                      setTranslation({
+                        ...translation,
+                        sourceLanguages: translation.sourceLanguages.filter(
+                          (_, sourceIndex) => sourceIndex !== index,
+                        ),
+                      })
+                    }
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </fieldset>
+          <label className="target-language">
+            <span>{t("translateInto")}</span>
+            <select
+              value={translation.targetLanguage}
+              onChange={(event) => {
+                const targetLanguage = event.target.value as TranslationLanguage;
+                const sourceLanguages = translation.sourceLanguages.filter(
+                  (item) => item !== targetLanguage,
+                );
+                setTranslation({
+                  targetLanguage,
+                  sourceLanguages:
+                    sourceLanguages.length > 0
+                      ? sourceLanguages
+                      : [targetLanguage === "en" ? "zh-Hans" : "en"],
+                });
+              }}
+            >
+              {TRANSLATION_LANGUAGES.map((item) => (
+                <option key={item} value={item}>
+                  {t(TRANSLATION_LANGUAGE_KEYS[item] as MessageKey)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="form-actions">
+          <span className="action-spacer" />
+          <button
+            type="button"
+            className="button primary"
+            disabled={busy}
+            onClick={() => void saveTranslationPreferences()}
+          >
+            {t("saveTranslationLanguages")}
+          </button>
+        </div>
+      </section>
+
+      <section
+        className="settings-card behavior-card"
+        aria-labelledby="behavior-title"
+        onChangeCapture={() => {
+          readingTouched.current = true;
+        }}
+      >
+        <div className="card-heading">
+          <div>
             <h2 id="behavior-title">{t("readingTitle")}</h2>
           </div>
         </div>
@@ -699,10 +900,80 @@ export function OptionsApp(): React.JSX.Element {
       <section className="settings-card skin-card" aria-labelledby="skin-title">
         <div className="card-heading">
           <div>
-            <div className="section-label">VERSIONED SKIN ENGINE</div>
             <h2 id="skin-title">{t("skinTitle")}</h2>
           </div>
           <span className="privacy-chip">{t("onlyFloatRead")}</span>
+        </div>
+        <div className="pet-creator">
+          <div
+            className="pet-drop-zone"
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "copy";
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              const file = event.dataTransfer.files[0];
+              if (file) void prepareCustomPet(file);
+            }}
+          >
+            <strong>{t("customPetTitle")}</strong>
+            <p>{t("customPetIntro")}</p>
+            <label className="button secondary file-button">
+              {t("choosePetImage")}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                disabled={busy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void prepareCustomPet(file);
+                  event.target.value = "";
+                }}
+              />
+            </label>
+          </div>
+          {preparedPet ? (
+            <div className="pet-preview-editor">
+              <div className="pet-preview-field">
+                <img src={preparedPet.previewUrl} alt={t("customPetPreview")} />
+              </div>
+              <div className="pet-editor-controls">
+                <label>
+                  <span>{t("customPetName")}</span>
+                  <input
+                    value={petName}
+                    maxLength={80}
+                    onChange={(event) => setPetName(event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span>{t("backgroundRemovalStrength", String(petTolerance))}</span>
+                  <input
+                    type="range"
+                    min="8"
+                    max="72"
+                    value={petTolerance}
+                    onChange={(event) => setPetTolerance(Number(event.target.value))}
+                    onPointerUp={() => {
+                      if (petSourceFile) void prepareCustomPet(petSourceFile, petTolerance);
+                    }}
+                    onKeyUp={() => {
+                      if (petSourceFile) void prepareCustomPet(petSourceFile, petTolerance);
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="button primary"
+                  disabled={busy || !petName.trim()}
+                  onClick={() => void installCustomPet()}
+                >
+                  {t("useThisPet")}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
         <div className="skin-workbench">
           <div className="skin-library" aria-label={t("skinList")}>
@@ -742,7 +1013,7 @@ export function OptionsApp(): React.JSX.Element {
               }
             >
               <div className={`fr-companion fr-state-${previewState}`} data-motion="none">
-                <CompanionArtwork state={previewState} communityImageUrl={previewImageUrl} />
+                <CompanionArtwork state={previewState} imageUrl={previewImageUrl} />
               </div>
               <strong>{previewSkin.name}</strong>
               <div className="preview-state-tabs" aria-label={t("previewStates")}>
@@ -877,10 +1148,61 @@ export function OptionsApp(): React.JSX.Element {
         </div>
       </section>
 
+      <section className="settings-card usage-history-card" aria-labelledby="usage-title">
+        <div className="card-heading">
+          <div>
+            <h2 id="usage-title">{t("usageTitle")}</h2>
+            <p>{t("usageIntro")}</p>
+          </div>
+        </div>
+        {usageSessions.length > 0 ? (
+          <div className="usage-history">
+            {usageSessions.slice(0, 8).map((session) => (
+              <article key={session.id} className="usage-session-row">
+                <div>
+                  <strong>{session.endedAt === null ? t("usageCurrent") : t("usageLast")}</strong>
+                  <span>{new Date(session.startedAt).toLocaleString(dateLocale)}</span>
+                </div>
+                <dl>
+                  <div>
+                    <dt>{t("usageInput")}</dt>
+                    <dd>{session.inputTokens.toLocaleString()}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("usageOutput")}</dt>
+                    <dd>{session.outputTokens.toLocaleString()}</dd>
+                  </div>
+                  <div>
+                    <dt>{t("usageTotal")}</dt>
+                    <dd>{(session.inputTokens + session.outputTokens).toLocaleString()}</dd>
+                  </div>
+                </dl>
+                <small>
+                  {t("usageRequests", String(session.requests))} ·{" "}
+                  {t("usageCacheHits", String(session.cacheHits))}
+                  {!session.usageAvailable ? ` · ${t("usageUnavailable")}` : ""}
+                </small>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">{t("usageEmpty")}</p>
+        )}
+        <div className="form-actions">
+          <button
+            type="button"
+            className="button ghost"
+            disabled={busy || usageSessions.length === 0}
+            onClick={() => void clearUsage()}
+          >
+            {t("clearUsage")}
+          </button>
+        </div>
+      </section>
+
       <section className="settings-card cache-card" aria-labelledby="cache-title">
         <div className="card-heading">
           <div>
-            <div className="section-label">LOCAL RESULT CACHE</div>
             <h2 id="cache-title">{t("cacheTitle")}</h2>
           </div>
           <span className="privacy-chip">
@@ -970,7 +1292,6 @@ export function OptionsApp(): React.JSX.Element {
       <section className="settings-card about-card" aria-labelledby="about-title">
         <div className="card-heading">
           <div>
-            <div className="section-label">OPEN SOURCE · NO TELEMETRY</div>
             <h2 id="about-title">{t("aboutTitle")}</h2>
           </div>
         </div>

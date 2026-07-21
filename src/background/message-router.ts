@@ -3,7 +3,7 @@ import {
   trustedToBackgroundSchema,
   type BackgroundResponse,
 } from "../shared/messages";
-import { getSkinStateAsset } from "../skins/storage";
+import { getRuntimeSkin, getSkinStateAsset } from "../skins/storage";
 import { isSitePaused } from "../storage/site-pauses";
 import { getPublicBootstrap, getSettings, updateCompanionPosition } from "../storage/settings";
 import { isPageTranslationEnabled, setPageTranslationEnabled } from "../storage/page-translation";
@@ -55,14 +55,21 @@ async function routeMessage(
       return { ok: true };
     case "GET_ACTIVE_SKIN_ASSET": {
       const settings = await getSettings();
+      const skin = await getRuntimeSkin(settings.activeSkinId);
       const asset = await getSkinStateAsset(settings.activeSkinId, parsed.data.state);
-      if (!asset) return { ok: true, data: null };
-      const bytes = new Uint8Array(asset.bytes);
+      const builtinResponse = skin.builtinAssetPath
+        ? await fetch(chrome.runtime.getURL(skin.builtinAssetPath))
+        : null;
+      if (!asset && !builtinResponse?.ok) return { ok: true, data: null };
+      const mime = asset?.mime ?? "image/webp";
+      const bytes = new Uint8Array(
+        asset?.bytes ?? (await (builtinResponse as Response).arrayBuffer()),
+      );
       let binary = "";
       for (let offset = 0; offset < bytes.length; offset += 32_768) {
         binary += String.fromCharCode(...bytes.subarray(offset, offset + 32_768));
       }
-      return { ok: true, data: { dataUrl: `data:${asset.mime};base64,${btoa(binary)}` } };
+      return { ok: true, data: { dataUrl: `data:${mime};base64,${btoa(binary)}` } };
     }
     case "SET_PAGE_TRANSLATION_PREFERENCE":
       await setPageTranslationEnabled(sender.tab?.url ?? sender.url, parsed.data.enabled);

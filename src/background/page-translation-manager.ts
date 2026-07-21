@@ -16,14 +16,32 @@ import {
 import { getPageTranslationMemory, putPageTranslationMemory } from "../storage/page-translation";
 import { getActiveProviderProfile } from "../storage/providers";
 import { getProviderSecret } from "../storage/secrets";
+import { addUsage, endUsageSession, startUsageSession } from "../storage/usage";
+import type { TranslationLanguage, TranslationPreferences } from "../translation/languages";
+
+interface PageBatchSegment {
+  id: string;
+  text: string;
+  kind: "content" | "ui";
+  sourceLanguage: TranslationLanguage;
+}
 
 interface ActivePageJob {
   jobId: string;
   tabId: number;
   controller: AbortController;
+  sessionId: string;
+  translation: TranslationPreferences;
 }
 
 const activeByTab = new Map<number, ActivePageJob>();
+interface ActiveUsageSession {
+  id: string;
+  translation: TranslationPreferences;
+  ready: Promise<void>;
+}
+
+const sessionsByTab = new Map<number, ActiveUsageSession>();
 
 export function cancelPageTranslationForTab(tabId: number): void {
   activeByTab.get(tabId)?.controller.abort();
@@ -40,8 +58,9 @@ function post(port: chrome.runtime.Port, message: PageTranslationPortOutgoing): 
 async function runMockBatch(
   port: chrome.runtime.Port,
   job: ActivePageJob,
-  segments: Array<{ id: string; text: string; kind: "content" | "ui" }>,
+  segments: PageBatchSegment[],
 ): Promise<void> {
+  await addUsage(job.sessionId, { requests: 1, usageAvailable: false });
   post(port, { type: "PAGE_BATCH_START", jobId: job.jobId });
   for (const segment of segments) {
     await new Promise<void>((resolve, reject) => {
@@ -69,13 +88,14 @@ async function runMockBatch(
       cached: false,
     });
   }
+  await addUsage(job.sessionId, { translatedSegments: segments.length });
   post(port, { type: "PAGE_BATCH_DONE", jobId: job.jobId });
 }
 
 async function runBatch(
   port: chrome.runtime.Port,
   job: ActivePageJob,
-  segments: Array<{ id: string; text: string; kind: "content" | "ui" }>,
+  segments: PageBatchSegment[],
 ): Promise<void> {
   if (__FLOATREAD_MOCK_PROVIDER__) {
     await runMockBatch(port, job, segments);
@@ -100,7 +120,7 @@ async function runBatch(
     segments.map(async (segment) => ({
       segment,
       key: await createCacheKey({
-        normalizedText: `${segment.kind}\u0000${segment.text}`,
+        normalizedText: `${segment.kind}\u0000${segment.sourceLanguage}\u0000${job.translation.targetLanguage}\u0000${segment.text}`,
         mode: "natural_zh",
         providerKind: profile.kind,
         providerBaseUrl: profile.baseUrl,
@@ -111,9 +131,11 @@ async function runBatch(
   );
   const memory = await getPageTranslationMemory(keyed.map((item) => item.key));
   const misses: typeof keyed = [];
+  let cacheHits = 0;
   for (const item of keyed) {
     const cached = memory.get(item.key);
     if (cached) {
+      cacheHits += 1;
       post(port, {
         type: "PAGE_SEGMENT_RESULT",
         jobId: job.jobId,
@@ -123,30 +145,43 @@ async function runBatch(
       });
     } else misses.push(item);
   }
+  if (cacheHits > 0) {
+    await addUsage(job.sessionId, { cacheHits, translatedSegments: cacheHits });
+  }
 
   if (misses.length > 0) {
-    const prompt = buildPageTranslationPrompt(misses.map((item) => item.segment));
+    const prompt = buildPageTranslationPrompt(
+      misses.map((item) => item.segment),
+      job.translation.targetLanguage,
+    );
     const timer = setTimeout(() => job.controller.abort(), profile.timeoutMs);
     try {
       const adapter = getProviderAdapter(profile.kind);
       const secret = await getProviderSecret(profile.id, profile.secretStorageMode);
       const results = await completePageTranslationWithSingleRetry(
-        async () =>
-          (
-            await adapter.complete(
-              {
-                requestId: job.jobId,
-                systemPrompt: prompt.systemPrompt,
-                userPrompt: prompt.userPrompt,
-                maxOutputTokens: prompt.maxOutputTokens,
-                temperature: 0,
-                responseFormat: "json_object",
-              },
-              profile,
-              secret,
-              job.controller.signal,
-            )
-          ).text,
+        async () => {
+          await addUsage(job.sessionId, { requests: 1 });
+          const completion = await adapter.complete(
+            {
+              requestId: job.jobId,
+              systemPrompt: prompt.systemPrompt,
+              userPrompt: prompt.userPrompt,
+              maxOutputTokens: prompt.maxOutputTokens,
+              temperature: 0,
+              responseFormat: "json_object",
+            },
+            profile,
+            secret,
+            job.controller.signal,
+          );
+          await addUsage(job.sessionId, {
+            inputTokens: completion.inputTokens ?? 0,
+            outputTokens: completion.outputTokens ?? 0,
+            usageAvailable:
+              completion.inputTokens !== undefined && completion.outputTokens !== undefined,
+          });
+          return completion.text;
+        },
         misses.map((item) => item.segment.id),
         job.controller.signal,
       );
@@ -164,6 +199,7 @@ async function runBatch(
         });
       }
       await putPageTranslationMemory(memoryWrites);
+      await addUsage(job.sessionId, { translatedSegments: memoryWrites.length });
     } finally {
       clearTimeout(timer);
     }
@@ -174,7 +210,7 @@ async function runBatch(
 async function executeBatch(
   port: chrome.runtime.Port,
   job: ActivePageJob,
-  segments: Array<{ id: string; text: string; kind: "content" | "ui" }>,
+  segments: PageBatchSegment[],
 ): Promise<void> {
   try {
     await runBatch(port, job, segments);
@@ -202,28 +238,84 @@ export function registerPageTranslationPorts(): void {
     const tabId = port.sender.tab?.id;
     if (typeof tabId !== "number") return;
 
-    port.onMessage.addListener((rawMessage: unknown) => {
+    const handleMessage = async (rawMessage: unknown): Promise<void> => {
       const parsed = pageTranslationPortIncomingSchema.safeParse(rawMessage);
       if (!parsed.success) return;
       const message = parsed.data;
+      if (message.type === "PAGE_TRANSLATION_SESSION_START") {
+        const previous = sessionsByTab.get(tabId);
+        const ready = (async () => {
+          if (previous && previous.id !== message.sessionId) {
+            await previous.ready;
+            await endUsageSession(previous.id, "page_closed");
+          }
+          const profile = await getActiveProviderProfile();
+          await startUsageSession({
+            id: message.sessionId,
+            provider: profile?.displayName ?? "未配置",
+            model: profile?.model ?? "未配置",
+            sourceLanguages: message.translation.sourceLanguages,
+            targetLanguage: message.translation.targetLanguage,
+          });
+        })();
+        sessionsByTab.set(tabId, {
+          id: message.sessionId,
+          translation: message.translation,
+          ready,
+        });
+        await ready;
+        return;
+      }
+      if (message.type === "PAGE_TRANSLATION_SESSION_END") {
+        const current = sessionsByTab.get(tabId);
+        if (current?.id === message.sessionId) {
+          await current.ready;
+          await endUsageSession(message.sessionId, message.reason);
+          sessionsByTab.delete(tabId);
+        }
+        return;
+      }
       if (message.type === "PAGE_TRANSLATE_CANCEL") {
         const active = activeByTab.get(tabId);
         if (active?.jobId === message.jobId) active.controller.abort();
         return;
       }
       activeByTab.get(tabId)?.controller.abort();
+      const session = sessionsByTab.get(tabId);
+      if (session?.id === message.sessionId) await session.ready;
       const job: ActivePageJob = {
         jobId: message.jobId,
         tabId,
         controller: new AbortController(),
+        sessionId: message.sessionId,
+        translation:
+          session?.id === message.sessionId
+            ? session.translation
+            : { sourceLanguages: ["en"], targetLanguage: "zh-Hans" },
       };
       activeByTab.set(tabId, job);
       void executeBatch(port, job, message.segments);
+    };
+
+    port.onMessage.addListener((rawMessage: unknown) => {
+      void handleMessage(rawMessage).catch(() => {
+        post(port, {
+          type: "PAGE_BATCH_ERROR",
+          jobId:
+            typeof rawMessage === "object" && rawMessage !== null && "jobId" in rawMessage
+              ? String(rawMessage.jobId)
+              : crypto.randomUUID(),
+          error: publicError("UNKNOWN", "页面翻译状态无法更新，请重新开始。", true),
+        });
+      });
     });
 
     port.onDisconnect.addListener(() => {
       activeByTab.get(tabId)?.controller.abort();
       activeByTab.delete(tabId);
+      const session = sessionsByTab.get(tabId);
+      sessionsByTab.delete(tabId);
+      if (session) void session.ready.then(() => endUsageSession(session.id, "page_closed"));
     });
   });
 }

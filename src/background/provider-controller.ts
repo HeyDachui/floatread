@@ -22,7 +22,9 @@ import {
   updateAppearance,
   updateCachePolicy,
   updateReadingPreferences,
+  updateTranslationPreferences,
 } from "../storage/settings";
+import { clearUsageSessions, getLatestUsageSession, listUsageSessions } from "../storage/usage";
 import { getActiveTab, injectAndSend, isInjectableUrl } from "./injection";
 import { cancelPageTranslationForTab } from "./page-translation-manager";
 
@@ -102,6 +104,7 @@ async function getPopupState(targetTabId?: number): Promise<unknown> {
     : undefined;
   const skin = await getRuntimeSkin(settings.activeSkinId);
   const pageTranslationEnabled = await isPageTranslationEnabled(tab?.url);
+  const latestUsage = await getLatestUsageSession();
   return {
     globalEnabled: settings.enabled,
     supportedPage,
@@ -118,6 +121,7 @@ async function getPopupState(targetTabId?: number): Promise<unknown> {
       ? { configured: true, label: profile.displayName, model: profile.model }
       : { configured: false },
     skin: { id: skin.id, name: skin.name, panel: skin.panel },
+    usage: latestUsage,
   };
 }
 
@@ -202,6 +206,11 @@ export async function routeTrustedProviderMessage(
       const settings = await getSettings();
       return { ok: true, data: { policy: settings.cache, stats: await getCacheStats() } };
     }
+    case "GET_USAGE_SESSIONS":
+      return { ok: true, data: await listUsageSessions() };
+    case "CLEAR_USAGE_SESSIONS":
+      await clearUsageSessions();
+      return { ok: true };
     case "GET_POPUP_STATE":
       return { ok: true, data: await getPopupState(message.targetTabId) };
     case "GET_READING_PREFERENCES": {
@@ -215,6 +224,14 @@ export async function routeTrustedProviderMessage(
         },
       };
     }
+    case "GET_TRANSLATION_PREFERENCES": {
+      const settings = await getSettings();
+      return { ok: true, data: settings.translation };
+    }
+    case "UPDATE_TRANSLATION_PREFERENCES":
+      await updateTranslationPreferences(message.translation);
+      await refreshCompanions();
+      return { ok: true };
     case "UPDATE_READING_PREFERENCES":
       await updateReadingPreferences({
         defaultMode: message.defaultMode,
@@ -287,7 +304,7 @@ export async function routeTrustedProviderMessage(
     }
     case "DELETE_INSTALLED_SKIN": {
       const settings = await getSettings();
-      if (settings.activeSkinId === message.skinId) await setActiveSkinId("native");
+      if (settings.activeSkinId === message.skinId) await setActiveSkinId("mochi");
       await deleteInstalledSkin(message.skinId);
       await refreshCompanions();
       return { ok: true };

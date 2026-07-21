@@ -90,7 +90,7 @@ export function createProviderProfile(kind: ProviderKind, now = Date.now()): Pro
     baseUrl: preset.baseUrl,
     model: preset.modelExample,
     secretStorageMode: "session",
-    timeoutMs: 60_000,
+    timeoutMs: 30_000,
     enabled: true,
     createdAt: now,
     updatedAt: now,

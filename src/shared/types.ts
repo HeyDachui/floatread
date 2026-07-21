@@ -1,3 +1,6 @@
+import type { RuntimeSkinDefinition } from "../skins/types";
+import type { TranslationPreferences } from "../translation/languages";
+
 export type ReaderMode = "natural_zh" | "key_points" | "explain_terms";
 export type ClickBehavior = "show_actions" | "run_default_mode";
 export type CompanionEdge = "left" | "right";
@@ -32,5 +35,5 @@ export interface PublicBootstrap {
   providerLabel?: string | undefined;
   locale: UiLocale;
   pageTranslationEnabled: boolean;
+  translation: TranslationPreferences;
 }
-import type { RuntimeSkinDefinition } from "../skins/types";

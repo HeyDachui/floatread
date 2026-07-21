@@ -18,12 +18,12 @@ import "../../shared/page.css";
 import "./styles.css";
 
 const PROVIDERS: ProviderKind[] = [
-  "openai",
-  "openai_compatible",
   "deepseek",
+  "openai",
   "anthropic",
   "gemini",
   "ollama",
+  "openai_compatible",
 ];
 
 async function send(message: unknown): Promise<BackgroundResponse> {
@@ -38,15 +38,26 @@ export function OnboardingApp(): React.JSX.Element {
   const locale = resolveUiLocale();
   const t = useMemo(() => createTranslator(locale), [locale]);
   const [step, setStep] = useState(0);
-  const [profile, setProfile] = useState(() => createProviderProfile("openai"));
+  const [profile, setProfile] = useState(() => createProviderProfile("deepseek"));
   const [secret, setSecret] = useState("");
   const [skins, setSkins] = useState<RuntimeSkinDefinition[]>([]);
-  const [selectedSkin, setSelectedSkin] = useState("native");
+  const [selectedSkin, setSelectedSkin] = useState("mochi");
   const [demoResult, setDemoResult] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const urlValidation = useMemo(() => validateProviderUrl(profile), [profile]);
   const skin = skins.find((item) => item.id === selectedSkin) ?? skins[0];
+  const providerName = (kind: ProviderKind): string => {
+    const names: Record<ProviderKind, [string, string]> = {
+      deepseek: ["DeepSeek（推荐）", "DeepSeek (recommended)"],
+      openai: ["OpenAI", "OpenAI"],
+      anthropic: ["Claude", "Claude"],
+      gemini: ["Gemini", "Gemini"],
+      ollama: ["Ollama（本机）", "Ollama (local)"],
+      openai_compatible: ["自定义 AI 服务", "Custom AI service"],
+    };
+    return names[kind][locale === "zh_CN" ? 0 : 1];
+  };
 
   useEffect(() => {
     void send({ type: "LIST_RUNTIME_SKINS" }).then((response) => {
@@ -135,18 +146,30 @@ export function OnboardingApp(): React.JSX.Element {
           <div className="boundary-grid">
             <article>
               <strong>01</strong>
-              <span>SELECT</span>
-              <p>Only text you actively select.</p>
+              <span>{locale === "zh_CN" ? "主动" : "YOU START"}</span>
+              <p>
+                {locale === "zh_CN"
+                  ? "不启动，就不会发送网页文字。"
+                  : "No page text is sent until you start."}
+              </p>
             </article>
             <article>
               <strong>02</strong>
-              <span>DIRECT</span>
-              <p>Browser to your Provider.</p>
+              <span>{locale === "zh_CN" ? "直连" : "DIRECT"}</span>
+              <p>
+                {locale === "zh_CN"
+                  ? "浏览器直接连接你的 AI 服务。"
+                  : "Your browser connects directly to your AI service."}
+              </p>
             </article>
             <article>
               <strong>03</strong>
-              <span>LOCAL</span>
-              <p>Settings, secrets, skins, cache.</p>
+              <span>{locale === "zh_CN" ? "本地" : "LOCAL"}</span>
+              <p>
+                {locale === "zh_CN"
+                  ? "设置、用量和皮肤保存在本机。"
+                  : "Settings, usage and skins stay on this device."}
+              </p>
             </article>
           </div>
           <button type="button" className="primary-action" onClick={() => setStep(1)}>
@@ -157,7 +180,9 @@ export function OnboardingApp(): React.JSX.Element {
 
       {step === 1 ? (
         <section className="setup-step" aria-labelledby="provider-heading">
-          <div className="eyebrow">STEP 02 · BYOK</div>
+          <div className="eyebrow">
+            {locale === "zh_CN" ? "第 2 步 · AI 服务" : "STEP 02 · AI SERVICE"}
+          </div>
           <h1 id="provider-heading">{t("onboardingProviderTitle")}</h1>
           <p>{t("onboardingProviderHint")}</p>
           <div className="onboarding-form">
@@ -180,7 +205,7 @@ export function OnboardingApp(): React.JSX.Element {
               >
                 {PROVIDERS.map((kind) => (
                   <option key={kind} value={kind}>
-                    {PROVIDER_DEFAULTS[kind].displayName}
+                    {providerName(kind)}
                   </option>
                 ))}
               </select>
@@ -194,16 +219,21 @@ export function OnboardingApp(): React.JSX.Element {
                 }
               />
             </label>
-            <label className="wide">
-              <span>{t("baseUrl")}</span>
-              <input
-                value={profile.baseUrl}
-                spellCheck={false}
-                onChange={(event) =>
-                  setProfile(updateProfile(profile, { baseUrl: event.target.value }))
-                }
-              />
-            </label>
+            {profile.kind === "openai_compatible" ? (
+              <details className="wide">
+                <summary>{t("advancedSettings")}</summary>
+                <label>
+                  <span>{t("serviceAddress")}</span>
+                  <input
+                    value={profile.baseUrl}
+                    spellCheck={false}
+                    onChange={(event) =>
+                      setProfile(updateProfile(profile, { baseUrl: event.target.value }))
+                    }
+                  />
+                </label>
+              </details>
+            ) : null}
             {PROVIDER_DEFAULTS[profile.kind].requiresSecret ? (
               <label className="wide">
                 <span>{t("apiKey")}</span>
@@ -272,7 +302,9 @@ export function OnboardingApp(): React.JSX.Element {
 
       {step === 2 ? (
         <section className="setup-step" aria-labelledby="skin-heading">
-          <div className="eyebrow">STEP 03 · CHARACTER</div>
+          <div className="eyebrow">
+            {locale === "zh_CN" ? "第 3 步 · 角色" : "STEP 03 · CHARACTER"}
+          </div>
           <h1 id="skin-heading">{t("onboardingSkinTitle")}</h1>
           <div className="onboarding-skin-grid">
             <div className="skin-list">
@@ -307,7 +339,14 @@ export function OnboardingApp(): React.JSX.Element {
                 }
               >
                 <div className="fr-companion fr-state-ready" data-motion="none">
-                  <CompanionArtwork state="ready" />
+                  <CompanionArtwork
+                    state="ready"
+                    imageUrl={
+                      skin?.builtinAssetPath
+                        ? chrome.runtime.getURL(skin.builtinAssetPath)
+                        : undefined
+                    }
+                  />
                 </div>
               </div>
             ) : null}

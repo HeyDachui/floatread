@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { skinManifestV1Schema } from "../skins/schema";
+import { usageSessionSchema } from "../storage/usage";
 
 export const popupStateSchema = z
   .object({
@@ -30,6 +31,7 @@ export const popupStateSchema = z
         panel: skinManifestV1Schema.shape.panel,
       })
       .strict(),
+    usage: usageSessionSchema.nullable(),
   })
   .strict();
 
