@@ -108,10 +108,22 @@ describe("Provider adapters", () => {
     expect(init?.headers).toMatchObject({ authorization: "Bearer sk-example-not-real" });
   });
 
-  it("routes DeepSeek through its independent compatible adapter", () => {
+  it("routes DeepSeek independently and explicitly disables thinking", async () => {
     expect(deepSeekAdapter.kind).toBe("deepseek");
     expect(deepSeekAdapter.validateConfig(profile("deepseek"))).toEqual({ valid: true });
     expect(openAiCompatibleAdapter.validateConfig(profile("deepseek")).valid).toBe(false);
+    const fetcher = fetchMock(Response.json({ choices: [{ message: { content: "OK" } }] }));
+    vi.stubGlobal("fetch", fetcher);
+    await deepSeekAdapter.complete(
+      REQUEST,
+      profile("deepseek"),
+      "sk-example-not-real",
+      new AbortController().signal,
+    );
+    const [, init] = fetcher.mock.calls[0] ?? [];
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      thinking: { type: "disabled" },
+    });
   });
 
   it("uses Anthropic Messages headers and text delta events", async () => {

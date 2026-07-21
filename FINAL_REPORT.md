@@ -102,13 +102,18 @@ Status/error mapping covers HTTP 400, 401, 403, 404, 408, 429, 5xx, timeout, abo
 
 ## 8–10. Real API smoke tests, models and credential handling
 
-| Provider           | Base URL           | Model        | Connection   | Ordinary     | Stream       | Cancel       |
-| ------------------ | ------------------ | ------------ | ------------ | ------------ | ------------ | ------------ |
-| All real Providers | Not authorized yet | Not selected | Not executed | Not executed | Not executed | Not executed |
+| Provider          | Base URL                   | Model               | Connection     | Ordinary       | Stream         | Cancel         |
+| ----------------- | -------------------------- | ------------------- | -------------- | -------------- | -------------- | -------------- |
+| DeepSeek          | `https://api.deepseek.com` | `deepseek-v4-flash` | Passed, 976 ms | Passed, 651 ms | Passed, 772 ms | Passed, 104 ms |
+| OpenAI            | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
+| OpenAI Compatible | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
+| Anthropic         | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
+| Gemini            | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
+| Ollama            | —                          | —                   | Not executed   | Not executed   | Not executed   | Not executed   |
 
-The supplied ignored credential file remains unread because its Provider was not confirmed. No real test is claimed. The automated vertical slice used FloatRead's deterministic local Mock Provider; it does not call a model and therefore has no real model name. Adapter request-format tests use clearly invalid example values only.
+The authorized model was `deepseek-v4-flash`. The ordinary request returned 24 characters using 317 input and 12 output tokens; model text was deliberately not recorded. Streaming returned 24 characters and cancellation produced `ABORTED`. The initial eight-token connection attempt returned `INVALID_RESPONSE` because default Thinking consumed the output budget before final `content`; the adapter was fixed to disable Thinking, unit-tested and then retested successfully.
 
-No credential was echoed into source, docs, output, logs, `dist`, ZIP or this report. The real checkpoint requires confirmation of one Provider, Base URL and model before the ignored file may be read for the smallest possible smoke test.
+The ignored key was read only into `FLOATREAD_TEST_DEEPSEEK_KEY` for the test process and removed in a `finally` block. No credential was echoed into source, docs, output, logs, `dist`, ZIP or this report. Other Provider adapters were not given real credentials. See `docs/REAL_API_SMOKE.md`.
 
 ## 11–13. Executed tests and unexecuted checks
 
@@ -126,12 +131,12 @@ No credential was echoed into source, docs, output, logs, `dist`, ZIP or this re
 | `pnpm package`                               | Passed; rebuild, dist check, scans, ZIP, release check and production Chrome load.        |
 | `pnpm verify:release`                        | Passed; 18 ZIP entries exactly match `dist`, version consistent.                          |
 | `pnpm test:release-load`                     | Passed; production MV3 Service Worker plus three extension pages loaded in real Chromium. |
-| `pnpm scan:secrets`                          | Passed after packaging across 160 tracked/build/archive text files.                       |
+| `pnpm scan:secrets`                          | Passed across 178 tracked/build/archive text files after staging the smoke evidence.      |
 | Consecutive `package:zip` + `verify:release` | Passed twice with identical SHA-256.                                                      |
+| `pnpm smoke:deepseek`                        | Passed after the documented adapter fix: connection, ordinary, stream and cancel.         |
 
 Not executed:
 
-- Real Provider smoke: Provider ownership/model not confirmed; the credential was deliberately not read.
 - Human checklist: `MANUAL_TESTING.md` is prepared with 58 unchecked steps. Automated E2E coverage is not mislabeled as human execution.
 - Chrome Web Store upload/review: requires publisher account and finalized identity.
 - Store screenshots: not fabricated; capture from a real build after publisher branding is final.
@@ -151,8 +156,8 @@ Not executed:
 - Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.1.0.zip`
 - Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.1.0-files.txt`
 - Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.1.0.sha256`
-- ZIP size: 268,427 bytes
-- SHA-256: `383077d0c23053ae9a21eb8fa8669bdda6150c9bc57d809af9fc07e3d5c3e879`
+- ZIP size: 268,464 bytes
+- SHA-256: `7da4b46299585504118ad04351e556ebe40cc6de3ca10aed93a050a927a2409b`
 
 ## 19. Local installation
 
@@ -170,7 +175,7 @@ Follow `MANUAL_TESTING.md` against the extracted production ZIP. Prioritize X la
 
 - Publisher name, GitHub/support URLs and store assets are provisional.
 - Firefox/Safari are not supported or tested in V1.
-- Human regression and real-Provider smoke are pending, explicitly not reported as passed.
+- Human regression remains pending; automated and real-API evidence are not mislabeled as human execution.
 - Chrome Web Store publication is outside this local repository delivery.
 - Stream quality and availability depend on the selected Provider/proxy.
 

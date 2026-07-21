@@ -17,10 +17,9 @@ Extract `release/FloatRead-v0.1.0.zip`, then load the extracted directory at `ch
 
 ## Verification status
 
-Automated verification results and exact commands are recorded in `PROGRESS.md`. Real Provider smoke tests are tracked independently and are not represented by Mock/adapter tests. Complete the checklist in `MANUAL_TESTING.md` before a Chrome Web Store submission.
+Automated verification results and exact commands are recorded in `PROGRESS.md`. An authorized DeepSeek `deepseek-v4-flash` connection/ordinary/stream/cancel smoke passed and is recorded independently from Mock/adapter tests in `docs/REAL_API_SMOKE.md`. Complete the checklist in `MANUAL_TESTING.md` before a Chrome Web Store submission.
 
 ## Known release prerequisites
 
 - Replace provisional branding URLs with the canonical public repository/author identity.
 - Capture approved screenshots from a real unpacked production build with no secret visible.
-- Complete and record any desired one-Provider real API smoke test using a revocable low-limit key.

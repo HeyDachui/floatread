@@ -15,6 +15,8 @@ FloatRead sends model requests directly from its Manifest V3 Background Service 
 
 Model names shown in the UI are editable examples, not a promise that a model will always exist. FloatRead sends no tool definitions and enables no search, grounding, file access, MCP or remote action capability. OpenAI requests set `store: false`.
 
+DeepSeek V4 defaults to Thinking mode, where reasoning tokens count against `max_tokens` before final `content`. FloatRead explicitly sends `thinking: { type: "disabled" }` because its three concise reading modes do not need exposed chain-of-thought; this also avoids an empty final answer under a small output budget.
+
 ## Permission boundary
 
 Remote Providers must use HTTPS. Ollama V1 accepts only `localhost` and `127.0.0.1`, including a custom port. Base URLs containing embedded credentials, a query string or a fragment are rejected. The settings page explains and requests only the parsed Provider origin before a user-triggered connection test. A denied permission produces a normal, recoverable error.

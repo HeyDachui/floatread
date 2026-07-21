@@ -24,6 +24,7 @@
     "test:release-load": "tsx scripts/test-release-load.ts",
     "verify:dist": "tsx scripts/verify-dist.ts",
     "scan:secrets": "tsx scripts/secret-scan.ts",
+    "smoke:deepseek": "tsx scripts/smoke-deepseek.ts",
     "package:zip": "tsx scripts/package-extension.ts",
     "verify:release": "tsx scripts/verify-release.ts",
     "package": "pnpm build && pnpm verify:dist && pnpm scan:secrets && pnpm package:zip && pnpm verify:release && pnpm test:release-load && pnpm scan:secrets",

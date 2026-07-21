@@ -23,6 +23,7 @@ function requestInit(
   apiKey: string | undefined,
   signal: AbortSignal,
   stream: boolean,
+  kind: ProviderKind,
 ): RequestInit {
   return {
     method: "POST",
@@ -38,6 +39,7 @@ function requestInit(
       ],
       max_tokens: request.maxOutputTokens,
       ...(typeof request.temperature === "number" ? { temperature: request.temperature } : {}),
+      ...(kind === "deepseek" ? { thinking: { type: "disabled" } } : {}),
       stream,
     }),
     signal,
@@ -77,7 +79,7 @@ export function createOpenAiCompatibleAdapter(
       assertProfile(adapter, profile);
       const response = await providerFetch(
         endpoint(profile.baseUrl, "chat/completions"),
-        requestInit(request, profile, apiKey, signal, false),
+        requestInit(request, profile, apiKey, signal, false, adapter.kind),
       );
       await assertOk(response);
       const record = await readJsonResponse(response);
@@ -100,7 +102,7 @@ export function createOpenAiCompatibleAdapter(
       assertProfile(adapter, profile);
       const response = await providerFetch(
         endpoint(profile.baseUrl, "chat/completions"),
-        requestInit(request, profile, apiKey, signal, true),
+        requestInit(request, profile, apiKey, signal, true, adapter.kind),
       );
       await assertOk(response);
       yield { type: "start" };

@@ -15,6 +15,8 @@ All actual Provider traffic originates in the Background Service Worker. UI and 
 
 Example model names are editable and can become unavailable; verify them with the Provider. Custom endpoints should normally use OpenAI Compatible Chat Completions.
 
+DeepSeek V4 requests explicitly disable Thinking mode. FloatRead needs only a concise reading result, and DeepSeek counts thinking plus final-answer tokens within the same output limit.
+
 ## Setup
 
 1. Open the toolbar Popup and choose **Settings**.

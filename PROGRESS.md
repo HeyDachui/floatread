@@ -4,25 +4,25 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: Phase 7 — complete; real-Provider smoke remains pending user confirmation
+- Current phase: Phase 7 and authorized DeepSeek smoke — complete
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
-- Local smoke-test secret: `.secrets/FloatRead-APIKEY.txt` (ignored; contents unread)
-- Real API status: preflight eligible; waiting for confirmation that the ignored key is a DeepSeek key
+- Local smoke-test secret: `.secrets/FloatRead-APIKEY.txt` (ignored; read only into a temporary process environment for the authorized test)
+- Real API status: DeepSeek `deepseek-v4-flash` connection, ordinary, stream and cancel passed
 
 ## Phase ledger
 
-| Phase | Status             | Commit                                     | Verification                                                                     |
-| ----- | ------------------ | ------------------------------------------ | -------------------------------------------------------------------------------- |
-| 0     | Complete           | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | Lint, typecheck, unit, integration, build and dist verification passed           |
-| 1     | Complete           | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 11 unit tests and 2 real Chromium extension E2E tests passed                     |
-| 2     | Complete           | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | 23 unit, 2 integration and 4 real extension E2E tests passed                     |
-| 3     | Preflight complete | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | 51 unit, 2 integration and 5 real extension E2E tests passed; real smoke pending |
-| 4     | Complete           | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | 59 unit, 2 integration and 6 real extension E2E tests passed                     |
-| 5     | Complete           | `80ee9636f1025bdd6b3791ae028738b184f600fa` | 79 unit, 2 integration and 7 real extension E2E tests passed                     |
-| 6     | Complete           | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | 90 unit, 2 integration and 13 real extension E2E tests passed                    |
-| 7     | Complete           | `2b4c95624715b0ff2715bb5532a29002bb75f212` | Full quality gate, audit, dist/ZIP verification and secret scans passed          |
+| Phase | Status   | Commit                                     | Verification                                                            |
+| ----- | -------- | ------------------------------------------ | ----------------------------------------------------------------------- |
+| 0     | Complete | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | Lint, typecheck, unit, integration, build and dist verification passed  |
+| 1     | Complete | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 11 unit tests and 2 real Chromium extension E2E tests passed            |
+| 2     | Complete | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | 23 unit, 2 integration and 4 real extension E2E tests passed            |
+| 3     | Complete | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | Automated checks plus post-Phase-7 authorized DeepSeek smoke passed     |
+| 4     | Complete | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | 59 unit, 2 integration and 6 real extension E2E tests passed            |
+| 5     | Complete | `80ee9636f1025bdd6b3791ae028738b184f600fa` | 79 unit, 2 integration and 7 real extension E2E tests passed            |
+| 6     | Complete | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | 90 unit, 2 integration and 13 real extension E2E tests passed           |
+| 7     | Complete | `2b4c95624715b0ff2715bb5532a29002bb75f212` | Full quality gate, audit, dist/ZIP verification and secret scans passed |
 
 ## Phase 0 target
 
@@ -70,7 +70,7 @@ The first dependency installation downloaded packages but exited with `ERR_PNPM_
 - Brand identity and public repository URLs are provisional centralized values.
 - Release/store screenshots have not been fabricated; the real-build capture checklist remains open.
 - The human regression checklist is prepared but is not falsely marked executed.
-- No real API call is authorized before the supplied credential's Provider is explicitly confirmed.
+- Only DeepSeek has a real API smoke record; other Provider adapters remain protocol-tested without live credentials.
 
 ## Phase 1 result
 
@@ -173,8 +173,10 @@ Real API checkpoint:
 - Proposed Provider: DeepSeek.
 - Proposed Base URL: `https://api.deepseek.com`.
 - Proposed model: `deepseek-v4-flash`.
-- Secret source: ignored `.secrets/FloatRead-APIKEY.txt`; file contents remain unread pending Provider confirmation.
-- No real request has been made and no credential has been echoed.
+- Secret source: ignored `.secrets/FloatRead-APIKEY.txt`, injected into a temporary environment variable without echo.
+- Initial connection: HTTP success but `INVALID_RESPONSE` because DeepSeek V4 Thinking consumed the eight-token output limit before final content.
+- Fix: the DeepSeek adapter explicitly sends `thinking: { type: "disabled" }`; request-format tests passed.
+- Retest: connection, ordinary generation, streaming and cancellation all passed. No credential or output body was recorded.
 
 Knowledge After at Phase 3: `not_applied` for prior local knowledge cards. Current primary Provider documentation and executable adapter tests were used directly. Project-local evidence retained: Provider protocols need separate framing parsers (SSE versus NDJSON), and retries are safe only before a text delta is exposed.
 
@@ -311,11 +313,11 @@ Final automated verification before the phase commit:
 Release evidence:
 
 - ZIP: `release/FloatRead-v0.1.0.zip`
-- ZIP size: 268,427 bytes
-- SHA-256: `383077d0c23053ae9a21eb8fa8669bdda6150c9bc57d809af9fc07e3d5c3e879`
+- ZIP size: 268,464 bytes
+- SHA-256: `7da4b46299585504118ad04351e556ebe40cc6de3ca10aed93a050a927a2409b`
 - Inventory: `release/FloatRead-v0.1.0-files.txt`
 - Digest file: `release/FloatRead-v0.1.0.sha256`
-- Secret scan: passed across 160 tracked/build/archive text files after packaging
+- Secret scan: passed across 178 tracked/build/archive text files after staging the smoke evidence
 
 Controlled release-tool failures and fixes:
 
@@ -326,6 +328,15 @@ Controlled release-tool failures and fixes:
 
 Knowledge After at Phase 7: no prior knowledge card was adopted. New project-local evidence retained: release verification must compare archive bytes to the already-verified production tree, and secret scanning should enumerate tracked source rather than walking ignored credential directories.
 
-## Remaining checkpoint
+## Authorized DeepSeek smoke result
 
-The ignored credential remains unread. Once the user confirms its Provider, Base URL and model, one minimal real-API smoke test may be run and recorded without echoing the key. Until then, the real-API matrix truthfully remains **not executed**.
+The user confirmed `deepseek-v4-flash` on 2026-07-21. With the default `https://api.deepseek.com` Base URL, the final minimal live checks produced:
+
+| Check               | Actual result                                                 |
+| ------------------- | ------------------------------------------------------------- |
+| Connection          | Passed in 976 ms; text received                               |
+| Ordinary generation | Passed in 651 ms; 24 characters; 317 input / 12 output tokens |
+| Streaming           | Passed in 772 ms; stream completed with 24 characters         |
+| Cancellation        | Passed in 104 ms with `ABORTED`                               |
+
+The first pre-fix connection returned `INVALID_RESPONSE` in 808 ms and did not proceed to other requests. Full details and credential-handling evidence are in `docs/REAL_API_SMOKE.md`. No other Provider used a real credential.

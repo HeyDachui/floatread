@@ -20,3 +20,4 @@ All notable changes are documented here. The project follows semantic versioning
 
 - Closed production Shadow DOM, pure-text model output, runtime message validation and trusted credential boundary.
 - Release checks reject dynamic execution, remote scripts, source maps, tests, environment files, local secrets and mismatched ZIP contents.
+- DeepSeek V4 requests explicitly disable default Thinking mode so a small output budget cannot be consumed before final text is returned.
