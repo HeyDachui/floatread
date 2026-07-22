@@ -922,3 +922,10 @@ Acceptance conclusion:
 
 - Formal existence, controlled function, automated quality, real DeepSeek metadata and installable package passed.
 - The owner can test 0.4.1 directly. Authenticated-X observation is still unknown and is not represented as passed.
+
+### Owner live-site acceptance — 2026-07-22
+
+- The owner installed/reloaded 0.4.1 and tested both authenticated X and TED through the requested checks.
+- Owner result: no problem observed. This closes the reported translated-selection, Natural Chinese spinner/Stop, connection stability and page responsiveness loop for the tested X/TED paths.
+- Acceptance scope is limited to the owner's tested X and TED sessions. Reddit remains untested by the owner and is not marked passed.
+- Project-loop status: stop this repair loop because automated regressions, real Provider metadata, installable package and owner live-use observation now agree. Reopen only if a reproducible X/TED regression appears or Reddit reveals a distinct platform issue.
