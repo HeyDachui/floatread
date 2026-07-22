@@ -573,3 +573,44 @@ Release evidence:
 - Real Provider calls this round: none. Provider code was unchanged; the 0.3.0 DeepSeek smoke is historical evidence only.
 
 Acceptance conclusion: formal existence, controlled functional operation and automated release quality passed. The actual Chrome profile points to the workspace `dist`, and the newly built package is installable. Authenticated-X observation of the repaired 0.3.1 click path remains the owner's final real-use check after pressing Reload in `chrome://extensions`; it is not claimed as already observed.
+
+## Version 0.3.2 visible failure-state round — 2026-07-22
+
+Owner acceptance report: after the 0.3.1 update, the visible-page translation state still appeared to fail. Live Chrome inspection showed the authenticated X page remained in English and the FloatRead settings page was open. Chrome security policy prevented inspection of the extension page itself, so the exact Provider/credential value was not inferred or read from browser storage.
+
+Controlled diagnosis and changes:
+
+- Content already received structured page-batch errors, but `FloatingCompanion` rendered only the initial 2.5-second Start toast. Error states and their recovery path were invisible.
+- Page translation now shows a persistent status beside the pet while scanning, translating or watching. The text includes the completed segment count.
+- A zero-result watch state explicitly says that no visible text matches the configured source languages.
+- Provider/permission/credential/network/model/response failures now remain visible, put the pet in its error state and expose a Settings button.
+- Missing-credential wording explains that session-only and enter-each-time modes require re-entry after their extension session ends. The Key itself is never sent to Content or rendered.
+- Mock-only error injection adds deterministic browser coverage without a real Provider call.
+
+Project-loop evidence:
+
+- Changed variable: page-translation state visibility and recovery guidance.
+- Held constant: scanner limits, mutation observation, Provider routing, prompts, caching, stop/abort behavior, permissions and credential storage modes.
+- The new browser case proves the error remains visible beyond the former 2.5-second timeout and offers recovery. The final full suite passed.
+- Exact live-X external cause remains intentionally unknown until the owner reloads 0.3.2 and reads the now-visible status; this release removes the diagnostic blind spot rather than inventing a Provider result.
+
+Actual verification:
+
+| Command                 | Actual result                                                  |
+| ----------------------- | -------------------------------------------------------------- |
+| `pnpm lint`             | Passed, zero warnings                                          |
+| `pnpm typecheck`        | Passed                                                         |
+| `pnpm test`             | Passed: 22 files, 109 tests                                    |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                       |
+| `pnpm test:e2e`         | Passed: 18 real Chromium extension tests                       |
+| `pnpm format:check`     | Passed                                                         |
+| `pnpm package`          | Passed: build, two secret scans, ZIP verification and MV3 load |
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.3.2.zip`
+- ZIP size: 435,817 bytes
+- SHA-256: `a91e41965cfbcdc9b4b1d721f8df0d1378e5a49340ab6ac41e016cd0a3625b45`
+- Real Provider calls this round: none; no new Token usage.
+
+Acceptance conclusion: formal existence, controlled functional operation and automated release quality passed. The failure reason will now be observable at the real X entry. Authenticated-X recovery is pending one owner reload and click; it is not claimed as already passed.

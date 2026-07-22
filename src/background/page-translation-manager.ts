@@ -60,6 +60,15 @@ async function runMockBatch(
   job: ActivePageJob,
   segments: PageBatchSegment[],
 ): Promise<void> {
+  if (segments.some((segment) => segment.text === "FloatRead mock page error.")) {
+    throw new ProviderFailure(
+      publicError(
+        "SECRET_REQUIRED",
+        "未找到 API Key。若使用“仅本次会话”或“每次输入”，请在设置中重新输入。",
+        false,
+      ),
+    );
+  }
   await addUsage(job.sessionId, { requests: 1, usageAvailable: false });
   post(port, { type: "PAGE_BATCH_START", jobId: job.jobId });
   for (const segment of segments) {

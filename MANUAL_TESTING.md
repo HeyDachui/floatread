@@ -21,6 +21,9 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Scrolling progressively translates newly visible posts.
 - [ ] Opening a dynamic menu translates its text; reopening the same menu uses local translation memory.
 - [ ] Stop immediately prevents new translations and late results cannot restart processing.
+- [ ] Translation progress remains visible with the completed count; it does not disappear after the former 2.5-second toast timeout.
+- [ ] A missing Key, denied permission, network failure or Provider error remains visible with a Settings recovery action and no secret data.
+- [ ] When no visible text matches the selected source languages, the companion says so instead of appearing stuck.
 - [ ] Resume processes text that appeared while stopped.
 - [ ] Clear restores surviving original text nodes and disables the site's translation preference.
 - [ ] No FloatRead global stylesheet is attached to the host document; companion UI remains in its Shadow DOM.
@@ -95,7 +98,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.3.1.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.3.2.zip`, not `dist-e2e`.
 - [ ] `manifest.json` is MV3, version matches, CSP is local-only and permissions match `docs/PERMISSIONS.md`.
 - [ ] ZIP inventory contains no tests, source maps, `.env`, `.secrets`, logs, `node_modules` or unrelated screenshots.
 - [ ] `pnpm scan:secrets` and `pnpm verify:release` pass after packaging.

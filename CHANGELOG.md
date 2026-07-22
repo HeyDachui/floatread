@@ -2,6 +2,19 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.3.2] - 2026-07-22
+
+### Fixed
+
+- Keep page-translation progress visible instead of hiding the only status after 2.5 seconds.
+- Surface the actual Provider, permission, credential, network or response error beside the companion and provide a direct Settings action.
+- Explain the zero-result state when no visible text matches the configured source languages.
+- Clarify that a session-only or enter-each-time API Key may need to be entered again after its extension session ends.
+
+### Verified
+
+- Add a browser regression proving a page error remains visible beyond the former toast timeout and exposes recovery.
+
 ## [0.3.1] - 2026-07-22
 
 ### Fixed

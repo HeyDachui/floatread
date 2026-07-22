@@ -666,6 +666,35 @@
   font-size: 13px;
 }
 
+.fr-page-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.fr-page-status-error {
+  border-color: color-mix(in srgb, var(--fr-error) 66%, transparent);
+  color: var(--fr-error);
+}
+
+.fr-page-status button {
+  flex: none;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--fr-accent) 22%, transparent);
+  color: var(--fr-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.fr-page-status button:hover,
+.fr-page-status button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--fr-accent) 70%, white);
+  outline-offset: 1px;
+}
+
 .fr-toast {
   top: calc(var(--fr-companion-y) - 10px);
   width: max-content;

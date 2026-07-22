@@ -49,7 +49,13 @@ export async function providerFetch(input: string, init: RequestInit): Promise<R
 export function requireApiKey(apiKey: string | undefined): string {
   const normalized = apiKey?.trim();
   if (!normalized) {
-    throw new ProviderFailure(publicError("SECRET_REQUIRED", "此 Provider 需要 API Key。", false));
+    throw new ProviderFailure(
+      publicError(
+        "SECRET_REQUIRED",
+        "未找到 API Key。若使用“仅本次会话”或“每次输入”，请在设置中重新输入。",
+        false,
+      ),
+    );
   }
   return normalized;
 }

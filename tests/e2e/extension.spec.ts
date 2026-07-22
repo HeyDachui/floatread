@@ -156,6 +156,26 @@ test("starts page translation even when text remains selected", async () => {
   await page.close();
 });
 
+test("keeps a page translation failure visible with a recovery action", async () => {
+  const page = await context.newPage();
+  await page.goto(fixtureUrl);
+  const host = page.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+  await page.locator("#source").evaluate((element) => {
+    element.textContent = "FloatRead mock page error.";
+  });
+
+  const companion = host.locator("button.fr-companion");
+  await companion.click();
+  const errorStatus = host.locator(".fr-page-status-error");
+  await expect(errorStatus).toContainText(/API Key/u);
+  await expect(errorStatus.getByRole("button")).toHaveText(/打开设置|Open settings/u);
+  await expect(companion).toHaveAttribute("aria-label", pageTranslationLabel);
+  await page.waitForTimeout(2_800);
+  await expect(errorStatus).toBeVisible();
+  await page.close();
+});
+
 test("streams a selected passage through Background and Mock Provider", async () => {
   const page = await context.newPage();
   await page.setViewportSize({ width: 1_000, height: 760 });

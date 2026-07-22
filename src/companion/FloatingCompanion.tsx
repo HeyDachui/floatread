@@ -90,8 +90,19 @@ export function FloatingCompanion({
   const visualState =
     isGenerating || isPageTranslating
       ? "thinking"
-      : (visualFeedback ?? (selection ? "ready" : "idle"));
+      : (visualFeedback ??
+        (pageTranslation.status === "error" ? "error" : selection ? "ready" : "idle"));
   const skinState = visualState as SkinState;
+  const pageStatusText =
+    pageTranslation.status === "scanning" || pageTranslation.status === "translating"
+      ? t("pageTranslationProgress", String(pageTranslation.translatedCount))
+      : pageTranslation.status === "watching"
+        ? pageTranslation.translatedCount === 0
+          ? t("pageTranslationNoMatch")
+          : t("pageTranslationWatching", String(pageTranslation.translatedCount))
+        : pageTranslation.status === "error"
+          ? pageTranslation.message
+          : null;
 
   useEffect(() => {
     if (bootstrap.skin.availableAssets.length === 0) {
@@ -367,7 +378,23 @@ export function FloatingCompanion({
       }
       data-skin={bootstrap.skin.variant}
     >
-      {hint ? (
+      {pageStatusText ? (
+        <div
+          className={`fr-toast fr-page-status${pageTranslation.status === "error" ? " fr-page-status-error" : ""}`}
+          role="status"
+          aria-live={pageTranslation.status === "error" ? "assertive" : "polite"}
+        >
+          <span>{pageStatusText}</span>
+          {pageTranslation.status === "error" ? (
+            <button
+              type="button"
+              onClick={() => void chrome.runtime.sendMessage({ type: "OPEN_OPTIONS" })}
+            >
+              {t("openSettings")}
+            </button>
+          ) : null}
+        </div>
+      ) : hint ? (
         <div className="fr-toast" role="status" aria-live="polite">
           {hint}
         </div>
