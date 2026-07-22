@@ -25,6 +25,11 @@ export type PageTranslationState =
       detectedLanguages?: TranslationLanguage[];
     };
 
+export interface PageTranslationNotice {
+  type: "scroll_catch_up";
+  id: number;
+}
+
 interface AppliedTranslation {
   original: string;
   sourceText: string;
@@ -44,11 +49,31 @@ let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 let reconnectStableTimer: ReturnType<typeof setTimeout> | undefined;
 let reconnectAttempts = 0;
 let backgroundPaused = false;
+let scrollWindowStartedAt = 0;
+let scrollWindowStartY = 0;
+let lastCatchUpNoticeAt = Number.NEGATIVE_INFINITY;
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_STABLE_MS = 2_000;
+const RAPID_SCROLL_WINDOW_MS = 600;
+const RAPID_SCROLL_MIN_PX = 480;
+const RAPID_SCROLL_VIEWPORT_RATIO = 0.85;
+const VIEWPORT_SETTLE_MS = 220;
+const CATCH_UP_NOTICE_COOLDOWN_MS = 20_000;
 const applied = new Map<Text, AppliedTranslation>();
 const pending = new Map<string, PageTextSegment>();
 const listeners = new Set<(value: PageTranslationState) => void>();
+const noticeListeners = new Set<(notice: PageTranslationNotice) => void>();
+
+export function isRapidScrollJump(
+  startY: number,
+  nextY: number,
+  viewportHeight: number,
+  elapsedMs: number,
+): boolean {
+  if (elapsedMs < 0 || elapsedMs > RAPID_SCROLL_WINDOW_MS) return false;
+  const threshold = Math.max(RAPID_SCROLL_MIN_PX, viewportHeight * RAPID_SCROLL_VIEWPORT_RATIO);
+  return Math.abs(nextY - startY) >= threshold;
+}
 
 export function restoreOriginalSelectionText(
   selectedText: string,
@@ -80,6 +105,10 @@ function publish(next: PageTranslationState): void {
     detectedLanguages: next.detectedLanguages ?? state.detectedLanguages ?? [],
   };
   for (const listener of listeners) listener(state);
+}
+
+function publishNotice(notice: PageTranslationNotice): void {
+  for (const listener of noticeListeners) listener(notice);
 }
 
 function translatedCount(): number {
@@ -292,13 +321,55 @@ function scan(): void {
   });
 }
 
-function scheduleScan(delay = 260): void {
+function scheduleScan(delay = 260, replace = false): void {
   if (!active || backgroundPaused || document.hidden) return;
-  if (scheduleTimer) return;
+  if (scheduleTimer) {
+    if (!replace) return;
+    clearTimeout(scheduleTimer);
+  }
   scheduleTimer = setTimeout(scan, delay);
 }
 
-const onViewportChange = (): void => scheduleScan(300);
+function cancelStaleViewportBatch(now: number): void {
+  if (!busy || !currentJobId || !currentSessionId) return;
+  const jobId = currentJobId;
+  const sessionId = currentSessionId;
+  currentJobId = null;
+  busy = false;
+  pending.clear();
+  try {
+    port?.postMessage({
+      type: "PAGE_TRANSLATE_CANCEL",
+      jobId,
+      sessionId,
+    });
+  } catch {
+    port = null;
+    scheduleReconnect(0);
+  }
+  if (now - lastCatchUpNoticeAt >= CATCH_UP_NOTICE_COOLDOWN_MS) {
+    lastCatchUpNoticeAt = now;
+    publishNotice({ type: "scroll_catch_up", id: now });
+  }
+  publish({ status: "scanning", translatedCount: translatedCount() });
+}
+
+const onViewportChange = (): void => {
+  const now = Date.now();
+  const nextY = window.scrollY;
+  const elapsed = now - scrollWindowStartedAt;
+  if (elapsed > RAPID_SCROLL_WINDOW_MS) {
+    scrollWindowStartedAt = now;
+    scrollWindowStartY = nextY;
+  } else if (isRapidScrollJump(scrollWindowStartY, nextY, window.innerHeight, elapsed)) {
+    cancelStaleViewportBatch(now);
+    scrollWindowStartedAt = now;
+    scrollWindowStartY = nextY;
+  }
+  scheduleScan(VIEWPORT_SETTLE_MS, true);
+};
+
+const onViewportResize = (): void => scheduleScan(300, true);
 
 const onVisibilityChange = (): void => {
   if (!active) return;
@@ -324,14 +395,14 @@ function startWatching(): void {
     observer.observe(document.body, { childList: true, subtree: true });
   }
   window.addEventListener("scroll", onViewportChange, { passive: true });
-  window.addEventListener("resize", onViewportChange, { passive: true });
+  window.addEventListener("resize", onViewportResize, { passive: true });
 }
 
 function stopWatching(): void {
   observer?.disconnect();
   observer = null;
   window.removeEventListener("scroll", onViewportChange);
-  window.removeEventListener("resize", onViewportChange);
+  window.removeEventListener("resize", onViewportResize);
   if (scheduleTimer) clearTimeout(scheduleTimer);
   scheduleTimer = undefined;
 }
@@ -343,6 +414,8 @@ export function startPageTranslation(
   clearReconnect();
   backgroundPaused = document.hidden;
   translationPreferences = preferences;
+  scrollWindowStartedAt = Date.now();
+  scrollWindowStartY = window.scrollY;
   currentSessionId = crypto.randomUUID();
   ensurePort().postMessage({
     type: "PAGE_TRANSLATION_SESSION_START",
@@ -435,4 +508,11 @@ export function subscribePageTranslation(
   listeners.add(listener);
   listener(state);
   return () => listeners.delete(listener);
+}
+
+export function subscribePageTranslationNotices(
+  listener: (notice: PageTranslationNotice) => void,
+): () => void {
+  noticeListeners.add(listener);
+  return () => noticeListeners.delete(listener);
 }

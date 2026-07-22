@@ -157,4 +157,63 @@ describe("page translator connection recovery", () => {
     expect(() => translator.pausePageTranslation()).not.toThrow();
     expect(translator.getPageTranslationState().status).toBe("paused");
   });
+
+  it("cancels a stale batch after a rapid viewport jump and debounces the catch-up scan", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 20,
+      left: 0,
+      right: 400,
+      bottom: 60,
+      width: 400,
+      height: 40,
+      toJSON: () => ({}),
+    });
+    document.body.innerHTML = '<main><p lang="en">Visible translation batch.</p></main>';
+    const connected = fakePort();
+    vi.stubGlobal("chrome", { runtime: { connect: vi.fn(() => connected) } });
+    const translator = await import("../../src/content/page-translator");
+    const notices: string[] = [];
+    const unsubscribe = translator.subscribePageTranslationNotices((notice) =>
+      notices.push(notice.type),
+    );
+
+    translator.startPageTranslation();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(
+      connected.postMessage.mock.calls.filter(
+        ([message]) => (message as { type?: string }).type === "PAGE_TRANSLATE_BATCH",
+      ),
+    ).toHaveLength(1);
+
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 900 });
+    window.dispatchEvent(new Event("scroll"));
+    expect(connected.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "PAGE_TRANSLATE_CANCEL" }),
+    );
+    expect(notices).toEqual(["scroll_catch_up"]);
+    await vi.advanceTimersByTimeAsync(219);
+    expect(
+      connected.postMessage.mock.calls.filter(
+        ([message]) => (message as { type?: string }).type === "PAGE_TRANSLATE_BATCH",
+      ),
+    ).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(
+      connected.postMessage.mock.calls.filter(
+        ([message]) => (message as { type?: string }).type === "PAGE_TRANSLATE_BATCH",
+      ),
+    ).toHaveLength(2);
+
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 1_800 });
+    window.dispatchEvent(new Event("scroll"));
+    expect(notices).toEqual(["scroll_catch_up"]);
+    unsubscribe();
+    translator.pausePageTranslation();
+  });
 });

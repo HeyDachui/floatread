@@ -9,6 +9,7 @@ import {
   pausePageTranslation,
   startPageTranslation,
   subscribePageTranslation,
+  subscribePageTranslationNotices,
   type PageTranslationState,
 } from "../content/page-translator";
 import { rememberLastResult } from "../content/last-result";
@@ -56,6 +57,8 @@ export function FloatingCompanion({
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
+  const [catchingUp, setCatchingUp] = useState(false);
+  const [catchUpMessage, setCatchUpMessage] = useState(false);
   const [viewportVersion, setViewportVersion] = useState(0);
   const [readerState, dispatch] = useReducer(readerReducer, INITIAL_READER_STATE);
   const [visualFeedback, setVisualFeedback] = useState<"success" | "error" | null>(null);
@@ -81,6 +84,8 @@ export function FloatingCompanion({
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
   const focusMenuOnOpen = useRef(false);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const catchUpTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const catchUpMessageTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const { companionSize, companionOpacity, snapMargin } = bootstrap.appearance;
   const viewport = { width: window.innerWidth, height: window.innerHeight };
@@ -192,6 +197,8 @@ export function FloatingCompanion({
   useEffect(
     () => () => {
       if (hintTimer.current) clearTimeout(hintTimer.current);
+      if (catchUpTimer.current) clearTimeout(catchUpTimer.current);
+      if (catchUpMessageTimer.current) clearTimeout(catchUpMessageTimer.current);
     },
     [],
   );
@@ -207,6 +214,22 @@ export function FloatingCompanion({
     setHint(message);
     hintTimer.current = setTimeout(() => setHint(null), 2_500);
   };
+
+  useEffect(
+    () =>
+      subscribePageTranslationNotices((notice) => {
+        if (notice.type !== "scroll_catch_up") return;
+        if (hintTimer.current) clearTimeout(hintTimer.current);
+        if (catchUpTimer.current) clearTimeout(catchUpTimer.current);
+        if (catchUpMessageTimer.current) clearTimeout(catchUpMessageTimer.current);
+        setHint(null);
+        setCatchUpMessage(true);
+        setCatchingUp(true);
+        catchUpMessageTimer.current = setTimeout(() => setCatchUpMessage(false), 2_000);
+        catchUpTimer.current = setTimeout(() => setCatchingUp(false), 700);
+      }),
+    [t],
+  );
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>): void => {
     if (event.button !== 0) return;
@@ -426,7 +449,11 @@ export function FloatingCompanion({
       }
       data-skin={bootstrap.skin.variant}
     >
-      {pageStatusText ? (
+      {catchUpMessage && pageTranslation.status !== "error" ? (
+        <div className="fr-toast fr-catch-up-toast" role="status" aria-live="polite">
+          {t("scrollTooFast")}
+        </div>
+      ) : pageStatusText ? (
         <div
           className={`fr-toast fr-page-status${pageTranslation.status === "error" ? " fr-page-status-error" : ""}`}
           role="status"
@@ -576,7 +603,7 @@ export function FloatingCompanion({
 
       <button
         ref={buttonRef}
-        className={`fr-companion fr-state-${visualState}`}
+        className={`fr-companion fr-state-${visualState}${catchingUp ? " fr-catching-up" : ""}`}
         data-motion={
           bootstrap.appearance.motionEnabled ? bootstrap.skin.motions[skinState] : "none"
         }
