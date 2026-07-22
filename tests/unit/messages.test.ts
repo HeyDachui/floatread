@@ -4,6 +4,7 @@ import {
   generationPortIncomingSchema,
   generationPortOutgoingSchema,
   pageTranslationPortIncomingSchema,
+  pageTranslationPortOutgoingSchema,
 } from "../../src/shared/messages";
 
 describe("content message protocol", () => {
@@ -68,6 +69,22 @@ describe("page translation port protocol", () => {
           kind: "content",
           sourceLanguage: "en",
         })),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a bounded background heartbeat without carrying page text", () => {
+    expect(
+      pageTranslationPortOutgoingSchema.safeParse({
+        type: "PAGE_BATCH_PROGRESS",
+        jobId: "page-job-123456",
+      }).success,
+    ).toBe(true);
+    expect(
+      pageTranslationPortOutgoingSchema.safeParse({
+        type: "PAGE_BATCH_PROGRESS",
+        jobId: "page-job-123456",
+        text: "must-not-be-sent",
       }).success,
     ).toBe(false);
   });

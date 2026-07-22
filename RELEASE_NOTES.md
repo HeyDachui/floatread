@@ -1,6 +1,6 @@
-# FloatRead 0.3.4 visible-first translation release notes
+# FloatRead 0.3.5 resilient translation release notes
 
-FloatRead 0.3.4 makes page translation truly visible-first. It scans only text intersecting the current viewport, ignores clipped accessibility-only text, prioritizes article content over navigation, and writes each validated streamed translation immediately instead of waiting for a complete batch.
+FloatRead 0.3.5 translates descriptive words even when they share a phrase with product or person names. Active page jobs now send a lightweight heartbeat, automatically reconnect after transient Manifest V3 Background restarts and preserve the same local request/Token totals.
 
 ## Highlights
 
@@ -14,11 +14,11 @@ FloatRead 0.3.4 makes page translation truly visible-first. It scans only text i
 
 ## Install
 
-Extract `release/FloatRead-v0.3.4.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. When updating the workspace build, press **Reload** once. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
+Extract `release/FloatRead-v0.3.5.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. When updating the workspace build, press **Reload** once. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
 
 ## Verification status
 
-Automated results and exact commands are recorded in `PROGRESS.md`. This round made no real Provider call and consumed no new tokens. The earlier DeepSeek `deepseek-v4-flash` smoke remains historical Provider evidence; real-X latency and visual quality still require the owner's post-reload check. Complete `MANUAL_TESTING.md` before store publication.
+Automated results and exact commands are recorded in `PROGRESS.md`. The V3 page Prompt and streaming path receive one minimal DeepSeek `deepseek-v4-flash` smoke after package gates pass; no output body or credential is recorded. Real-X continuity still requires the owner's post-reload check. Complete `MANUAL_TESTING.md` before store publication.
 
 ## Known release prerequisites
 

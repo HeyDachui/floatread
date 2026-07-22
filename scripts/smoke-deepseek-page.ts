@@ -1,7 +1,5 @@
-import {
-  buildPageTranslationPrompt,
-  parsePageTranslationResponse,
-} from "../src/page-translation/prompt";
+import { buildPageTranslationPrompt } from "../src/page-translation/prompt";
+import { streamPageTranslationWithSingleRetry } from "../src/page-translation/complete";
 import { deepSeekAdapter } from "../src/providers/openai-compatible";
 import { ProviderFailure, type ProviderProfile } from "../src/providers/types";
 
@@ -26,7 +24,12 @@ const profile: ProviderProfile = {
   updatedAt: 0,
 };
 const segments = [
-  { id: "ui_0", kind: "ui" as const, text: "Account settings", sourceLanguage: "en" as const },
+  {
+    id: "mixed_name_0",
+    kind: "content" as const,
+    text: "ChatGPT Work => ChatGPT HelpMeWithEverything?",
+    sourceLanguage: "en" as const,
+  },
   {
     id: "content_0",
     kind: "content" as const,
@@ -38,37 +41,55 @@ const prompt = buildPageTranslationPrompt(segments);
 const started = performance.now();
 
 try {
-  const completion = await deepSeekAdapter.complete(
-    {
-      requestId: "page-smoke-generation",
-      systemPrompt: prompt.systemPrompt,
-      userPrompt: prompt.userPrompt,
-      maxOutputTokens: prompt.maxOutputTokens,
-      temperature: 0,
-      responseFormat: "json_object",
-    },
-    profile,
-    key,
-    new AbortController().signal,
-  );
-  const parsed = parsePageTranslationResponse(
-    completion.text,
+  const controller = new AbortController();
+  let firstSegmentMs: number | undefined;
+  let inputTokens: number | undefined;
+  let outputTokens: number | undefined;
+  const parsed = await streamPageTranslationWithSingleRetry(
+    () =>
+      deepSeekAdapter.stream(
+        {
+          requestId: "page-smoke-generation",
+          systemPrompt: prompt.systemPrompt,
+          userPrompt: prompt.userPrompt,
+          maxOutputTokens: prompt.maxOutputTokens,
+          temperature: 0,
+          responseFormat: "json_object",
+        },
+        profile,
+        key,
+        controller.signal,
+      ),
     segments.map((segment) => segment.id),
+    controller.signal,
+    () => {
+      firstSegmentMs ??= Math.round(performance.now() - started);
+    },
+    (input, output) => {
+      inputTokens = input;
+      outputTokens = output;
+    },
   );
-  const success = parsed !== null;
+  const mixedResult = parsed.get("mixed_name_0") ?? "";
+  const success =
+    parsed.size === segments.length &&
+    mixedResult.includes("ChatGPT") &&
+    mixedResult !== segments[0]?.text;
   console.log(
     JSON.stringify(
       {
         provider: "DeepSeek",
         model,
-        check: "page_translation_batch",
+        check: "v3_stream_page_batch",
         success,
         durationMs: Math.round(performance.now() - started),
         result: success ? "strict_json_batch_received" : "INVALID_RESPONSE",
-        segmentCount: parsed?.size ?? 0,
-        outputCharacters: parsed ? [...parsed.values()].map((value) => value.length) : [],
-        inputTokens: completion.inputTokens,
-        outputTokens: completion.outputTokens,
+        segmentCount: parsed.size,
+        firstSegmentMs,
+        outputCharacters: [...parsed.values()].map((value) => value.length),
+        mixedNameTranslated: mixedResult !== segments[0]?.text,
+        inputTokens,
+        outputTokens,
       },
       null,
       2,
@@ -81,7 +102,7 @@ try {
       {
         provider: "DeepSeek",
         model,
-        check: "page_translation_batch",
+        check: "v3_stream_page_batch",
         success: false,
         durationMs: Math.round(performance.now() - started),
         result: error instanceof ProviderFailure ? error.publicError.code : "UNKNOWN",

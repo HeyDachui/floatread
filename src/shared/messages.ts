@@ -279,6 +279,7 @@ export type PageTranslationPortIncoming = z.infer<typeof pageTranslationPortInco
 
 export const pageTranslationPortOutgoingSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("PAGE_BATCH_START"), jobId: requestIdSchema }).strict(),
+  z.object({ type: z.literal("PAGE_BATCH_PROGRESS"), jobId: requestIdSchema }).strict(),
   z
     .object({
       type: z.literal("PAGE_SEGMENT_RESULT"),

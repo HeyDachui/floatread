@@ -2,6 +2,19 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.3.5] - 2026-07-22
+
+### Fixed
+
+- Preserve genuine proper nouns while translating ordinary descriptive words in the same display name or phrase; bump the page Prompt/cache version so older skipped results are not reused.
+- Send a bounded heartbeat during active Provider page jobs so Manifest V3 does not discard an otherwise quiet long-lived connection.
+- Reconnect an active page automatically after a transient Background restart, resend unfinished visible text and retain already-applied translations.
+- Resume the same local usage session after reconnection instead of resetting its request and Token totals.
+
+### Verified
+
+- Add protocol, mixed-name Prompt, transient-Port reconnect and usage-session resume regressions.
+
 ## [0.3.4] - 2026-07-22
 
 ### Fixed

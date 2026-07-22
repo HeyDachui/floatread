@@ -714,3 +714,58 @@ Release evidence:
 - Real Provider calls this round: none; no new Token usage.
 
 Acceptance conclusion: formal repository, controlled function, automated quality and installable-package checks passed. The owner's authenticated X path is not claimed as passed until 0.3.4 is reloaded and observed through the three stopping-condition checks above.
+
+## Version 0.3.5 mixed-name and resilient-connection round — 2026-07-22
+
+Owner acceptance report: 0.3.4 was substantially better, but a visible phrase such as `ChatGPT Work => ChatGPT HelpMeWithEverything?` remained untranslated and the page repeatedly reported a disconnected translation link.
+
+Controlled diagnosis and changes:
+
+- The page Prompt's former “preserve product/person/technical names” rule allowed the model to treat an entire mixed phrase as a proper name. V3 now preserves only genuine proper-noun portions and `@handles`, while explicitly requiring ordinary words, actions and descriptions in the same display text to be translated.
+- `PAGE_TRANSLATION_PROMPT_VERSION` changed from V2 to V3, so cached results created under the over-broad preservation rule cannot mask the fix.
+- Chrome's documented Manifest V3 lifecycle terminates a worker after roughly 30 seconds of inactivity; opening a long-lived Port alone no longer resets that timer, while sending a Port message does. Active Provider page jobs now send a text-free `PAGE_BATCH_PROGRESS` heartbeat every ten seconds and clear it as soon as the job ends.
+- If a Port still disconnects, Content retains its session id and completed Text-node translations, clears only unfinished segments, reconnects up to three times and resubmits the currently visible unfinished text. A reconnect must remain stable for two seconds before its retry count is cleared, preventing rapid disconnect loops. User Stop cancels reconnect timers and remains authoritative.
+- `startUsageSession` now reopens an existing matching UUID instead of replacing it, preserving accumulated requests, cache hits and Token totals across a transient Background restart.
+
+Project-loop boundaries:
+
+- Changed variables: mixed-name Prompt semantics/cache version and active-job connection resilience.
+- Held constant: strict viewport boundary, content-first ordering, six-segment/6,000-character limit, Provider/model, one retry, timeout, pure-text rendering, permissions, credential isolation and user Stop behavior.
+- Automated stopping evidence requires mixed-name prompt coverage, heartbeat protocol validation, Port reconnect with the same UUID, retained usage totals, full E2E and package gates. Real-use closure still requires the owner to observe 0.3.5 on authenticated X over a longer page session.
+
+Knowledge-cycle After:
+
+- Before status: `no_relevant_hit`; FloatRead remains unconfigured in the local connector, so no query id or external candidate was adopted from it.
+- The official Chrome lifecycle evidence directly changed the implementation: a Port opening is insufficient, while messages sent through long-lived messaging reset service-worker activity. This supported a job-scoped heartbeat rather than an indefinite global keepalive.
+- Reusable bounded judgment: long-running Manifest V3 work should keep itself alive only while an authorized job exists, persist resumable identity/counters outside global memory, and make Stop cancel both work and recovery. This does not apply to short one-shot events or justify keeping a worker alive permanently.
+- Suggested reception: retain in this project record; no global Skill or rule was modified.
+
+Actual verification:
+
+| Command                 | Actual result                                                  |
+| ----------------------- | -------------------------------------------------------------- |
+| `pnpm lint`             | Passed, zero warnings                                          |
+| `pnpm typecheck`        | Passed                                                         |
+| `pnpm test`             | Passed: 24 files, 117 tests                                    |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                       |
+| `pnpm test:e2e`         | Passed: 18 real Chromium extension tests                       |
+| `pnpm format:check`     | Passed                                                         |
+| `pnpm package`          | Passed: build, two secret scans, ZIP verification and MV3 load |
+
+Real Provider checkpoint:
+
+- Provider/model: DeepSeek / `deepseek-v4-flash`.
+- Check: one V3 streamed two-segment page batch, including the owner's mixed-name example and the fixed harmless Codex sentence.
+- Result: passed; first validated segment 1,111 ms, total 1,245 ms, two exact ids, mixed-name output changed while preserving `ChatGPT`.
+- Usage: 310 input + 49 output = 359 total Token.
+- No response body, Authorization header or credential was retained in logs or documentation.
+- The owner explicitly requested retention of the low-limit test credential. It remains only at the Git-ignored `.secrets/FloatRead-APIKEY.txt`; it is absent from tracked files, `dist` and release ZIP.
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.3.5.zip`
+- ZIP size: 437,302 bytes
+- SHA-256: `cb80b7c2d99ebb60e1824edac6d110b681542618535a2d2f6d2797e54dea6e8e`
+- Secret scan: passed before packaging and again after the real smoke record; ignored owner-retained secret was not copied to any artifact.
+
+Acceptance conclusion: formal, controlled functional, automated quality, real DeepSeek V3 Prompt/stream and installable-package evidence passed. Authenticated-X long-session continuity remains owner-observed acceptance, not an automated claim.

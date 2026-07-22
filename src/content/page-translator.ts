@@ -39,6 +39,11 @@ let currentSessionId: string | null = null;
 let translationPreferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES;
 let observer: MutationObserver | null = null;
 let scheduleTimer: ReturnType<typeof setTimeout> | undefined;
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+let reconnectStableTimer: ReturnType<typeof setTimeout> | undefined;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 3;
+const RECONNECT_STABLE_MS = 2_000;
 const applied = new Map<Text, AppliedTranslation>();
 const pending = new Map<string, PageTextSegment>();
 const listeners = new Set<(value: PageTranslationState) => void>();
@@ -60,30 +65,100 @@ function translatedCount(): number {
 
 function ensurePort(): chrome.runtime.Port {
   if (port) return port;
-  port = chrome.runtime.connect({ name: PAGE_TRANSLATION_PORT_NAME });
-  port.onMessage.addListener((rawMessage: unknown) => {
+  const connectedPort = chrome.runtime.connect({ name: PAGE_TRANSLATION_PORT_NAME });
+  port = connectedPort;
+  connectedPort.onMessage.addListener((rawMessage: unknown) => {
     const parsed = pageTranslationPortOutgoingSchema.safeParse(rawMessage);
     if (parsed.success) handleEvent(parsed.data);
   });
-  port.onDisconnect.addListener(() => {
+  connectedPort.onDisconnect.addListener(() => {
+    if (port !== connectedPort) return;
     port = null;
     if (active) {
-      active = false;
+      if (reconnectStableTimer) clearTimeout(reconnectStableTimer);
+      reconnectStableTimer = undefined;
+      reconnectAttempts += 1;
       busy = false;
-      publish({
-        status: "error",
-        translatedCount: translatedCount(),
-        message: "页面翻译连接已断开，请重试。",
-      });
+      currentJobId = null;
+      pending.clear();
       stopWatching();
-      currentSessionId = null;
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        failReconnect();
+        return;
+      }
+      publish({ status: "scanning", translatedCount: translatedCount() });
+      scheduleReconnect(500 * reconnectAttempts);
     }
   });
-  return port;
+  return connectedPort;
+}
+
+function failReconnect(): void {
+  active = false;
+  busy = false;
+  currentJobId = null;
+  pending.clear();
+  reconnectAttempts = 0;
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = undefined;
+  if (reconnectStableTimer) clearTimeout(reconnectStableTimer);
+  reconnectStableTimer = undefined;
+  stopWatching();
+  publish({
+    status: "error",
+    translatedCount: translatedCount(),
+    message: "页面翻译连接已断开，自动恢复失败，请重试。",
+  });
+  currentSessionId = null;
+}
+
+function reconnect(): void {
+  reconnectTimer = undefined;
+  if (!active || !currentSessionId) return;
+  try {
+    const connectedPort = ensurePort();
+    connectedPort.postMessage({
+      type: "PAGE_TRANSLATION_SESSION_START",
+      sessionId: currentSessionId,
+      translation: translationPreferences,
+    });
+    if (reconnectStableTimer) clearTimeout(reconnectStableTimer);
+    reconnectStableTimer = setTimeout(() => {
+      reconnectAttempts = 0;
+      reconnectStableTimer = undefined;
+    }, RECONNECT_STABLE_MS);
+    startWatching();
+    publish({ status: "scanning", translatedCount: translatedCount() });
+    scheduleScan(100);
+  } catch {
+    reconnectAttempts += 1;
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      failReconnect();
+      return;
+    }
+    scheduleReconnect(500 * reconnectAttempts);
+  }
+}
+
+function scheduleReconnect(delay = 350): void {
+  if (!active || reconnectTimer) return;
+  reconnectTimer = setTimeout(reconnect, delay);
+}
+
+function clearReconnect(): void {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = undefined;
+  if (reconnectStableTimer) clearTimeout(reconnectStableTimer);
+  reconnectStableTimer = undefined;
+  reconnectAttempts = 0;
 }
 
 function handleEvent(event: PageTranslationPortOutgoing): void {
   if (event.jobId !== currentJobId || !active) return;
+  if (event.type === "PAGE_BATCH_PROGRESS") {
+    publish({ status: "translating", translatedCount: translatedCount() });
+    return;
+  }
   if (event.type === "PAGE_SEGMENT_RESULT") {
     const segment = pending.get(event.id);
     if (!segment || !segment.node.isConnected) return;
@@ -106,6 +181,7 @@ function handleEvent(event: PageTranslationPortOutgoing): void {
     busy = false;
     active = false;
     currentJobId = null;
+    clearReconnect();
     stopWatching();
     publish({
       status: "error",
@@ -199,6 +275,7 @@ export function startPageTranslation(
   preferences: TranslationPreferences = DEFAULT_TRANSLATION_PREFERENCES,
 ): void {
   if (active) return;
+  clearReconnect();
   translationPreferences = preferences;
   currentSessionId = crypto.randomUUID();
   ensurePort().postMessage({
@@ -214,6 +291,7 @@ export function startPageTranslation(
 
 export function pausePageTranslation(reason: "stopped" | "cleared" | "error" = "stopped"): void {
   active = false;
+  clearReconnect();
   stopWatching();
   if (currentJobId) {
     ensurePort().postMessage({

@@ -73,6 +73,43 @@ describe("local translation usage", () => {
       }),
     ]);
   });
+
+  it("resumes the same usage record after a transient background reconnect", async () => {
+    const values: Record<string, unknown> = {};
+    vi.stubGlobal("chrome", {
+      storage: {
+        local: {
+          get: vi.fn(async (key: string) => ({ [key]: values[key] })),
+          set: vi.fn(async (items: Record<string, unknown>) => Object.assign(values, items)),
+          remove: vi.fn(async (key: string) => delete values[key]),
+        },
+      },
+    });
+    const id = "8fe9ae3d-c955-416f-adde-ea551b0da904";
+    const session = {
+      id,
+      provider: "DeepSeek",
+      model: "deepseek-v4-flash",
+      sourceLanguages: ["en" as const],
+      targetLanguage: "zh-Hans" as const,
+    };
+    await startUsageSession(session);
+    await addUsage(id, { requests: 1, inputTokens: 40, outputTokens: 10 });
+    await endUsageSession(id, "page_closed");
+    await startUsageSession(session);
+    await addUsage(id, { requests: 1, inputTokens: 20, outputTokens: 5 });
+    await endUsageSession(id, "stopped");
+
+    await expect(listUsageSessions()).resolves.toEqual([
+      expect.objectContaining({
+        id,
+        requests: 2,
+        inputTokens: 60,
+        outputTokens: 15,
+        endReason: "stopped",
+      }),
+    ]);
+  });
 });
 
 describe("custom pet preparation", () => {

@@ -34,6 +34,8 @@ describe("page translation prompt", () => {
       },
     ]);
     expect(prompt.systemPrompt).toContain("不可信数据");
+    expect(prompt.systemPrompt).toContain("ChatGPT HelpMeWithEverything");
+    expect(prompt.systemPrompt).toContain("翻译 Work");
     expect(prompt.userPrompt).toContain("sourceSegments");
     expect(
       parsePageTranslationResponse('{"translations":[{"id":"seg_0","text":"译文"}]}', ["seg_0"]),

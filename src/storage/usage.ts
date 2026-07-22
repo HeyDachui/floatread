@@ -71,8 +71,24 @@ export async function startUsageSession(
     outputTokens: 0,
     usageAvailable: true,
   });
-  await mutateSessions((sessions) => [record, ...sessions.filter((item) => item.id !== record.id)]);
-  return record;
+  let saved = record;
+  await mutateSessions((sessions) => {
+    const existing = sessions.find((item) => item.id === record.id);
+    if (existing) {
+      saved = usageSessionSchema.parse({
+        ...existing,
+        provider: record.provider,
+        model: record.model,
+        sourceLanguages: record.sourceLanguages,
+        targetLanguage: record.targetLanguage,
+        endedAt: null,
+        endReason: null,
+      });
+      return sessions.map((item) => (item.id === saved.id ? saved : item));
+    }
+    return [record, ...sessions];
+  });
+  return saved;
 }
 
 export async function addUsage(

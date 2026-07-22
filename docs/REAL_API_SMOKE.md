@@ -24,6 +24,7 @@ This record contains no credential, Authorization header, selected private text 
 | V2 page batch                | Passed | 1,144 ms | 2 segments; 196 input / 38 output tokens    |
 | V2.1 JSON page batch         | Passed | 1,481 ms | 2 segments; 216 input / 38 output tokens    |
 | V0.3 multilingual page batch | Passed |   919 ms | 2 segments; 229 input / 39 output tokens    |
+| V3 streamed mixed-name batch | Passed | 1,245 ms | First item 1,111 ms; 310 input / 49 output  |
 
 ## Controlled initial failure and fix
 
@@ -40,3 +41,7 @@ The V2 page-batch smoke used `Account settings` plus the fixed public test sente
 The V2.1 retest explicitly requested the Provider's JSON-object response mode after the multiline/mixed-text reliability fix. It used the same two harmless segments and retained the same no-body/no-key evidence policy.
 
 The V0.3 retest exercised the new source/target-language prompt and cache version with the same harmless two-segment batch. It returned strict JSON for both IDs. Only segment count, output lengths (4 and 24) and Provider-reported usage (229 input / 39 output, 268 total) were retained.
+
+The V3 retest exercised the production streaming parser and the new mixed-name rule with `ChatGPT Work => ChatGPT HelpMeWithEverything?` plus the fixed harmless Codex sentence. Both ids returned, the mixed-name result differed from its source while preserving `ChatGPT`, and the first safe item was available before the full batch completed. Only timings, lengths, success flags and Provider-reported usage were retained; no output body was saved.
+
+After this V3 test, `.secrets/FloatRead-APIKEY.txt` remains locally present and Git-ignored because the owner explicitly requested that the low-limit test credential be retained. It is not tracked, built, packaged or scanned as repository content and must never be treated as a production credential.

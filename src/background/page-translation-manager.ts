@@ -42,6 +42,7 @@ interface ActiveUsageSession {
 }
 
 const sessionsByTab = new Map<number, ActiveUsageSession>();
+const PAGE_JOB_HEARTBEAT_MS = 10_000;
 
 export function cancelPageTranslationForTab(tabId: number): void {
   activeByTab.get(tabId)?.controller.abort();
@@ -164,6 +165,10 @@ async function runBatch(
       job.translation.targetLanguage,
     );
     const timer = setTimeout(() => job.controller.abort(), profile.timeoutMs);
+    const heartbeat = setInterval(
+      () => post(port, { type: "PAGE_BATCH_PROGRESS", jobId: job.jobId }),
+      PAGE_JOB_HEARTBEAT_MS,
+    );
     try {
       const adapter = getProviderAdapter(profile.kind);
       const secret = await getProviderSecret(profile.id, profile.secretStorageMode);
@@ -223,6 +228,7 @@ async function runBatch(
       await putPageTranslationMemory(memoryWrites);
       await addUsage(job.sessionId, { translatedSegments: memoryWrites.length });
     } finally {
+      clearInterval(heartbeat);
       clearTimeout(timer);
     }
   }
