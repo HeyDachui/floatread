@@ -448,6 +448,7 @@ export function FloatingCompanion({
         } as React.CSSProperties
       }
       data-skin={bootstrap.skin.variant}
+      data-pet={bootstrap.skin.variant === "pet" ? bootstrap.skin.id : undefined}
     >
       {catchUpMessage && pageTranslation.status !== "error" ? (
         <div className="fr-toast fr-catch-up-toast" role="status" aria-live="polite">
@@ -635,7 +636,7 @@ export function FloatingCompanion({
           setContextMenuOpen((open) => !open);
         }}
       >
-        <CompanionArtwork state={skinState} imageUrl={skinImageUrl} />
+        <CompanionArtwork state={skinState} imageUrl={skinImageUrl} skinId={bootstrap.skin.id} />
         <span className="fr-visually-hidden" aria-live="polite">
           {selection
             ? t("selectionReady")

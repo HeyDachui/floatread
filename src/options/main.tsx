@@ -72,6 +72,17 @@ const DEFAULT_READING: ReadingPreferences = {
 };
 
 const SKIN_STATES: SkinState[] = ["idle", "ready", "thinking", "success", "error"];
+const SKIN_STATE_LABEL_KEYS: Record<SkinState, MessageKey> = {
+  idle: "petStateIdle",
+  ready: "petStateReady",
+  thinking: "petStateThinking",
+  success: "petStateSuccess",
+  error: "petStateError",
+};
+
+function builtinAssetFor(skin: RuntimeSkinDefinition, state: SkinState): string | undefined {
+  return skin.builtinAssets?.[state] ?? skin.builtinAssets?.idle ?? skin.builtinAssetPath;
+}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1_000) return `${bytes} B`;
@@ -230,8 +241,9 @@ export function OptionsApp(): React.JSX.Element {
     }
     let objectUrl: string | undefined;
     let current = true;
-    if (previewSkin.builtinAssetPath) {
-      setPreviewImageUrl(chrome.runtime.getURL(previewSkin.builtinAssetPath));
+    const builtinPath = builtinAssetFor(previewSkin, previewState);
+    if (builtinPath) {
+      setPreviewImageUrl(chrome.runtime.getURL(builtinPath));
       return () => {
         current = false;
       };
@@ -1001,19 +1013,49 @@ export function OptionsApp(): React.JSX.Element {
         </div>
         <div className="skin-workbench">
           <div className="skin-library" aria-label={t("skinList")}>
-            {skins.map((skin) => (
-              <button
-                key={skin.id}
-                type="button"
-                className={skin.id === previewSkinId ? "skin-choice active" : "skin-choice"}
-                onClick={() => setPreviewSkinId(skin.id)}
-              >
-                <span>{skin.name}</span>
-                <small>
-                  {t(skin.source === "builtin" ? "builtinOriginal" : "communitySkin")}
-                  {skin.id === activeSkinId ? ` · ${t("active")}` : ""}
-                </small>
-              </button>
+            {[
+              {
+                title: t("petLibraryTitle"),
+                items: skins.filter(
+                  (skin) => skin.variant === "pet" || skin.variant === "community",
+                ),
+              },
+              {
+                title: t("otherAppearanceTitle"),
+                items: skins.filter(
+                  (skin) => skin.variant !== "pet" && skin.variant !== "community",
+                ),
+              },
+            ].map((group) => (
+              <section className="skin-group" key={group.title}>
+                <h3>{group.title}</h3>
+                <div className="skin-group-grid">
+                  {group.items.map((skin) => {
+                    const thumbnail = builtinAssetFor(skin, "idle");
+                    return (
+                      <button
+                        key={skin.id}
+                        type="button"
+                        className={skin.id === previewSkinId ? "skin-choice active" : "skin-choice"}
+                        onClick={() => setPreviewSkinId(skin.id)}
+                      >
+                        {thumbnail ? (
+                          <img src={chrome.runtime.getURL(thumbnail)} alt="" />
+                        ) : (
+                          <span className="skin-choice-symbol" aria-hidden="true" />
+                        )}
+                        <span className="skin-choice-copy">
+                          <strong>{skin.name}</strong>
+                          <small>
+                            {t(skin.source === "builtin" ? "builtinOriginal" : "communitySkin")}
+                            {skin.id === activeSkinId ? ` · ${t("active")}` : ""}
+                          </small>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             ))}
           </div>
 
@@ -1021,6 +1063,7 @@ export function OptionsApp(): React.JSX.Element {
             <div
               className="skin-preview-stage fr-companion-layer"
               data-skin={previewSkin.variant}
+              data-pet={previewSkin.variant === "pet" ? previewSkin.id : undefined}
               style={
                 {
                   "--fr-accent": previewSkin.panel.accent,
@@ -1037,7 +1080,11 @@ export function OptionsApp(): React.JSX.Element {
               }
             >
               <div className={`fr-companion fr-state-${previewState}`} data-motion="none">
-                <CompanionArtwork state={previewState} imageUrl={previewImageUrl} />
+                <CompanionArtwork
+                  state={previewState}
+                  imageUrl={previewImageUrl}
+                  skinId={previewSkin.id}
+                />
               </div>
               <strong>{previewSkin.name}</strong>
               <div className="preview-state-tabs" aria-label={t("previewStates")}>
@@ -1048,7 +1095,7 @@ export function OptionsApp(): React.JSX.Element {
                     aria-pressed={previewState === state}
                     onClick={() => setPreviewState(state)}
                   >
-                    {state}
+                    {t(SKIN_STATE_LABEL_KEYS[state])}
                   </button>
                 ))}
               </div>

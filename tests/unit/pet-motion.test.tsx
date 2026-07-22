@@ -8,11 +8,15 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function renderArtwork(variant: "pet" | "community", state = "idle") {
+function renderArtwork(variant: "pet" | "community", state = "idle", skinId = "mochi") {
   return render(
     <div className="fr-companion-layer" data-skin={variant}>
       <button className="fr-companion" type="button">
-        <CompanionArtwork state={state as "idle"} imageUrl="data:image/webp;base64,AAAA" />
+        <CompanionArtwork
+          state={state as "idle"}
+          imageUrl="data:image/webp;base64,AAAA"
+          skinId={variant === "pet" ? skinId : undefined}
+        />
       </button>
     </div>,
   );
@@ -79,5 +83,18 @@ describe("built-in pet motion", () => {
       "data:image/webp;base64,AAAA",
     );
     expect(container.querySelector(".fr-mochi-art")).not.toBeInTheDocument();
+  });
+
+  it("renders authored pets with state, walking direction and click reaction hooks", () => {
+    const { container } = renderArtwork("pet", "thinking", "maple");
+    const button = container.querySelector("button")!;
+    const artwork = container.querySelector(".fr-authored-pet")!;
+
+    expect(artwork).toHaveAttribute("data-art-state", "thinking");
+    expect(container.querySelector(".fr-pet-reaction")).toBeInTheDocument();
+    dispatchPointer(button, "pointerdown", { pointerId: 2, clientX: 20, clientY: 20 });
+    dispatchPointer(button, "pointermove", { pointerId: 2, clientX: 8, clientY: 20 });
+    expect(artwork).toHaveAttribute("data-facing", "left");
+    expect(artwork).toHaveAttribute("data-interaction", "walking");
   });
 });

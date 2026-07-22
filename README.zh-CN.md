@@ -35,7 +35,7 @@ FloatRead 不会把整张网页、无限时间线或每一次滚动都重新交�
 - 简化 Popup、当前网站暂停、全局暂停、右键菜单、快捷键和首次引导。
 - 中英文界面、键盘操作、深浅色兼容和减少动画支持。
 - OpenAI、OpenAI Compatible、DeepSeek、Anthropic Claude、Google Gemini 和 Ollama。
-- 默认原创宠物 Mochi 具有眨眼、拖动行走、转身和状态反馈；另有六套内置球/角色皮肤，以及把一张 PNG/JPG 本地变成宠物的工具。
+- 提供 Mochi 猫、Maple 红熊猫和 Piko 小企鹅三只原创宠物；Maple 与 Piko 各有五张独立状态画面，三只宠物均响应点击、拖动行走、转身和快速滚动追赶。另保留六套非宠物外观，以及把一张 PNG/JPG 本地变成宠物的工具。
 
 FloatRead 没有开发者后端、账号、支付、会员、广告、埋点、遥测或使用统计。Provider 请求由扩展 Background Service Worker 直接发往用户配置的服务地址。
 

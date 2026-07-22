@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SkinState } from "../skins/types";
 import petMochiStyles from "./pet-mochi.css?inline";
 import {
@@ -11,20 +11,22 @@ import {
 interface CompanionArtworkProps {
   state: SkinState;
   imageUrl?: string | undefined;
+  skinId?: string | undefined;
 }
 
-export function CompanionArtwork({ state, imageUrl }: CompanionArtworkProps): React.JSX.Element {
+const BUILTIN_PET_IDS = new Set(["mochi", "maple", "piko"]);
+
+export function CompanionArtwork({
+  state,
+  imageUrl,
+  skinId,
+}: CompanionArtworkProps): React.JSX.Element {
   const rootRef = useRef<HTMLSpanElement | null>(null);
-  const [isBuiltinPet, setIsBuiltinPet] = useState(false);
   const [facing, setFacing] = useState<PetFacing>("left");
   const [interaction, setInteraction] = useState<PetInteraction>("idle");
   const facingRef = useRef<PetFacing>("left");
-
-  useLayoutEffect(() => {
-    setIsBuiltinPet(
-      rootRef.current?.closest(".fr-companion-layer")?.getAttribute("data-skin") === "pet",
-    );
-  }, [imageUrl]);
+  const isBuiltinPet = skinId !== undefined && BUILTIN_PET_IDS.has(skinId);
+  const isMochi = skinId === "mochi";
 
   useEffect(() => {
     if (!isBuiltinPet) return;
@@ -88,7 +90,7 @@ export function CompanionArtwork({ state, imageUrl }: CompanionArtworkProps): Re
       aria-hidden="true"
     >
       <style>{petMochiStyles}</style>
-      {isBuiltinPet && imageUrl ? (
+      {isMochi && imageUrl ? (
         <span
           className="fr-mochi-art fr-artwork"
           data-art-state={state}
@@ -101,6 +103,17 @@ export function CompanionArtwork({ state, imageUrl }: CompanionArtworkProps): Re
           <img className="fr-mochi-layer fr-mochi-tail" src={imageUrl} alt="" draggable={false} />
           <span className="fr-mochi-lid fr-mochi-lid-left" />
           <span className="fr-mochi-lid fr-mochi-lid-right" />
+        </span>
+      ) : isBuiltinPet && imageUrl ? (
+        <span
+          className="fr-authored-pet fr-artwork"
+          data-art-state={state}
+          data-facing={facing}
+          data-interaction={interaction}
+          style={{ "--fr-pet-facing": facing === "right" ? -1 : 1 } as React.CSSProperties}
+        >
+          <img src={imageUrl} alt="" draggable={false} />
+          <span className="fr-pet-reaction" />
         </span>
       ) : imageUrl ? (
         <img className="fr-community-art" src={imageUrl} alt="" draggable={false} />

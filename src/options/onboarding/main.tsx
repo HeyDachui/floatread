@@ -323,6 +323,7 @@ export function OnboardingApp(): React.JSX.Element {
               <div
                 className="demo-stage fr-companion-layer"
                 data-skin={skin.variant}
+                data-pet={skin.variant === "pet" ? skin.id : undefined}
                 style={
                   {
                     "--fr-accent": skin.panel.accent,
@@ -341,10 +342,15 @@ export function OnboardingApp(): React.JSX.Element {
                 <div className="fr-companion fr-state-ready" data-motion="none">
                   <CompanionArtwork
                     state="ready"
+                    skinId={skin.id}
                     imageUrl={
-                      skin?.builtinAssetPath
-                        ? chrome.runtime.getURL(skin.builtinAssetPath)
-                        : undefined
+                      (skin.builtinAssets?.ready ?? skin.builtinAssets?.idle)
+                        ? chrome.runtime.getURL(
+                            skin.builtinAssets?.ready ?? (skin.builtinAssets?.idle as string),
+                          )
+                        : skin?.builtinAssetPath
+                          ? chrome.runtime.getURL(skin.builtinAssetPath)
+                          : undefined
                     }
                   />
                 </div>

@@ -538,13 +538,36 @@ test("previews and applies a built-in skin to an open page without reloading it"
   const optionsPage = await context.newPage();
   await optionsPage.goto(`chrome-extension://${extensionId}/src/options/index.html`);
   await expect(
-    optionsPage.getByRole("heading", { name: /皮肤与实时预览|Skins and live preview/u }),
+    optionsPage.getByRole("heading", { name: /宠物与外观|Pets and appearance/u }),
   ).toBeVisible();
   await optionsPage.screenshot({
     path: resolve(projectRoot, "output/playwright/settings-and-pet-module.png"),
     fullPage: true,
   });
-  await expect(optionsPage.locator(".skin-choice")).toHaveCount(7);
+  await expect(optionsPage.locator(".skin-choice")).toHaveCount(9);
+  await optionsPage.getByRole("button", { name: /Piko 小企鹅/u }).click();
+  await expect(optionsPage.locator(".skin-preview-stage")).toHaveAttribute("data-pet", "piko");
+  await optionsPage
+    .locator(".skin-preview-stage")
+    .getByRole("button", { name: /遇到问题|Needs attention/u })
+    .click();
+  await expect(optionsPage.locator(".skin-preview-stage .fr-authored-pet img")).toHaveAttribute(
+    "src",
+    /error\.webp$/u,
+  );
+  await optionsPage.getByRole("button", { name: /Maple 红熊猫/u }).click();
+  const petPreview = optionsPage.locator(".skin-preview-stage");
+  await expect(petPreview).toHaveAttribute("data-pet", "maple");
+  await expect(petPreview.locator(".fr-authored-pet img")).toHaveAttribute("src", /error\.webp$/u);
+  await petPreview.getByRole("button", { name: /翻译中|Translating/u }).click();
+  await expect(petPreview.locator(".fr-authored-pet img")).toHaveAttribute(
+    "src",
+    /thinking\.webp$/u,
+  );
+  await optionsPage.getByRole("button", { name: /应用皮肤|Apply skin/u }).click();
+  await expect(host.locator(".fr-companion-layer")).toHaveAttribute("data-pet", "maple");
+  await expect(host.locator(".fr-authored-pet")).toBeAttached();
+
   await optionsPage.getByRole("button", { name: /Terminal/u }).click();
   await expect(optionsPage.locator(".skin-preview-stage")).toHaveAttribute("data-skin", "terminal");
   await optionsPage.getByLabel(/助手大小|Companion size/u).fill("72");
@@ -574,7 +597,7 @@ test("previews and applies a built-in skin to an open page without reloading it"
   await expect(optionsPage.getByRole("status")).toContainText(
     /已安全导入并应用 Terminal Export|Safely imported and applied Terminal Export/u,
   );
-  await expect(optionsPage.locator(".skin-choice")).toHaveCount(8);
+  await expect(optionsPage.locator(".skin-choice")).toHaveCount(10);
   await expect(host.locator(".fr-companion-layer")).toHaveAttribute("data-skin", "community");
   await expect(host.locator("img.fr-community-art")).toBeAttached();
   await optionsPage.close();

@@ -410,16 +410,36 @@
 
 .skin-library {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
+  gap: 18px;
   align-content: start;
 }
 
-.skin-choice {
+.skin-group {
   display: grid;
-  gap: 4px;
-  min-height: 66px;
-  padding: 12px;
+  gap: 9px;
+}
+
+.skin-group h3 {
+  margin: 0;
+  color: #526079;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.skin-group-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.skin-choice {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px;
   border: 1px solid #d9e1ed;
   border-radius: 12px;
   background: #fbfcfe;
@@ -429,7 +449,45 @@
   cursor: pointer;
 }
 
-.skin-choice small {
+.skin-choice img,
+.skin-choice-symbol {
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 38%, #fff 0 7%, transparent 8%),
+    color-mix(in srgb, var(--option-accent) 12%, #eef3fa);
+  object-fit: contain;
+}
+
+.skin-choice-symbol {
+  position: relative;
+}
+
+.skin-choice-symbol::after {
+  position: absolute;
+  inset: 15px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  content: "";
+  opacity: 0.42;
+}
+
+.skin-choice-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.skin-choice-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skin-choice small,
+.skin-choice-copy small {
   color: #788499;
 }
 
@@ -473,11 +531,14 @@
 }
 
 .preview-state-tabs {
+  position: relative;
+  z-index: 2;
   display: flex;
   max-width: 250px;
   gap: 4px;
   flex-wrap: wrap;
   justify-content: center;
+  pointer-events: auto;
 }
 
 .preview-state-tabs button {
@@ -769,7 +830,8 @@
   }
 
   .skin-workbench,
-  .skin-library {
+  .skin-library,
+  .skin-group-grid {
     grid-template-columns: 1fr;
   }
 
@@ -828,6 +890,10 @@
     border-color: #3a4558;
     background: #171c25;
     color: #eef3fb;
+  }
+
+  .skin-group h3 {
+    color: #9da9bb;
   }
 
   .skin-choice.active,

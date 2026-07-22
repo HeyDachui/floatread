@@ -73,9 +73,11 @@ async function routeMessage(
       const settings = await getSettings();
       const skin = await getRuntimeSkin(settings.activeSkinId);
       const asset = await getSkinStateAsset(settings.activeSkinId, parsed.data.state);
-      const builtinResponse = skin.builtinAssetPath
-        ? await fetch(chrome.runtime.getURL(skin.builtinAssetPath))
-        : null;
+      const builtinPath =
+        skin.builtinAssets?.[parsed.data.state] ??
+        skin.builtinAssets?.idle ??
+        skin.builtinAssetPath;
+      const builtinResponse = builtinPath ? await fetch(chrome.runtime.getURL(builtinPath)) : null;
       if (!asset && !builtinResponse?.ok) return { ok: true, data: null };
       const mime = asset?.mime ?? "image/webp";
       const bytes = new Uint8Array(

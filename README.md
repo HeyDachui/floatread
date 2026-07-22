@@ -28,12 +28,12 @@ Request counts, cache hits, and Provider-reported input/output/total tokens are 
 - Enhanced semantic profiles for X, TED and Reddit, with a generic active-tab fallback elsewhere.
 - Precision translation for article/post content and concise translation for navigation, menus and buttons.
 - Persistent, bounded local translation memory so repeated UI labels do not call the model again.
-- Floating companion with drag, edge snap, viewport correction, sizing, opacity and six built-in skins.
+- Floating companion with drag, edge snap, viewport correction, sizing, opacity, three original pets and six additional appearances.
 - Streaming output, cancel, retry, copy, original-text view and bounded local cache.
 - A simplified Popup, per-site/global pause, context menu, keyboard shortcuts and onboarding.
 - Chinese/English UI, keyboard operation, dark appearance and `prefers-reduced-motion` support.
 - OpenAI, OpenAI Compatible, DeepSeek, Anthropic Claude, Google Gemini and Ollama.
-- Mochi, an original default pet with blink, drag-walk, turn and state reactions, plus local PNG/JPG-to-pet creation and secure skin packages.
+- Three original built-in pets: Mochi, Maple the red panda and Piko the penguin. Maple and Piko have five authored state images; all pets react to clicks, walking, turns and rapid-scroll catch-up. Local PNG/JPG-to-pet creation and secure skin packages remain supported.
 
 FloatRead has no developer server, account, payment, analytics, advertising or telemetry system. Provider requests go directly from the extension's Background Service Worker to the endpoint the user configures.
 
@@ -111,7 +111,7 @@ Read [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md) and the [threat model]
 
 ## Skins
 
-Mochi is the original default pet. Users can also drop one PNG/JPG into Settings; FloatRead locally removes border-connected light background pixels, crops the subject, converts it to transparent WebP and applies built-in motions. Native, Lens, Glass Orb, Pixel Bot, Ink and Terminal remain available. Community `.floatread-skin` packages contain only strict JSON and PNG/WebP; executable or remote content is rejected. See [skin authoring](docs/SKINS.md).
+Mochi remains the default pet; Maple and Piko add distinct five-state artwork. Users can also drop one PNG/JPG into Settings; FloatRead locally removes border-connected light background pixels, crops the subject, converts it to transparent WebP and applies built-in single-image motions. Native, Lens, Glass Orb, Pixel Bot, Ink and Terminal remain available. Community `.floatread-skin` packages contain only strict JSON and PNG/WebP; executable or remote content is rejected. See [skin authoring](docs/SKINS.md).
 
 ## Contributing
 
