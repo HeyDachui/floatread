@@ -1,27 +1,28 @@
-# FloatRead 0.3.5 resilient translation release notes
+# FloatRead 0.4.0 adaptive translation release notes
 
-FloatRead 0.3.5 translates descriptive words even when they share a phrase with product or person names. Active page jobs now send a lightweight heartbeat, automatically reconnect after transient Manifest V3 Background restarts and preserve the same local request/Token totals.
+FloatRead 0.4.0 adds Fast, Smart and Precise page translation, local detected-language choices, hidden-tab Token protection, enhanced X/TED/Reddit semantics and a naturally animated built-in Mochi companion.
 
 ## Highlights
 
-- Click the companion with no selection, or use the Popup, to translate visible page text.
-- Main/article content receives natural precision translation; menus, navigation and buttons use concise UI translation.
-- New visible text is translated as the user scrolls; infinite timelines are never preloaded.
-- A bounded persistent local translation memory reuses repeated menu labels.
-- Stop aborts the live batch and ignores late results; Resume continues; Clear restores surviving originals and disables the site preference.
-- Selection-based Natural Chinese, Key Points and Explain Terms remain available for focused reading.
-- Companion size now ranges from 32–120px; the result panel supports up to 760px and direct width/height resizing.
+- Smart is recommended for mixed page content; Fast reduces polishing and batches more visible text; Precise retains the previous context-focused behavior.
+- Detected languages can be translated once, remembered for the current site or ignored. Detection itself makes no Provider call.
+- Hidden tabs submit no new page batches. One already-submitted batch may finish; returning resumes only if the user did not press Stop.
+- X, TED and Reddit receive semantic page profiles. TED live captions and timers are excluded; generic pages retain the active-tab fallback.
+- Mochi blinks, walks while dragged, turns with direction and reacts to press, ready, thinking, success and error. User-uploaded images keep the lightweight local path.
+- Local usage shows input, output and total Token only; no price estimate is added.
 
 ## Install
 
-Extract `release/FloatRead-v0.3.5.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. When updating the workspace build, press **Reload** once. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
+Extract `release/FloatRead-v0.4.0.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. When updating an existing workspace build, press **Reload** once and refresh the open site tab.
 
 ## Verification status
 
-Automated results and exact commands are recorded in `PROGRESS.md`. The V3 page Prompt and streaming path receive one minimal DeepSeek `deepseek-v4-flash` smoke after package gates pass; no output body or credential is recorded. Real-X continuity still requires the owner's post-reload check. Complete `MANUAL_TESTING.md` before store publication.
+Lint, strict typecheck, 129 unit tests, 2 integration tests and 18 real Chromium extension tests passed. DeepSeek `deepseek-v4-flash` returned all six strict segments in one Fast and one Precise streaming request, using 515 and 516 total Token respectively. Fast finished in 1.909 seconds in this sample, but network variance meant it was not faster than Precise in this single small batch; a same-page manual comparison remains required. The production build, 20-entry ZIP inventory, secret scans and MV3 load test passed.
+
+Release archive: `release/FloatRead-v0.4.0.zip`, 443,368 bytes, SHA-256 `585a909944c9568a633f56328220283dc6876b4ad5ca35c7baa4b91b3fcbea0f`.
 
 ## Known release prerequisites
 
 - Replace provisional branding URLs with the canonical public repository/author identity.
-- Capture approved screenshots from a real unpacked production build with no secret visible.
-- Perform the human X regression checklist; automated semantic-fixture E2E is not labeled as manual X acceptance.
+- Capture approved screenshots from a production build with no credential visible.
+- Complete real X, TED and Reddit observation; semantic fixture E2E is not presented as manual platform acceptance.

@@ -16,9 +16,13 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Before page translation is enabled, DevTools shows no AI Provider request and no host text changes.
 - [ ] Clicking the companion starts translation with or without a leftover selection; clicking it again stops immediately.
 - [ ] Settings can add 1–5 source languages and one target language; unselected languages remain unchanged.
+- [ ] Fast, Smart and Precise can each be selected; migrated 0.3.x settings start as Precise and a fresh profile starts as Smart.
+- [ ] On the same visible page and Provider, Fast is observably quicker than Precise without becoming an inaccurate word-for-word translation.
+- [ ] A newly detected language offers This time / Always on this site / Ignore; no Provider request occurs before the choice.
 - [ ] Visible tweet/article text is translated naturally; navigation/menu/button text is concise.
 - [ ] Infinite timeline content outside the visible/near-visible window is not preloaded.
 - [ ] Scrolling progressively translates newly visible posts.
+- [ ] Switching the page to the background submits no new batch; at most one in-flight batch finishes, and returning resumes only if Stop was not clicked.
 - [ ] Opening a dynamic menu translates its text; reopening the same menu uses local translation memory.
 - [ ] Stop immediately prevents new translations and late results cannot restart processing.
 - [ ] Translation progress remains visible with the completed count; it does not disappear after the former 2.5-second toast timeout.
@@ -29,9 +33,16 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] No FloatRead global stylesheet is attached to the host document; companion UI remains in its Shadow DOM.
 - [ ] Select English text, right-click the companion and choose a precision mode; only the selection is used for that precision request.
 
+## X, TED and Reddit platform profiles
+
+- [ ] X short post text, long post text, menus and dynamically opened controls are classified without private `data-testid` selectors.
+- [ ] TED titles, descriptions, speaker information and recommendations translate, while live captions, timers and transcript highlighting are not repeatedly submitted.
+- [ ] Reddit short post titles, post bodies, comments and menus translate; usernames and links remain intact.
+- [ ] A normal non-profiled article still works through the generic active-tab path.
+
 ## Reading workflow
 
-- [ ] Normal page batches contain at most 6 segments / 6,000 characters; one long node may use the 12,000-character protocol ceiling; malformed JSON retries once.
+- [ ] Precise, Smart and Fast page batches cap at 6/6,000, 8/8,000 and 12/12,000 segments/characters; malformed JSON retries once.
 - [ ] Under continuous DOM additions/removals, Stop remains clickable, aborts the request and disables restart for the origin.
 - [ ] Reloading after an active translation does not automatically restart AI requests.
 - [ ] Natural Chinese produces faithful natural Chinese without invented information.
@@ -84,6 +95,8 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 ## Skins, data and languages
 
 - [ ] Mochi is the fresh-install default, remains legible at the default size and reacts to click/state changes.
+- [ ] Mochi visibly blinks while idle, walks while dragged, turns with horizontal direction and gives restrained ready/thinking/success/error feedback.
+- [ ] At 32px, 76px and 120px, Mochi remains recognizable and its eyelids/paw/tail do not detach visually.
 - [ ] A PNG/JPG can be previewed, locally de-backgrounded, named and enabled as a custom pet.
 - [ ] Internal light details are preserved when enclosed by the pet outline; the source image is never uploaded.
 - [ ] Mochi plus all six earlier built-in skins switch immediately and preview five states.
@@ -98,7 +111,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.3.5.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.4.0.zip`, not `dist-e2e`.
 - [ ] With X already open, press Reload for FloatRead in `chrome://extensions`; the existing page reconnects without requiring a page refresh.
 - [ ] Start page translation and confirm the first visible post changes before below-the-fold content; off-screen text waits until it enters the viewport.
 - [ ] Confirm mixed display text such as `ChatGPT Work => ChatGPT HelpMeWithEverything?` preserves `ChatGPT` but translates the descriptive words.

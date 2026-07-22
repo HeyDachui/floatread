@@ -2,6 +2,25 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.4.0] - 2026-07-22
+
+### Added
+
+- Add Fast, Smart (recommended) and Precise page-translation levels with separate Prompt/cache identities and bounded batch sizes.
+- Prompt when a visible, locally detected language is not selected; users can translate once, remember it for the current site or ignore it without sending text before consent.
+- Add semantic page profiles for X, TED and Reddit while preserving the generic-page fallback and avoiding TED live caption/timer regions.
+- Pause new scans and Provider batches while a tab is hidden, allow an already submitted batch to finish, and resume only when the user returns without having explicitly stopped.
+- Give the built-in Mochi pet natural blink, drag-walk, turn, press and state reactions while keeping user-uploaded single images on their existing lightweight path.
+
+### Changed
+
+- Migrate existing 0.3.x users to Precise page translation so the previous behavior is preserved; fresh settings recommend Smart.
+- Continue showing Token only—input, output and total per Start-to-Stop session—with no price estimate.
+
+### Verified
+
+- Add strict schema migration, quality Prompt, site-language decision, hidden-tab, platform-profile and pet-motion regressions.
+
 ## [0.3.5] - 2026-07-22
 
 ### Fixed

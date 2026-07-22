@@ -2,7 +2,7 @@
 
 FloatRead is an open-source, serverless, bring-your-own-key page translator for Chromium browsers. Translation starts only when the user clicks the companion, then progressively handles visible content in the selected source languages. Main content receives natural translation, while menus reuse persistent local translation memory. Selection reading remains available for deeper analysis.
 
-> Current release: `0.3.5`. Page translation defaults to English, and users may add more source languages and choose one target language. Publisher links are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
+> Current release: `0.4.0`. Page translation defaults to English; users can select Fast, Smart or Precise, add source languages and choose one target language. Publisher links are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
 
 [简体中文](README.zh-CN.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Manual testing](MANUAL_TESTING.md)
 
@@ -12,8 +12,12 @@ FloatRead is an open-source, serverless, bring-your-own-key page translator for 
 - Key points: what the text says, why it matters, what it omits, and clearly labeled inference.
 - Explain terms: plain-Chinese explanations grounded in the selected text.
 - One-click visible-page translation with progressive processing as the user scrolls.
+- Fast, Smart (recommended) and Precise page-translation levels; migrated users keep the previous Precise behavior.
 - One to five source languages and one target language; the extension UI itself remains Chinese/English.
+- A local detected-language choice: this time, always on this site, or ignore—without an AI call before consent.
 - Local per-session request, cache-hit and input/output/total token accounting from Start to Stop.
+- Hidden pages submit no new Provider batch and resume only when the user returns without explicitly stopping.
+- Enhanced semantic profiles for X, TED and Reddit, with a generic active-tab fallback elsewhere.
 - Precision translation for article/post content and concise translation for navigation, menus and buttons.
 - Persistent, bounded local translation memory so repeated UI labels do not call the model again.
 - Floating companion with drag, edge snap, viewport correction, sizing, opacity and six built-in skins.
@@ -21,13 +25,13 @@ FloatRead is an open-source, serverless, bring-your-own-key page translator for 
 - A simplified Popup, per-site/global pause, context menu, keyboard shortcuts and onboarding.
 - Chinese/English UI, keyboard operation, dark appearance and `prefers-reduced-motion` support.
 - OpenAI, OpenAI Compatible, DeepSeek, Anthropic Claude, Google Gemini and Ollama.
-- Mochi, an original default pet, plus local PNG/JPG-to-pet creation and secure skin packages.
+- Mochi, an original default pet with blink, drag-walk, turn and state reactions, plus local PNG/JPG-to-pet creation and secure skin packages.
 
 FloatRead has no developer server, account, payment, analytics, advertising or telemetry system. Provider requests go directly from the extension's Background Service Worker to the endpoint the user configures.
 
 ## How page translation works
 
-After the user explicitly starts translation, FloatRead scans only visible and near-viewport text in the source languages selected by the user. Language detection happens locally. It uses semantic HTML roles rather than X's private `data-testid` values, normally batches at most six segments / 6,000 characters, and translates new visible content as the user scrolls. It never preloads an infinite timeline.
+After the user explicitly starts translation, FloatRead scans only current-viewport text in selected source languages. Detection happens locally. It uses semantic HTML rather than X private selectors. Precise, Smart and Fast cap batches at 6/6,000, 8/8,000 and 12/12,000 segments/characters respectively. New visible content is translated while scrolling; infinite timelines are never preloaded, and hidden tabs submit no new batch.
 
 Translations replace visible text-node values and can change wrapping. A restricted child-list observer detects newly added posts and menus without continuously rewriting React-controlled character data. Stop aborts the Background batch, disables restart for the origin and preserves completed translations; Clear also restores surviving original text nodes. Reloading a page never automatically starts AI translation.
 
@@ -39,7 +43,7 @@ Release screenshots are intentionally not fabricated. Maintainers should capture
 
 ## Install a release build
 
-1. Obtain `FloatRead-v0.3.5.zip` and verify its SHA-256 against the adjacent `.sha256` file.
+1. Obtain `FloatRead-v0.4.0.zip` and verify its SHA-256 against the adjacent `.sha256` file.
 2. Extract the ZIP to a permanent local folder.
 3. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. Open FloatRead settings, add a Provider, grant the exact endpoint origin when prompted, and test the connection.

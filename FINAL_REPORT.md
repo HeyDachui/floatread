@@ -1,196 +1,199 @@
-# FloatRead 0.2.3 safety verification report
+# FloatRead 0.4.0 最终交付报告
 
-Report date: 2026-07-21
+报告日期：2026-07-22
 
-Audited workspace: `E:\AI-900\FloatRead`
+锁定工作区：`E:\AI-900\FloatRead`
 
-Release version: `0.2.3`
+发布版本：`0.4.0`
 
-## 1. Completion overview
+## 1. 完成概述
 
-FloatRead 0.2.3 is the safety replacement for 0.2.2. The owner observed an endless translating state, ineffective Stop and a page crash with 0.2.2. That report invalidated 0.2.2's production-readiness claim. Investigation identified synchronous same-text-node reapplication and high-frequency mutation rescans as a credible contention loop with React. Version 0.2.3 removes synchronous character-data writes, observes only inserted/removed nodes, coalesces scan scheduling, reduces normal batch pressure, aborts independently in Background, persists Stop for the origin and never automatically restarts translation after reload.
+FloatRead 0.4.0 已形成可运行、可测试、可构建和可安装的 Chrome Manifest V3 扩展。页面翻译新增快速、智能、精细三档，支持发现其他语言后再询问用户，切到后台后不再提交新批次，并为 X、TED、Reddit 提供不依赖私有节点名的页面策略。内置 Mochi 增加眨眼、行走、转身、点击与请求状态反馈。
 
-The controlled Chromium path is runnable, tested and packaged. Live authenticated-X regression remains the final production-readiness gate and is not reported as passed. Provider traffic and credentials stay inside trusted extension contexts; there is no FloatRead backend, account, telemetry, advertising or payment system.
+受控 Chromium 流程、真实 DeepSeek 最小请求和生产 ZIP 均已通过。真实登录态 X/TED/Reddit 长时间滚动、实际切换标签页和宠物自然度仍需所有者人工观察，不冒充已通过。
 
-Automated delivery is complete. Human regression on the live X website and Chrome Web Store publication remain external acceptance work and are not reported as completed.
+## 2. 实际实现功能
 
-## 2. Implemented features
+- 页面直接替换翻译；快速、智能（默认推荐）、精细三档。
+- 本地发现其他语言，提供“仅本次、此网站以后都翻译、忽略”。用户同意前不因提醒调用 AI。
+- 页面隐藏后停止扫描和新请求；允许一个已提交批次完成，返回时仅在用户未主动停止的情况下继续。
+- X、TED、Reddit 增强语义策略，普通网页通用策略；TED 实时字幕、计时和高频进度区域跳过。
+- 每次 Start-to-Stop 会话记录请求数、缓存命中、输入 Token、输出 Token和总 Token；不显示费用。
+- Mochi 低频眨眼、拖动行走、方向转身、点击、ready/thinking/success/error 反馈；减少动画设置有效。
+- 用户 PNG/JPG 本地去背景并生成轻量宠物，不上传图片，不伪造完整逐帧动作。
+- 悬浮助手拖动、边缘吸附、位置保存、32–120px 大小、透明度、隐藏、站点暂停、全局暂停。
+- 流式结果、取消、重试、复制、原文、缓存、Popup、设置、Onboarding、右键菜单和快捷键。
+- OpenAI、OpenAI Compatible、DeepSeek、Anthropic、Gemini、Ollama 独立适配器，所有真实请求仅由 Background 发起。
+- 三种 Key 保存模式、可选域名权限、严格消息校验、纯文本渲染、日志脱敏和秘密扫描。
 
-- One fixed FloatRead host with a closed production Shadow DOM; FloatRead UI styles remain isolated.
-- User-enabled, per-origin progressive page translation of visible/near-visible text, with content/UI classification and dynamic-content observation only while active.
-- Stop, resume and clear controls. Stop aborts the active batch and rejects late results; clear restores original text for surviving nodes and disables that origin's translation preference.
-- Persistent, hashed translation memory for repeated menu/UI and content segments, bounded to 2,000 records.
-- Selection-based Natural Chinese, Key Points and Explain Terms precision modes with injection-resistant prompts.
-- Dragging, edge snap, saved position, viewport correction, 32–120 px companion size, opacity, and a result panel configurable to 760 px and directly resizable.
-- Streaming, cancel, retry, copy, source view, cache, understandable errors, Popup, onboarding, context menu, shortcuts, bilingual UI, keyboard access, reduced motion, and light/dark compatibility.
-- OpenAI, OpenAI Compatible, DeepSeek, Anthropic Claude, Google Gemini and Ollama adapters behind a Background-only router.
-- Session, persistent-local and prompt-each-time credential modes; exact-origin optional permissions; connection testing and credential clearing.
-- Six built-in skins plus versioned, code-free skin import/export and validation.
-
-## 3. Repository structure
+## 3. 仓库结构
 
 ```text
 FloatRead/
-├── .github/workflows/       # read-only CI
-├── docs/                    # architecture, permissions, Providers, skins and security
-├── public/_locales/         # Chrome locale catalogs
-├── scripts/                 # build, smoke, scan, package and release verification
+├── docs/                    # 架构、权限、Provider、皮肤、发布与产品记录
+├── public/                  # 本地化目录和内置宠物资源
+├── scripts/                 # 构建、打包、真实冒烟、清单与秘密扫描
 ├── src/
-│   ├── background/          # trusted Provider/page-batch request boundary
-│   ├── cache/               # precision-reading result cache
-│   ├── companion/           # isolated floating UI and reader state
-│   ├── content/             # page scanner/translator and precision-reading client
-│   ├── page-translation/    # batch prompt and strict result protocol
-│   ├── providers/           # six independent Provider adapters
-│   ├── shared/              # typed and runtime-validated protocols
-│   ├── skins/               # schema, package validation and storage
-│   └── storage/             # settings, credentials, pauses and translation memory
+│   ├── background/          # Provider、权限、请求、页面翻译任务
+│   ├── companion/           # Shadow DOM 悬浮界面和宠物动画
+│   ├── content/             # 页面扫描、平台策略和翻译控制
+│   ├── page-translation/    # 三档 Prompt、流式严格结果协议
+│   ├── providers/           # 六类 Provider 适配器
+│   ├── storage/             # 设置、凭据、缓存、暂停和 Token
+│   ├── skins/               # 版本化无代码皮肤系统
+│   └── popup/options/...    # Popup、设置和 Onboarding
 ├── tests/{unit,integration,e2e}/
-├── dist/                    # generated production extension (ignored)
-└── release/                 # generated ZIP, inventory and digest (ignored)
+├── dist/                    # 生产扩展，20 个文件
+└── release/FloatRead-v0.4.0.zip
 ```
 
-## 4. Git commit ledger
+## 4. Git 提交记录
 
-| Stage             | Commit                                     | Subject                                     |
-| ----------------- | ------------------------------------------ | ------------------------------------------- |
-| Phase 0           | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | initialize repository and architecture      |
-| Phase 1           | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | implement isolated floating companion       |
-| Phase 2           | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | implement mock streaming result flow        |
-| Phase 3           | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | implement providers permissions and secrets |
-| Phase 4           | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | implement versioned local result cache      |
-| Phase 5           | `80ee9636f1025bdd6b3791ae028738b184f600fa` | implement secure skin engine                |
-| Phase 6           | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | complete onboarding popup and i18n          |
-| Phase 7           | `2b4c95624715b0ff2715bb5532a29002bb75f212` | prepare verified open-source release        |
-| Final V1 evidence | `7dc163f04b41b1ab54b79dccb4732e90bf75a5be` | record final verification report            |
-| DeepSeek live fix | `1eefc8115fd4bf85e4002139102578e69af6e9c0` | verify DeepSeek V4 live integration         |
-| V2 redesign       | `c69fec0c2822455e5b9e1dadd8404ceb01031898` | implement progressive page translation      |
-| V2.1 reliability  | `44d6861`                                  | translate multiline and mixed page text     |
-| V2.2 reliability  | `85763347a7dece3ae68c54b9aac0eb5387cd1842` | harden dynamic page translation             |
-| V2.3 safety fix   | `83de8991bd8d34b71a6a6205cd79776634dfabee` | stop dynamic page translation safely        |
+| 阶段             | Commit                                     | 内容                               |
+| ---------------- | ------------------------------------------ | ---------------------------------- |
+| Phase 0          | `6573a7680abb5b7573b1d58deb64f159f1ed7a3b` | 初始化仓库与架构                   |
+| Phase 1          | `be39d18ee6fbdb9bd61ec496ba945097c5274829` | 独立悬浮助手                       |
+| Phase 2          | `bcaa587ca3cdb7e60da4c8b5330c6062313ffa23` | Mock 流式垂直链路                  |
+| Phase 3          | `26bdd909c753b4d1f13270b8f9d8f3becab9306e` | Provider、权限与凭据               |
+| Phase 4          | `0cf1f92bb2ee206f581b817c21bf13e5e93dfdeb` | 版本化本地缓存                     |
+| Phase 5          | `80ee9636f1025bdd6b3791ae028738b184f600fa` | 安全皮肤引擎                       |
+| Phase 6          | `f93405f843fbf2b1b47f47cbc027ec900214ef66` | Popup、Onboarding、双语界面        |
+| Phase 7          | `2b4c95624715b0ff2715bb5532a29002bb75f212` | 开源发布构建                       |
+| V2 页面翻译      | `c69fec0c2822455e5b9e1dadd8404ceb01031898` | 渐进式页面翻译                     |
+| 0.3 多语言与宠物 | `0ae860d6a21e352bceae38b9b16fdb9e796ea4a4` | 多语言、Token、自定义宠物          |
+| 0.3.5 稳定性     | `c8bbc39c02b2ccc0fcffedb3b76782c84a44bddd` | 混合名称和连接恢复                 |
+| 0.4 产品锁定     | `65a39f631ac50ed6a9fc00385b37ddeca22943a0` | 0.4 实施边界                       |
+| 0.4 翻译能力     | `1583864678b688749be83c4f8764dcb961be3219` | 三档、语言选择、后台保护、平台策略 |
+| 0.4 宠物模块     | `a32cf96f1dbe22369fe9bf1c7983e1e39857f65b` | Mochi 动画与测试                   |
 
-## 5. Key architecture decisions
+## 5. 关键架构决定
 
-- The owner-authorized V2 boundary is recorded separately in `docs/V2_PRODUCT_BOUNDARY.md`; the V1 source specification remains unchanged as historical evidence.
-- The scanner processes only visible and near-viewport eligible text. Normal batches are capped at 6 segments/6,000 characters; a single long eligible node may use the 12,000-character protocol ceiling. It does not preload an infinite timeline.
-- Text is classified as content or UI. Exact, validated IDs map Provider results back to text nodes; malformed or partial JSON is rejected.
-- Content cannot choose Provider URLs, headers, models, prompts or credentials. Background reconstructs requests and owns permission, fetch, abort and retry behavior.
-- Cancellation uses `AbortController`, generation IDs and an independent Background abort path so buffered late completion messages cannot revive stopped work. Stop also disables the origin preference, and reload never auto-starts page translation. A malformed or retryable page completion is retried at most once; non-retryable failures are not retried.
-- Dynamic observation is limited to child-list changes. Scan timers coalesce, and FloatRead never synchronously fights the host over character-data mutations. A host reset may remain original until a later safe child-list or viewport rescan.
-- Production Shadow DOM is closed; the E2E-only build opens it for assertions. Production Mock behavior is compiled out.
-- UI strategy is code-native and operational: the Popup exposes page state and controls, the companion supplies contextual actions, and the larger resizable result panel remains dedicated to precision reading. Existing tokenized skins and restrained state feedback were preserved.
+- 页面只挂载一个固定定位宿主，生产使用 closed Shadow DOM，不修改站点布局或 React 状态。
+- 页面文字只在用户主动开启后扫描；严格使用文字 Range 可见区域，不预读无限时间线。
+- Fast 12 段/12,000 字符，Smart 8/8,000，Precise 6/6,000。快速档减少长页面请求轮数，但不承诺每个单次网络请求都必然更快。
+- Content Script 不持有 Key、Provider URL、Authorization 或完整请求能力；Background 根据可信配置重建请求。
+- 用户 Stop 高于自动恢复：取消在途请求、计时器、重连与后续扫描。
+- 平台增强使用语义 HTML 和稳定公开属性；不依赖 X 的 `data-testid="tweetText"` 等内部选择器。
+- 动态观察只处理 child-list 变化并合并扫描；跳过 TED 等站点的高频直播区域。
+- 模型输出按严格 id/text JSON 验证并以纯文本写回，禁止 `innerHTML`。
 
-## 6. Manifest permissions and purpose
+## 6. Manifest 权限及用途
 
-| Permission                                 | Purpose                                                                                                       |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `storage`                                  | Settings, Provider profile, credential mode, pauses, skins, caches, origin preference and translation memory. |
-| `contextMenus`                             | Explicit precision-reading actions for selected text.                                                         |
-| `activeTab`                                | Temporary non-X activation after a toolbar/shortcut user gesture.                                             |
-| `scripting`                                | Mount or remove the single host in an authorized active tab.                                                  |
-| `https://x.com/*`, `https://twitter.com/*` | Make the companion/page translator available on X without private X selectors.                                |
-| Optional Provider origins                  | Exact selected remote Provider origin, requested when configured.                                             |
-| Optional localhost/127.0.0.1               | User-controlled Ollama or local proxy.                                                                        |
+| 权限                                       | 用途                                                   |
+| ------------------------------------------ | ------------------------------------------------------ |
+| `storage`                                  | 设置、会话/本地凭据、缓存、皮肤、暂停状态和 Token 记录 |
+| `contextMenus`                             | 用户选中文字后的主动右键入口                           |
+| `activeTab`                                | 非 X 网站在用户点击/快捷键后获得临时使用权             |
+| `scripting`                                | 在已授权当前页挂载或移除唯一宿主                       |
+| `https://x.com/*`, `https://twitter.com/*` | X 上直接提供悬浮助手；无 `<all_urls>` 永久权限         |
+| 可选 `https://*/*`                         | 用户选择 Provider 或主动允许其他站点时按精确来源申请   |
+| 可选 localhost/127.0.0.1                   | Ollama 或用户本地代理                                  |
 
-There is no permanent `<all_urls>`, tabs, history, cookies, downloads, webRequest or unlimitedStorage permission.
+未申请历史、Cookie、下载、webRequest、tabs 或 unlimitedStorage。
 
-## 7. Provider support matrix
+## 7. Provider 支持矩阵
 
-| Provider          | Ordinary    | Streaming | Cancel      | Connection test | Adapter tests |
-| ----------------- | ----------- | --------- | ----------- | --------------- | ------------- |
-| OpenAI Responses  | Implemented | SSE       | Implemented | Implemented     | Passed        |
-| OpenAI Compatible | Implemented | SSE       | Implemented | Implemented     | Passed        |
-| DeepSeek          | Implemented | SSE       | Implemented | Implemented     | Passed        |
-| Anthropic Claude  | Implemented | SSE       | Implemented | Implemented     | Passed        |
-| Google Gemini     | Implemented | SSE       | Implemented | Implemented     | Passed        |
-| Ollama            | Implemented | NDJSON    | Implemented | Implemented     | Passed        |
+| Provider          | 普通返回 | 流式 | 取消 | 连接测试 | Base URL                    |
+| ----------------- | -------- | ---- | ---- | -------- | --------------------------- |
+| OpenAI            | 是       | 是   | 是   | 是       | 可配置                      |
+| OpenAI Compatible | 是       | 是   | 是   | 是       | 可配置                      |
+| DeepSeek          | 是       | 是   | 是   | 是       | 可配置；V4 明确关闭思考模式 |
+| Anthropic Claude  | 是       | 是   | 是   | 是       | 可配置                      |
+| Google Gemini     | 是       | 是   | 是   | 是       | 可配置                      |
+| Ollama            | 是       | 是   | 是   | 是       | 可配置本地地址              |
 
-HTTP 400, 401, 403, 404, 408, 429, 5xx, timeout, abort, malformed response and network failures are mapped to unified errors. Automatic retry is limited to one attempt before any output is exposed.
+## 8. 真实 API 冒烟矩阵
 
-## 8–10. Real API smoke matrix and credential confirmation
+本轮只测试一个 Provider/模型，没有并行消耗多把 Key，没有保存译文正文。
 
-| Provider/model                 | Connection     | Ordinary       | Stream         | Cancel         | V2 page batch                       |
-| ------------------------------ | -------------- | -------------- | -------------- | -------------- | ----------------------------------- |
-| DeepSeek / `deepseek-v4-flash` | Passed, 976 ms | Passed, 651 ms | Passed, 772 ms | Passed, 104 ms | Passed again in JSON mode, 1,481 ms |
-| Other adapters                 | Not executed   | Not executed   | Not executed   | Not executed   | Not executed                        |
+| Provider / 模型                | 检查                      | 结果 |                    耗时 |                     Token |
+| ------------------------------ | ------------------------- | ---- | ----------------------: | ------------------------: |
+| DeepSeek / `deepseek-v4-flash` | Fast 六段流式严格 JSON    | 通过 | 1,909 ms；首段 1,398 ms | 405 输入 + 110 输出 = 515 |
+| DeepSeek / `deepseek-v4-flash` | Precise 六段流式严格 JSON | 通过 | 1,683 ms；首段 1,147 ms | 406 输入 + 110 输出 = 516 |
 
-Base URL: `https://api.deepseek.com`. The page test used two harmless segments and returned the exact two-segment JSON shape. The recorded evidence contains only durations, token/character counts and result types—not response bodies or credentials.
+Fast 在本次小样本低于两秒，但没有比 Precise 快；226ms 差异属于单次 Provider/网络波动。它的确定性优势是长页面每批容纳量更大。不得据此宣传“任何网络下必然更快”。
 
-The ignored local key was read into `FLOATREAD_TEST_DEEPSEEK_KEY` only for each smoke process and removed in `finally`. It was not copied to source, settings, docs, logs, `dist`, the release ZIP or this report. No other Provider received a real credential. The controlled initial DeepSeek Thinking-mode failure and adapter fix are documented in `docs/REAL_API_SMOKE.md`.
+## 9. 凭据确认
 
-## 11–13. Executed tests and unexecuted checks
+- API Key 未回显、未写入源码、日志、README、缓存、`dist` 或 ZIP。
+- 冒烟命令只把本地忽略文件内容短暂放入子进程环境变量，完成后删除环境变量。
+- 所有者明确要求保留测试 Key，因此它仍只存在于 `.secrets/FloatRead-APIKEY.txt`；`.secrets/` 被 Git 忽略并不参与构建或扫描对象。
 
-| Command                           | Actual result                                                                                      |
-| --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `pnpm audit`                      | Passed; no known vulnerabilities.                                                                  |
-| `pnpm format:check`               | Passed.                                                                                            |
-| `pnpm lint`                       | Passed with zero warnings.                                                                         |
-| `pnpm typecheck`                  | Passed.                                                                                            |
-| `pnpm test`                       | Passed: 19 files, 99 tests.                                                                        |
-| `pnpm test:integration`           | Passed: 2 files, 2 tests.                                                                          |
-| `pnpm test:e2e`                   | Passed: 15 real Chromium extension tests, including a 5 ms mutation storm, Stop and reload safety. |
-| `pnpm build` / `pnpm verify:dist` | Passed: 18 production files; file policy and production flags verified.                            |
-| `pnpm package`                    | Passed: rebuild, dist validation, two secret scans, ZIP validation and production Chrome load.     |
-| `pnpm test:release-load`          | Passed: MV3 worker and three extension pages loaded in real Chromium.                              |
-| `pnpm smoke:deepseek`             | Passed: connection, ordinary, stream and cancel.                                                   |
-| `pnpm smoke:deepseek-page`        | Passed: strict two-segment page batch.                                                             |
-| Two `package:zip` runs            | Passed with identical SHA-256.                                                                     |
+## 10. 实际执行的测试
 
-Not executed:
+| 命令                       | 真实结果                                          |
+| -------------------------- | ------------------------------------------------- |
+| `pnpm format`              | 通过                                              |
+| `pnpm lint`                | 通过，零警告                                      |
+| `pnpm typecheck`           | 通过                                              |
+| `pnpm test`                | 26 文件、129 测试通过                             |
+| `pnpm test:integration`    | 2 文件、2 测试通过                                |
+| `pnpm test:e2e`            | 18 条真实 Chromium 扩展流程通过                   |
+| `pnpm format:check`        | 通过                                              |
+| `pnpm package`             | 构建、清单、两次秘密扫描、ZIP 和 MV3 加载全部通过 |
+| `pnpm smoke:deepseek-page` | Fast/Precise 各一个最小流式请求通过               |
 
-- The live-X human checklist remains unchecked. The E2E page fixture verifies layout isolation, translation, dynamic menus, mutation-pressure Stop, reload safety and restoration, but is not represented as live-X acceptance.
-- Chrome Web Store upload/review and store screenshots require the publisher account and finalized branding.
-- OpenAI, Anthropic, Gemini, OpenAI Compatible and Ollama were adapter-tested, not live-key-tested.
+## 11. 未执行或仍需人工的测试
 
-## 14–15. Security and secret checks
+- 没有对 OpenAI、Anthropic、Gemini、Ollama 使用真实凭据；其适配器由单元和 Mock 测试覆盖，不能写成真实 API 通过。
+- Playwright 不能可靠把扩展 isolated world 的真实 `document.hidden` 切换出来，因此后台规则由确定性模块测试覆盖；真实 Chrome 标签切换仍需人工观察。
+- 真实登录态 X、TED、Reddit 的长时间滚动、虚拟列表变化和页面升级兼容仍需人工回归。
+- 宠物状态和截图已检查，是否“自然好看”仍由所有者决定。
 
-- Dependency audit found no known vulnerabilities.
-- No authored/bundled `eval`, `new Function`, remote script or remote execution path; extension CSP is local-only.
-- Credentials remain in trusted storage contexts and are absent from public/content messages, caches and exports.
-- Page-batch messages are bounded and runtime-validated; strict response parsing requires the exact requested ID set.
-- Model output is assigned as text, not injected as HTML.
-- Skin tests cover schema, MIME/signature, path traversal, duplicate, over-size, decompression ratio, dangerous URL and executable-field rejection.
-- Secret scanning passed across tracked files, `dist` and the unpacked release ZIP; ignored `.secrets` is deliberately outside repository enumeration.
+## 12. 安全与秘密扫描
 
-## 16–18. Build artifacts
+- 禁止 `eval`、`new Function`、远程脚本、动态第三方 JS 和模型输出 `innerHTML`。
+- 皮肤包只接受受限 JSON/PNG/WebP，并检查版本、MIME、扩展名、路径穿越、大小、重复项、危险 URL、颜色和未知字段。
+- Provider HTTP 错误统一映射，429 最多自动重试一次；日志和错误不会包含完整 Authorization。
+- `pnpm package` 的构建前后秘密扫描均通过；扫描覆盖 tracked/build/archive 文本文件。
 
-- Production directory: `E:\AI-900\FloatRead\dist`
-- Release ZIP: `E:\AI-900\FloatRead\release\FloatRead-v0.2.3.zip`
-- Inventory: `E:\AI-900\FloatRead\release\FloatRead-v0.2.3-files.txt`
-- Digest: `E:\AI-900\FloatRead\release\FloatRead-v0.2.3.sha256`
-- ZIP size: 274,999 bytes
-- SHA-256: `f665f1de544b44ae9749d615acbf50871c75282099ff7dc17af2734f8160d087`
-- ZIP entries: 18; every path and byte matched the verified `dist` tree.
+## 13. 构建产物
 
-## 19. Local installation
+- 解压目录：`E:\AI-900\FloatRead\dist`
+- 发布 ZIP：`E:\AI-900\FloatRead\release\FloatRead-v0.4.0.zip`
+- ZIP 大小：443,368 字节
+- ZIP 文件数：20
+- SHA-256：`585a909944c9568a633f56328220283dc6876b4ad5ca35c7baa4b91b3fcbea0f`
+- 生产 MV3 加载测试：3 个扩展页面已验证。
 
-1. Disable and remove 0.2.2; do not continue running it on X.
-2. Extract `release/FloatRead-v0.2.3.zip` into a persistent folder.
-3. Open `chrome://extensions` and enable Developer mode.
-4. Choose **Load unpacked** and select the extracted folder containing `manifest.json`; confirm Chrome displays version 0.2.3, then hard-refresh X.
-5. Open FloatRead Settings, choose DeepSeek, set `https://api.deepseek.com`, model `deepseek-v4-flash`, and enter the key using the preferred storage mode.
-6. Grant only the displayed exact Provider-origin permission.
-7. Open X and manually start page translation. Stop must abort the active batch and remain stopped after reload; translation starts again only after an explicit user action.
+## 14. 本地安装步骤
 
-## 20. Human acceptance
+1. 解压 `release/FloatRead-v0.4.0.zip` 到固定目录；也可直接使用仓库的 `dist`。
+2. Chrome 打开 `chrome://extensions`。
+3. 开启“开发者模式”。
+4. 点击“加载已解压的扩展程序”，选择解压目录或 `E:\AI-900\FloatRead\dist`。
+5. 如果原来已加载旧版，点击 FloatRead 卡片的“重新加载”，再刷新正在测试的网页。
+6. 打开设置，选择 DeepSeek、模型 `deepseek-v4-flash`、Key 保存方式并测试连接。
 
-Use `MANUAL_TESTING.md` against the extracted production ZIP. For the reported issue, first verify: visible tweet text translates; menus translate once and remain translated; scrolling progressively translates newly visible text; Stop prevents later batches; Resume continues; Clear restores current original nodes; late results never appear after Stop; and X layout/scrolling remain usable. Record Chrome/OS, tester/date and ZIP digest without recording a key.
+## 15. 人工验收重点
 
-## 21–22. Known limitations and incomplete work
+- 在 X、TED、Reddit 分别点击开始，确认只替换可见文字，滚动后继续，不插入站点正文按钮。
+- 切换 Fast/Smart/Precise，对比首段和当前可见区域完成时间及质量。
+- 遇到新语言时分别检查“仅本次、以后都翻译、忽略”。
+- 翻译中切到其他标签页，观察最多完成一个在途批次且 Token 不继续增长；回来后自动继续。
+- 点击 Stop 后等待并滚动，确认不再翻译、不重连；刷新也不擅自开始。
+- 检查 Token 的输入、输出、总计与缓存命中。
+- 在 32px、76px、120px 检查 Mochi 眨眼、拖动行走、转身、点击和减少动画。
+- 完整清单见 `MANUAL_TESTING.md`。
 
-- Real X behavior still needs the owner's manual run. An attempted automated live-X inspection reached Cloudflare's security-verification page and was not bypassed. Controlled Chromium fixtures cover mutation pressure, cancellation and reload safety, but do not establish live-X production readiness.
-- Direct page-text replacement is intentionally invasive under the V2 authorization. FloatRead no longer immediately rewrites same-node host resets; a reset may remain English until a safe child-list or viewport rescan. Clear restores nodes that still exist, but a site framework may destroy/recreate nodes before restoration.
-- Translation is progressive around the viewport, not an eager crawl of the entire infinite timeline.
-- One page batch is non-streaming because it must return strict JSON for multiple segment IDs; precision-reading requests still stream.
-- Publisher name, GitHub/support URLs and store assets are provisional.
-- Firefox/Safari, Chrome Web Store submission and other Providers' real-key smoke tests are not completed.
+## 16. 已知限制与未完成项
 
-No V2 core path uses a fixed production demo. Version 0.2.2 is rejected and superseded. Version 0.2.3 passes the controlled functional and quality gates; the live-site manual checklist is the remaining production-readiness gate.
+- TED 官方本身已有演讲字幕和文字稿翻译；FloatRead 的差异是整个学习页面翻译，不能宣传“TED 没有翻译”。
+- Fast 的大批次策略提高长页面吞吐，但 Provider 与网络决定单次延迟，不能保证永远低于两秒。
+- 通用网页由 activeTab 临时授权；强 CSP、跨域 iframe、canvas 文字或关闭的 Shadow DOM 无法读取。
+- 自定义单张图片只能做轻量动作，不能自动生成可信的十几帧走路动画。
+- 商店发布仍缺正式仓库/作者链接、批准的无凭据截图和真实站点人工回归。
 
-## 23. Suggested next release
+## 17. 下一版本建议
 
-- Use live-X manual evidence to tune semantic priority, batch cadence and text-node restoration without adopting private X selectors.
-- Add an explicit translation-language setting and per-section include/exclude controls.
-- Add an optional side-by-side/original-on-hover presentation mode for sites where direct replacement is fragile.
-- Run minimal authorized smoke tests for additional priority Providers, one credential at a time.
-- Finalize publisher identity, repository URLs, screenshots and store listing.
+- 用同一真实页面收集三档首段/完成时间分布，而不是用单次结果宣传速度。
+- 根据人工反馈优化 TED/Reddit 动态区域与新语言提醒频率。
+- 若 Mochi 自然度仍不足，再评估受控逐帧资源；保持用户上传单图的轻量边界。
+- 评估术语固定译法与整篇文章的显式一次性翻译，但不得恢复无限时间线扫描。
+
+## 18. 最终验收结论
+
+- 形式存在：通过。
+- 功能可运行：受控 Chromium、真实 DeepSeek、生产构建与 ZIP 加载通过。
+- 质量达到要求：自动化、安全、包体和代表性视觉检查通过；真实平台长期行为与主观宠物自然度仍为人工未知项。
+- 可投入状态：可以交给所有者安装测试；在完成真实站点清单和正式品牌素材前，不宣称 Chrome 商店发布就绪。

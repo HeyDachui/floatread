@@ -795,3 +795,67 @@ Knowledge-cycle Before:
 - Result: FloatRead is not configured in the connector, so there was no relevant hit or query id. No external candidate was adopted; implementation proceeds from current repository evidence and platform documentation.
 
 Stopping evidence for this round will include schema migration, strict message validation, timing instrumentation, hidden-tab tests, language-decision tests, platform-strategy tests, pet-module acceptance, full lint/type/unit/integration/E2E/package gates and a bounded real DeepSeek comparison. None of those are claimed complete at this starting checkpoint.
+
+### Version 0.4.0 completion record — 2026-07-22
+
+Implemented outcomes:
+
+- Added Fast, Smart (recommended) and Precise page translation. Fresh installs use Smart; existing schema-v2 users migrate to Precise so an update does not silently lower their prior translation quality.
+- Fast batches up to 12 segments/12,000 characters, Smart 8/8,000 and Precise 6/6,000. All three retain strict JSON ids, one retry at most, streaming, cancellation and direct text replacement.
+- Reused the existing local scan to report newly detected languages. The user can translate once, remember the language for that origin or ignore it; the decision message contains only the language and choice, and no Provider call occurs before consent.
+- Hidden pages stop scanning and submitting new batches. At most one already-submitted batch can finish. Returning resumes only if the user did not press Stop. A deterministic content-module test covers this isolated-world rule; Playwright's headless multi-page context did not expose a reliable real `document.hidden` transition to the extension isolated world, so an actual Chrome tab switch remains a manual observation instead of a claimed browser-E2E pass.
+- Added semantic profiles for X, TED, Reddit and generic sites without private X selectors. TED live captions, timers, progress and log regions are excluded from translation.
+- Preserved Token-only reporting: each Start-to-Stop session records request count, cache hits, input Token, output Token and total Token in Popup/settings; no fee estimate was added.
+- Integrated the visible pet task's Mochi module after inspecting its source and actual screenshots. Mochi now has low-frequency blink, drag-walk, horizontal turn, press and request-state feedback, with reduced-motion support. User-uploaded images remain on the lighter local-processing path.
+
+Independent pet-module handoff closure:
+
+- Visible execution task: `019f8991-8299-7ac1-b1f1-11d54ecf3473` (`local`).
+- Task result was not accepted from its completion message alone. The primary task reviewed `CompanionArtwork.tsx`, `pet-mochi.css`, `pet-motion.ts`, the dedicated unit tests and real screenshots, then ran repository-wide gates in the main workspace.
+- Integration commit: `a32cf96 feat: animate the built-in Mochi companion`.
+- Acceptance: formal existence passed; functional and automated quality evidence passed; natural motion on the owner's real pages remains an explicit manual observation. The visible task was archived after integration.
+
+Actual verification:
+
+| Command                    | Actual result                                                                                |
+| -------------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm format`              | Passed                                                                                       |
+| `pnpm lint`                | Passed, zero warnings                                                                        |
+| `pnpm typecheck`           | Passed                                                                                       |
+| `pnpm test`                | Passed: 26 files, 129 tests                                                                  |
+| `pnpm test:integration`    | Passed: 2 files, 2 tests                                                                     |
+| `pnpm test:e2e`            | Passed: 18 real Chromium extension tests                                                     |
+| `pnpm format:check`        | Passed                                                                                       |
+| `pnpm package`             | Passed: production build, dist/ZIP checks, two secret scans and Chrome MV3 release-load test |
+| `pnpm smoke:deepseek-page` | Passed: one Fast and one Precise bounded streaming request; all six strict segments returned |
+
+Real Provider evidence:
+
+- Provider/model: DeepSeek / `deepseek-v4-flash`; Base URL `https://api.deepseek.com`.
+- Fast: first validated item 1,398 ms, total 1,909 ms, 405 input + 110 output = 515 Token.
+- Precise: first validated item 1,147 ms, total 1,683 ms, 406 input + 110 output = 516 Token.
+- This small sample proves both production prompts and parsers work and Fast was below two seconds. It does not prove Fast is always quicker: Fast was 226 ms slower here because one request per mode is dominated by Provider/network variance. Its deterministic long-page benefit remains fewer batches, and same-page sustained comparison remains manual.
+- No response body, Authorization header or credential was retained. Temporary environment variables were removed. The owner-retained low-limit key remains only in Git-ignored `.secrets/FloatRead-APIKEY.txt` and is absent from tracked source, `dist` and the ZIP.
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.4.0.zip`
+- ZIP size: 443,368 bytes
+- ZIP entries: 20
+- SHA-256: `585a909944c9568a633f56328220283dc6876b4ad5ca35c7baa4b91b3fcbea0f`
+- Manifest V3 production load: passed with three extension pages.
+- Secret scan: passed before and after archive generation across tracked/build/archive text files.
+
+Knowledge-cycle After:
+
+- Before result: FloatRead was not configured in the local connector, so no relevant hit or query id existed and no connected-knowledge recommendation was adopted.
+- Bounded project finding: background-page control must live in the Content Script's isolated world. Headless Chromium opening another page does not reliably reproduce an actual extension-world visibility transition, and a main-world override does not cross the isolation boundary. The deterministic module path is therefore automated, while a real tab switch remains manual. This is a harness boundary, not evidence that hidden-tab behavior passed on a real site.
+- Bounded project finding: platform profiles should avoid high-frequency live-media regions such as TED captions/timers to prevent churn and Token waste; this does not justify broad site-specific private selectors.
+- No global Skill or external knowledge object was modified. These findings remain in the project record until a configured knowledge consumer exists.
+
+Production-delivery acceptance:
+
+- Formal existence: passed; source, tests, docs, `dist` and ZIP are present and version-aligned at 0.4.0.
+- Functional operation: passed for controlled Chromium extension flows, real DeepSeek Fast/Precise batches and release loading.
+- Required quality: automated gates and bounded visual inspection passed. Natural pet motion, live hidden-tab switching and authenticated X/TED/Reddit long-session behavior remain manual/unknown rather than falsely passed.
+- Ready for owner testing: yes. Store/publication readiness remains blocked on canonical branding, approved screenshots and completion of the manual live-site checklist.

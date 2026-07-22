@@ -1,7 +1,8 @@
-import { buildPageTranslationPrompt } from "../src/page-translation/prompt";
 import { streamPageTranslationWithSingleRetry } from "../src/page-translation/complete";
+import { buildPageTranslationPrompt } from "../src/page-translation/prompt";
 import { deepSeekAdapter } from "../src/providers/openai-compatible";
 import { ProviderFailure, type ProviderProfile } from "../src/providers/types";
+import type { PageTranslationQuality } from "../src/translation/languages";
 
 const key = process.env.FLOATREAD_TEST_DEEPSEEK_KEY?.trim();
 const baseUrl = process.env.FLOATREAD_TEST_BASE_URL?.trim() || "https://api.deepseek.com";
@@ -23,6 +24,7 @@ const profile: ProviderProfile = {
   createdAt: 0,
   updatedAt: 0,
 };
+
 const segments = [
   {
     id: "mixed_name_0",
@@ -36,11 +38,48 @@ const segments = [
     text: "We reset usage limits for affected Codex users.",
     sourceLanguage: "en" as const,
   },
+  {
+    id: "ted_title_0",
+    kind: "content" as const,
+    text: "A better way to learn difficult ideas",
+    sourceLanguage: "en" as const,
+  },
+  {
+    id: "ted_ui_0",
+    kind: "ui" as const,
+    text: "About the speaker",
+    sourceLanguage: "en" as const,
+  },
+  {
+    id: "reddit_content_0",
+    kind: "content" as const,
+    text: "This discussion explains why the result matters.",
+    sourceLanguage: "en" as const,
+  },
+  {
+    id: "ui_0",
+    kind: "ui" as const,
+    text: "Share this idea",
+    sourceLanguage: "en" as const,
+  },
 ];
-const prompt = buildPageTranslationPrompt(segments);
-const started = performance.now();
 
-try {
+interface SmokeRun {
+  quality: PageTranslationQuality;
+  success: boolean;
+  durationMs: number;
+  firstSegmentMs?: number;
+  segmentCount: number;
+  outputCharacters: number[];
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  mixedNameTranslated: boolean;
+}
+
+async function runQuality(quality: PageTranslationQuality): Promise<SmokeRun> {
+  const prompt = buildPageTranslationPrompt(segments, "zh-Hans", quality);
+  const started = performance.now();
   const controller = new AbortController();
   let firstSegmentMs: number | undefined;
   let inputTokens: number | undefined;
@@ -49,7 +88,7 @@ try {
     () =>
       deepSeekAdapter.stream(
         {
-          requestId: "page-smoke-generation",
+          requestId: `page-smoke-${quality}`,
           systemPrompt: prompt.systemPrompt,
           userPrompt: prompt.userPrompt,
           maxOutputTokens: prompt.maxOutputTokens,
@@ -75,21 +114,43 @@ try {
     parsed.size === segments.length &&
     mixedResult.includes("ChatGPT") &&
     mixedResult !== segments[0]?.text;
+  return {
+    quality,
+    success,
+    durationMs: Math.round(performance.now() - started),
+    ...(firstSegmentMs === undefined ? {} : { firstSegmentMs }),
+    segmentCount: parsed.size,
+    outputCharacters: [...parsed.values()].map((value) => value.length),
+    ...(inputTokens === undefined ? {} : { inputTokens }),
+    ...(outputTokens === undefined ? {} : { outputTokens }),
+    ...(inputTokens === undefined || outputTokens === undefined
+      ? {}
+      : { totalTokens: inputTokens + outputTokens }),
+    mixedNameTranslated: mixedResult !== segments[0]?.text,
+  };
+}
+
+const started = performance.now();
+try {
+  const fast = await runQuality("fast");
+  const precise = await runQuality("precise");
+  const success = fast.success && precise.success;
   console.log(
     JSON.stringify(
       {
         provider: "DeepSeek",
         model,
-        check: "v3_stream_page_batch",
+        check: "v4_fast_precise_stream_comparison",
         success,
         durationMs: Math.round(performance.now() - started),
-        result: success ? "strict_json_batch_received" : "INVALID_RESPONSE",
-        segmentCount: parsed.size,
-        firstSegmentMs,
-        outputCharacters: [...parsed.values()].map((value) => value.length),
-        mixedNameTranslated: mixedResult !== segments[0]?.text,
-        inputTokens,
-        outputTokens,
+        result: success ? "two_strict_json_batches_received" : "INVALID_RESPONSE",
+        fast,
+        precise,
+        fastFirstSegmentAdvantageMs:
+          fast.firstSegmentMs === undefined || precise.firstSegmentMs === undefined
+            ? undefined
+            : precise.firstSegmentMs - fast.firstSegmentMs,
+        fastCompletionAdvantageMs: precise.durationMs - fast.durationMs,
       },
       null,
       2,
@@ -102,7 +163,7 @@ try {
       {
         provider: "DeepSeek",
         model,
-        check: "v3_stream_page_batch",
+        check: "v4_fast_precise_stream_comparison",
         success: false,
         durationMs: Math.round(performance.now() - started),
         result: error instanceof ProviderFailure ? error.publicError.code : "UNKNOWN",
