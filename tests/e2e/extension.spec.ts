@@ -7,7 +7,7 @@ const projectRoot = resolve(import.meta.dirname, "../..");
 const extensionPath = resolve(projectRoot, "dist-e2e");
 const fixturePath = resolve(projectRoot, "tests/e2e/fixtures/page.html");
 const fixtureUrl = "http://127.0.0.1:4173/";
-const readyLabel = /FloatRead(?:：选择阅读模式|: choose a reading mode)/u;
+const pageTranslationLabel = /翻译当前页面|Translate this page/u;
 const naturalMode = /自然中文|Natural Chinese/u;
 
 let server: Server;
@@ -104,7 +104,7 @@ test("selection changes ready state and the companion remains visible after drag
   await selectFixtureSource(page);
 
   const companion = host.locator("button.fr-companion");
-  await expect(companion).toHaveAttribute("aria-label", readyLabel);
+  await expect(companion).toHaveAttribute("aria-label", pageTranslationLabel);
   const before = await companion.boundingBox();
   if (!before) throw new Error("companion bounding box missing");
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
@@ -140,6 +140,22 @@ test("starts visible-page translation when the companion is used without a selec
   await page.close();
 });
 
+test("starts page translation even when text remains selected", async () => {
+  const page = await context.newPage();
+  await page.goto(fixtureUrl);
+  const host = page.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+  await selectFixtureSource(page);
+
+  const companion = host.locator("button.fr-companion");
+  await expect(companion).toHaveAttribute("aria-label", pageTranslationLabel);
+  await companion.click();
+
+  await expect(page.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
+  await expect(host.locator(".fr-action-menu")).toHaveCount(0);
+  await page.close();
+});
+
 test("streams a selected passage through Background and Mock Provider", async () => {
   const page = await context.newPage();
   await page.setViewportSize({ width: 1_000, height: 760 });
@@ -149,8 +165,8 @@ test("streams a selected passage through Background and Mock Provider", async ()
   await selectFixtureSource(page);
 
   const companion = host.locator("button.fr-companion");
-  await expect(companion).toHaveAttribute("aria-label", readyLabel);
-  await companion.click();
+  await expect(companion).toHaveAttribute("aria-label", pageTranslationLabel);
+  await companion.click({ button: "right" });
   await host.getByRole("menuitem", { name: naturalMode }).click();
 
   const panel = host.locator(".fr-result-panel");
@@ -182,8 +198,8 @@ test("cancels an active stream and keeps partial content", async () => {
   await selectFixtureSource(page);
 
   const companion = host.locator("button.fr-companion");
-  await expect(companion).toHaveAttribute("aria-label", readyLabel);
-  await companion.click();
+  await expect(companion).toHaveAttribute("aria-label", pageTranslationLabel);
+  await companion.click({ button: "right" });
   await host.getByRole("menuitem", { name: /解释术语|Explain terms/u }).click();
   const panel = host.locator(".fr-result-panel");
   await expect(panel.getByRole("button", { name: /停止|Stop/u })).toBeVisible();
@@ -209,8 +225,8 @@ test("reuses an identical result from cache without running Mock again", async (
   });
   await selectFixtureSource(page);
   const companion = host.locator("button.fr-companion");
-  await expect(companion).toHaveAttribute("aria-label", readyLabel);
-  await companion.click();
+  await expect(companion).toHaveAttribute("aria-label", pageTranslationLabel);
+  await companion.click({ button: "right" });
   await host.getByRole("menuitem", { name: naturalMode }).click();
 
   const panel = host.locator(".fr-result-panel");
@@ -219,7 +235,7 @@ test("reuses an identical result from cache without running Mock again", async (
   );
   await expect(panel.locator(".fr-provider-tag")).not.toContainText(/缓存|cached/u);
   await panel.getByRole("button", { name: /关闭结果面板|Close result panel/u }).click();
-  await companion.click();
+  await companion.click({ button: "right" });
   await host.getByRole("menuitem", { name: naturalMode }).click();
   await expect(panel.locator(".fr-output-text")).toHaveText(
     "Mock 自然中文：A unique cache proof passage for FloatRead.",
@@ -236,9 +252,10 @@ test("supports keyboard-first mode selection and reduced-motion rendering", asyn
   await host.waitFor({ state: "attached" });
   await selectFixtureSource(page);
   const companion = host.locator("button.fr-companion");
-  await expect(companion).toHaveAttribute("aria-label", readyLabel);
+  await expect(companion).toHaveAttribute("aria-label", pageTranslationLabel);
+  await expect(companion).toHaveClass(/fr-state-ready/u);
   await companion.focus();
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("ArrowDown");
   const pageTranslationItem = host.getByRole("menuitem", {
     name: /翻译当前页面|Translate this page/u,
   });

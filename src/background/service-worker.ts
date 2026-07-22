@@ -3,6 +3,7 @@ import { registerMessageRouter } from "./message-router";
 import { registerGenerationPorts } from "./request-manager";
 import { createContextMenus, registerContextMenuClicks } from "./context-menu";
 import { registerPageTranslationPorts } from "./page-translation-manager";
+import { reconnectDeclaredSiteTabs } from "./injection";
 
 const initializeTrustedStorage = async (): Promise<void> => {
   await Promise.all([
@@ -23,9 +24,11 @@ chrome.runtime.onInstalled.addListener((details) => {
   void initialization.then(async () => {
     if (details.reason === "install") {
       await createContextMenus();
+      await reconnectDeclaredSiteTabs();
       await chrome.tabs.create({ url: chrome.runtime.getURL("src/options/onboarding/index.html") });
     } else if (details.reason === "update") {
       await createContextMenus();
+      await reconnectDeclaredSiteTabs();
     }
   });
 });

@@ -205,32 +205,33 @@ export function FloatingCompanion({
     setDragPoint(nextPoint);
   };
 
-  const activateCompanion = (keyboard = false): void => {
-    if (!selection) {
-      if (isPageActive) {
-        void chrome.runtime.sendMessage({
-          type: "SET_PAGE_TRANSLATION_PREFERENCE",
-          enabled: false,
-        });
-        pausePageTranslation();
-        showHint(t("pageTranslationPaused", String(pageTranslation.translatedCount)));
-      } else {
-        void chrome.runtime.sendMessage({
-          type: "SET_PAGE_TRANSLATION_PREFERENCE",
-          enabled: true,
-        });
-        startPageTranslation(bootstrap.translation);
-        showHint(t("pageTranslationStarting"));
-      }
-      return;
-    }
+  const activateCompanion = (precisionMenu = false, keyboard = false): void => {
     setContextMenuOpen(false);
-    if (bootstrap.clickBehavior === "run_default_mode") {
-      startGeneration(bootstrap.defaultMode, selection.text, keyboard);
+    if (precisionMenu && selection) {
+      if (bootstrap.clickBehavior === "run_default_mode") {
+        startGeneration(bootstrap.defaultMode, selection.text, keyboard);
+        return;
+      }
+      focusMenuOnOpen.current = keyboard;
+      setActionMenuOpen((open) => !open);
       return;
     }
-    focusMenuOnOpen.current = keyboard;
-    setActionMenuOpen((open) => !open);
+    setActionMenuOpen(false);
+    if (isPageActive) {
+      void chrome.runtime.sendMessage({
+        type: "SET_PAGE_TRANSLATION_PREFERENCE",
+        enabled: false,
+      });
+      pausePageTranslation();
+      showHint(t("pageTranslationPaused", String(pageTranslation.translatedCount)));
+    } else {
+      void chrome.runtime.sendMessage({
+        type: "SET_PAGE_TRANSLATION_PREFERENCE",
+        enabled: true,
+      });
+      startPageTranslation(bootstrap.translation);
+      showHint(t("pageTranslationStarting"));
+    }
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>): void => {
@@ -259,6 +260,7 @@ export function FloatingCompanion({
     dispatch({ type: "START", requestId, mode, originalText: text });
     setFocusPanelOnOpen(focusOnOpen);
     setActionMenuOpen(false);
+    setContextMenuOpen(false);
     generationClient.current?.start(requestId, text, mode);
   };
 
@@ -415,6 +417,18 @@ export function FloatingCompanion({
 
       {contextMenuOpen ? (
         <div className="fr-context-menu" role="menu" aria-label={t("companionMenu")}>
+          {selection
+            ? modeLabels.map((item) => (
+                <button
+                  key={item.mode}
+                  type="button"
+                  role="menuitem"
+                  onClick={(event) => selectMode(item.mode, event.detail === 0)}
+                >
+                  {item.label}
+                </button>
+              ))
+            : null}
           <button
             type="button"
             role="menuitem"
@@ -462,7 +476,8 @@ export function FloatingCompanion({
           bootstrap.appearance.motionEnabled ? bootstrap.skin.motions[skinState] : "none"
         }
         type="button"
-        aria-label={selection ? t("companionReady") : t("translatePage")}
+        aria-label={t(isPageActive ? "pausePageTranslation" : "translatePage")}
+        aria-haspopup="menu"
         aria-expanded={actionMenuOpen || contextMenuOpen || readerState.value !== "idle"}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -473,9 +488,14 @@ export function FloatingCompanion({
         }}
         onDoubleClick={(event) => event.preventDefault()}
         onKeyDown={(event) => {
+          if (event.key === "ArrowDown" && selection) {
+            event.preventDefault();
+            activateCompanion(true, true);
+            return;
+          }
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault();
-          activateCompanion(true);
+          activateCompanion(false, true);
         }}
         onContextMenu={(event) => {
           event.preventDefault();

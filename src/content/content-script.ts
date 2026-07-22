@@ -15,7 +15,15 @@ type FloatReadGlobal = typeof globalThis & {
 
 const floatReadGlobal = globalThis as FloatReadGlobal;
 
-if (window.top === window && !floatReadGlobal.__FLOATREAD_CONTENT_INSTALLED__) {
+if (window.top === window) {
+  // Programmatic reinjection is used to recover tabs that were already open
+  // when an unpacked build was reloaded. Background probes healthy tabs before
+  // injecting, so reaching here again means the previous context is stale.
+  if (floatReadGlobal.__FLOATREAD_CONTENT_INSTALLED__) {
+    clearPageTranslation();
+    unmountFloatRead();
+    clearLastResult();
+  }
   floatReadGlobal.__FLOATREAD_CONTENT_INSTALLED__ = true;
 
   chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {

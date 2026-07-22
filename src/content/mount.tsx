@@ -40,9 +40,16 @@ export function unmountFloatRead(): void {
 }
 
 export async function mountFloatRead(initialAction?: InitialCompanionAction): Promise<void> {
-  if (state || document.querySelector(ROOT_TAG_NAME)) return;
+  if (state) return;
+
+  // An unpacked-extension reload invalidates the previous isolated world but can
+  // leave its closed Shadow DOM host in the page. Remove that inert shell so the
+  // new content-script instance can take ownership without requiring a page reload.
+  document.querySelector(ROOT_TAG_NAME)?.remove();
   const bootstrap = await requestBootstrap();
   if (!bootstrap?.enabled) return;
+  if (state) return;
+  document.querySelector(ROOT_TAG_NAME)?.remove();
 
   const host = document.createElement(ROOT_TAG_NAME);
   host.style.position = "fixed";

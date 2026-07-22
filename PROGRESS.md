@@ -533,3 +533,43 @@ Release evidence:
 - Temporary test Key file deleted after the single final DeepSeek request; no credential was printed or retained.
 
 Acceptance status: formal repository/artifact completeness passed; controlled functional and automated quality gates passed; real DeepSeek page-prompt readiness passed. Authenticated-X production quality for 0.3.0 remains an owner manual check, not an automated claim. Single-image custom pets have built-in motion presets rather than newly illustrated multi-frame animation.
+
+## Version 0.3.1 open-tab recovery round — 2026-07-22
+
+Owner acceptance report: after installing/testing the new build, clicking the companion did not start translation. Chrome configuration inspection confirmed that the unpacked extension path was the current workspace production directory (`E:\AI-900\FloatRead\dist`), so the investigation did not treat this as a wrong-package report.
+
+Controlled diagnosis and changes:
+
+- Extension reloads can invalidate an existing Content Script while leaving its closed-Shadow-DOM host visible. The old pet can therefore look installed but no longer communicate with Background.
+- Background now probes already-open declared X/Twitter tabs on install/update. Healthy tabs are left alone; tabs without a live receiver receive one serialized Content Script injection.
+- A newly injected Content Script removes the inert host left by the previous isolated world and mounts a fresh host. Mount also rechecks uniqueness after asynchronous bootstrap.
+- `injectAndSend` now tries a live receiver first, avoiding the former unconditional reinjection on every trusted action.
+- Normal pet click and Enter/Space now always start or stop full-page translation, even with a retained selection. Precision reading remains in the pet right-click menu and opens by Arrow Down for keyboard users; browser selection actions remain unchanged.
+
+Project-loop evidence:
+
+- Changed variables: extension-reload recovery and the pet's primary click contract.
+- Held constant: Provider routing, scanner limits, mutation strategy, stop/abort behavior, language settings, prompts and credentials.
+- New regression evidence covers stale-host replacement, live receiver reuse, stale receiver reinjection, selected-text page startup and keyboard precision access.
+- The first full E2E run had 16/17 passes because the old keyboard assertion still expected the selection menu from Enter. The product contract and test were aligned to Enter = full page, Arrow Down = precision menu; the targeted retry and final full suite passed.
+
+Actual verification:
+
+| Command                 | Actual result                                                  |
+| ----------------------- | -------------------------------------------------------------- |
+| `pnpm lint`             | Passed, zero warnings                                          |
+| `pnpm typecheck`        | Passed                                                         |
+| `pnpm test`             | Passed: 22 files, 109 tests                                    |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                       |
+| `pnpm test:e2e`         | Passed: 17 real Chromium extension tests                       |
+| `pnpm format:check`     | Passed                                                         |
+| `pnpm package`          | Passed: build, two secret scans, ZIP verification and MV3 load |
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.3.1.zip`
+- ZIP size: 435,305 bytes
+- SHA-256: `a480d7402136fed0f95329d9f4310ebcdb65fb6c1d125cd35acb0a578123d90c`
+- Real Provider calls this round: none. Provider code was unchanged; the 0.3.0 DeepSeek smoke is historical evidence only.
+
+Acceptance conclusion: formal existence, controlled functional operation and automated release quality passed. The actual Chrome profile points to the workspace `dist`, and the newly built package is installable. Authenticated-X observation of the repaired 0.3.1 click path remains the owner's final real-use check after pressing Reload in `chrome://extensions`; it is not claimed as already observed.

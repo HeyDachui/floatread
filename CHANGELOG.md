@@ -2,6 +2,18 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.3.1] - 2026-07-22
+
+### Fixed
+
+- Recover X tabs that were already open when an unpacked extension build was installed or reloaded. FloatRead now probes the existing Content Script, reinjects only when the old context is missing, and replaces an inert leftover Shadow DOM host.
+- Make a normal pet click consistently start or stop full-page translation even when text is still selected. Precision reading remains available from the pet's right-click menu, the browser selection menu and the keyboard.
+- Avoid injecting duplicate Content Scripts into healthy tabs and serialize concurrent recovery injection for the same tab.
+
+### Verified
+
+- Add deterministic tests for stale-host replacement, healthy-context reuse, stale-context reinjection and selected-text full-page startup.
+
 ## [0.3.0] - 2026-07-22
 
 ### Added

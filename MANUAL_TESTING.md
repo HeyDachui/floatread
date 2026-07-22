@@ -14,7 +14,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 - [ ] On X Home, exactly one `floatread-root` exists and the companion is visible.
 - [ ] Before page translation is enabled, DevTools shows no AI Provider request and no host text changes.
-- [ ] Clicking the companion with no selection starts translation; clicking it again stops immediately.
+- [ ] Clicking the companion starts translation with or without a leftover selection; clicking it again stops immediately.
 - [ ] Settings can add 1–5 source languages and one target language; unselected languages remain unchanged.
 - [ ] Visible tweet/article text is translated naturally; navigation/menu/button text is concise.
 - [ ] Infinite timeline content outside the visible/near-visible window is not preloaded.
@@ -24,7 +24,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Resume processes text that appeared while stopped.
 - [ ] Clear restores surviving original text nodes and disables the site's translation preference.
 - [ ] No FloatRead global stylesheet is attached to the host document; companion UI remains in its Shadow DOM.
-- [ ] Select English text and choose a precision mode; only the selection is used for that precision request.
+- [ ] Select English text, right-click the companion and choose a precision mode; only the selection is used for that precision request.
 
 ## Reading workflow
 
@@ -52,7 +52,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Result width adjusts up to 760px and the panel can be resized in both dimensions.
 - [ ] Clicking outside collapses the result panel.
 - [ ] The panel avoids all viewport edges; long text scrolls internally.
-- [ ] Keyboard Enter/Space opens actions, focus enters the menu, Escape closes, and controls have visible focus.
+- [ ] Keyboard Enter/Space starts or stops page translation; with a selection ready, Arrow Down opens precision actions and focus enters the menu.
 - [ ] Light X, dark X, browser dark preference and `prefers-reduced-motion` all behave correctly.
 
 ## Triggers and controls
@@ -95,7 +95,7 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.3.0.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.3.1.zip`, not `dist-e2e`.
 - [ ] `manifest.json` is MV3, version matches, CSP is local-only and permissions match `docs/PERMISSIONS.md`.
 - [ ] ZIP inventory contains no tests, source maps, `.env`, `.secrets`, logs, `node_modules` or unrelated screenshots.
 - [ ] `pnpm scan:secrets` and `pnpm verify:release` pass after packaging.
