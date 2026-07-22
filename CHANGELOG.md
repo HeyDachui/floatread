@@ -4,6 +4,10 @@ All notable changes are documented here. The project follows semantic versioning
 
 ## [0.5.0] - 2026-07-22
 
+- Expand the built-in companion system from one pet to three original pets: Mochi, Maple the red panda and Piko the penguin.
+- Give Maple and Piko five authored visual states—idle, content found, translating, complete and error—plus click, walk, turn, idle and rapid-scroll reactions.
+- Rework Settings into visual Pet companions and Other appearances groups with thumbnails and localized state labels.
+- Keep custom PNG/JPG pets on the safe local single-image path and preserve reduced-motion suppression across every pet type.
 - Preserve the owner-tested 0.4.1 repository state as annotated Git tag `stable-v0.4.1` before starting this release.
 - Replace separate page/reading cache behavior with one automatic 10 MB local-memory service backed by trusted extension storage.
 - Use soft 5 MB targets for recent results and repeated long-term text; either tier may borrow unused capacity, while overflow reclaims the borrowing tier first.

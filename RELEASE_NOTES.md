@@ -4,6 +4,9 @@ FloatRead 0.5.0 adds an automatic translation-memory layer without changing the 
 
 ## What changed
 
+- Three original built-in pets are now available: Mochi, Maple the red panda and Piko the penguin.
+- Maple and Piko use five distinct authored state images instead of presenting every situation through one picture. All pets also react to clicks, walking/turning and rapid-scroll catch-up.
+- Settings now presents visual pet cards first, other appearances second, and human-readable state labels instead of raw internal state names.
 - One 10 MB local-memory budget now covers page translation and precision reading.
 - Recent content and repeated long-term content each target about 5 MB, but either side may borrow unused capacity.
 - Eligible menu, button and short-phrase translations move to long-term memory after the third encounter.

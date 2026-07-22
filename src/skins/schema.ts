@@ -95,6 +95,31 @@ export const runtimeSkinSchema = z
       .string()
       .regex(/^pets\/[a-z0-9-_]+\/[a-z0-9-_]+\.webp$/u)
       .optional(),
+    builtinAssets: z
+      .object({
+        idle: z
+          .string()
+          .regex(/^pets\/[a-z0-9-_]+\/[a-z0-9-_]+\.webp$/u)
+          .optional(),
+        ready: z
+          .string()
+          .regex(/^pets\/[a-z0-9-_]+\/[a-z0-9-_]+\.webp$/u)
+          .optional(),
+        thinking: z
+          .string()
+          .regex(/^pets\/[a-z0-9-_]+\/[a-z0-9-_]+\.webp$/u)
+          .optional(),
+        success: z
+          .string()
+          .regex(/^pets\/[a-z0-9-_]+\/[a-z0-9-_]+\.webp$/u)
+          .optional(),
+        error: z
+          .string()
+          .regex(/^pets\/[a-z0-9-_]+\/[a-z0-9-_]+\.webp$/u)
+          .optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 

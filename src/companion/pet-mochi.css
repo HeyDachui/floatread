@@ -15,6 +15,53 @@
   transition: transform 220ms cubic-bezier(0.2, 0.75, 0.3, 1);
 }
 
+.fr-authored-pet {
+  position: absolute;
+  inset: -8%;
+  display: block;
+  transform-origin: 50% 82%;
+  transition: transform 240ms cubic-bezier(0.2, 0.75, 0.3, 1);
+}
+
+.fr-authored-pet > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 9px rgba(0, 0, 0, 0.2));
+  pointer-events: none;
+}
+
+.fr-pet-reaction {
+  position: absolute;
+  top: -1%;
+  right: 2%;
+  width: 22%;
+  height: 22%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fr-pet-reaction::before,
+.fr-pet-reaction::after {
+  position: absolute;
+  width: 24%;
+  height: 76%;
+  border-radius: 999px;
+  background: var(--fr-accent);
+  content: "";
+  transform-origin: 50% 120%;
+}
+
+.fr-pet-reaction::before {
+  rotate: -34deg;
+}
+
+.fr-pet-reaction::after {
+  right: 0;
+  rotate: 34deg;
+}
+
 /* Keep the established artwork hook without inheriting whole-image motion presets. */
 .fr-companion .fr-mochi-art.fr-artwork {
   animation: none;
@@ -84,6 +131,32 @@
 
 .fr-mochi-art[data-facing="right"] {
   transform: scaleX(-1);
+}
+
+.fr-authored-pet[data-facing="right"] {
+  transform: scaleX(-1);
+}
+
+.fr-companion:not([data-motion="none"]) .fr-authored-pet[data-art-state="idle"] > img {
+  animation: fr-pet-idle-alive 7.2s ease-in-out infinite;
+}
+
+.fr-companion:not([data-motion="none"]) .fr-authored-pet[data-interaction="walking"] > img {
+  animation: fr-pet-authored-walk 340ms ease-in-out infinite;
+}
+
+.fr-companion:not([data-motion="none"]) .fr-authored-pet[data-interaction="pressed"] > img {
+  animation: fr-pet-authored-press 300ms cubic-bezier(0.18, 0.78, 0.35, 1);
+}
+
+.fr-companion:not([data-motion="none"])
+  .fr-authored-pet[data-interaction="pressed"]
+  .fr-pet-reaction {
+  animation: fr-pet-reaction-pop 420ms ease-out;
+}
+
+.fr-authored-pet[data-interaction="turning"] {
+  transition-duration: 300ms;
 }
 
 .fr-companion:not([data-motion="none"]) .fr-mochi-art[data-interaction="walking"] {
@@ -236,10 +309,73 @@
   }
 }
 
+@keyframes fr-pet-idle-alive {
+  0%,
+  72%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  78% {
+    translate: 0 -2%;
+    rotate: -2.2deg;
+  }
+  84% {
+    translate: 0 0;
+    rotate: 1.4deg;
+  }
+  90% {
+    translate: 0 -1%;
+    rotate: 0deg;
+  }
+}
+
+@keyframes fr-pet-authored-walk {
+  0%,
+  100% {
+    translate: -1.5% 1%;
+    rotate: -1.8deg;
+  }
+  50% {
+    translate: 1.5% -4%;
+    rotate: 1.8deg;
+  }
+}
+
+@keyframes fr-pet-authored-press {
+  35% {
+    translate: 0 5%;
+    scale: 0.92 1.08;
+  }
+  72% {
+    translate: 0 -6%;
+    scale: 1.05 0.96;
+  }
+}
+
+@keyframes fr-pet-reaction-pop {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+  }
+  38% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -20%;
+    scale: 1.1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fr-mochi-art,
   .fr-mochi-layer,
-  .fr-mochi-lid {
+  .fr-mochi-lid,
+  .fr-authored-pet,
+  .fr-authored-pet > img,
+  .fr-pet-reaction {
     animation: none !important;
     transition: none !important;
   }
