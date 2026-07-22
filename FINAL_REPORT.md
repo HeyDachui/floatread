@@ -7,9 +7,11 @@ Status: automated release candidate ready for owner testing; 0.4.1 remains the o
 
 FloatRead now uses one automatic 10 MB local translation-memory service for page translation and selection reading. Recent results and repeated long-term results each target about 5 MB and may borrow unused space from each other. Eligible functional text and short phrases enter recent memory, then move to long-term memory after the third encounter.
 
+The built-in companion system now contains three original pets instead of one: Mochi, Maple red panda and Piko penguin. Maple and Piko each use five independent state images and all three pets respond to click, drag-walk, turn and rapid-scroll catch-up. Settings presents visual pet cards before the non-pet appearances and uses bilingual human-readable state names.
+
 The user no longer chooses TTL, entry count or MB. Settings exposes only automatic local storage, current browser session or off; it shows recent/long-term usage, reuse count, conservative estimated Token savings and a clear action.
 
-The accepted 0.4.1 translation, Stop, visible-only scanning, Provider, permission, Token-ledger and pet paths were intentionally held constant.
+The accepted 0.4.1 translation, Stop, visible-only scanning, Provider, permission and Token-ledger paths were intentionally held constant. The pet path is the only user-facing subsystem expanded in this round.
 
 ## Version isolation and recovery
 
@@ -18,6 +20,7 @@ The accepted 0.4.1 translation, Stop, visible-only scanning, Provider, permissio
 | Owner-tested stable baseline                            | `main`, tag `stable-v0.4.1`       | `fbd1487` |
 | Automatic-memory implementation                         | `feature/automatic-memory-v0.5.0` | `ec8175c` |
 | Rapid-scroll current-viewport priority and pet feedback | `feature/automatic-memory-v0.5.0` | `5879d3d` |
+| Multi-pet and authored-state implementation             | `feature/automatic-memory-v0.5.0` | `af8501a` |
 
 Stable installer: `release/FloatRead-v0.4.1.zip`
 Stable SHA-256: `f46c9872ee611ba9142e90a4f1cb4732dcccd1f46cd5b25a26a75d62a664498d`
@@ -43,16 +46,16 @@ No 0.5.0 code was committed to `main`. Returning to 0.4.1 requires loading the p
 | `pnpm format:check`               | Passed                                                                                       |
 | `pnpm lint`                       | Passed, zero warnings                                                                        |
 | `pnpm typecheck`                  | Passed                                                                                       |
-| `pnpm test`                       | Passed: 27 files, 138 tests                                                                  |
+| `pnpm test`                       | Passed: 27 files, 140 tests                                                                  |
 | `pnpm test:integration`           | Passed: 2 files, 2 tests                                                                     |
 | `pnpm test:e2e`                   | Passed: 20 real Chromium MV3 tests                                                           |
 | `pnpm run ci`                     | Passed end-to-end after the final UI locator correction                                      |
-| `pnpm build` / `pnpm verify:dist` | Passed; 20 production files                                                                  |
+| `pnpm build` / `pnpm verify:dist` | Passed; 30 production files                                                                  |
 | `pnpm package`                    | Passed: build, dist verification, two secret scans, ZIP verification and production MV3 load |
 | `pnpm test:release-load`          | Passed: Service Worker plus Popup, Settings and Onboarding loaded                            |
-| `pnpm scan:secrets`               | Passed across 641 tracked/build/archive text files                                           |
+| `pnpm scan:secrets`               | Passed across 642 tracked/build/archive text files                                           |
 
-New controlled tests prove promotion, tier borrowing/reclamation, long-term protection, Token-savings statistics, requested-key-only legacy migration, rapid-scroll cancellation/debounce/cooldown and the simplified settings surface. Chromium also proves that a partially completed old batch stops, the pet displays its catch-up reaction and the current viewport translates next. Existing tests still prove Stop, cancel, original-source precision reading, visible-page translation, no automatic reload restart, Popup, skin/pet, keyboard and reduced-motion paths.
+New controlled tests prove promotion, tier borrowing/reclamation, long-term protection, Token-savings statistics, requested-key-only legacy migration, rapid-scroll cancellation/debounce/cooldown, all three built-in pets, both five-frame authored state sets and the simplified settings surface. Chromium also proves that Maple and Piko can be previewed across states, a pet applies to an open page without reload, a partially completed old batch stops, the pet displays its catch-up reaction and the current viewport translates next. Existing tests still prove Stop, cancel, original-source precision reading, visible-page translation, no automatic reload restart, Popup, custom single-image pets, keyboard and reduced-motion paths.
 
 One baseline-only observation is retained honestly: the first untouched-0.4.1 full E2E run passed 18 assertions but timed out closing Chromium in the final `afterAll`; the final test passed immediately when rerun alone. The final 0.5.0 suite later passed 19/19 in one run.
 
@@ -60,9 +63,9 @@ One baseline-only observation is retained honestly: the first untouched-0.4.1 fu
 
 - Production directory: `E:\AI-900\FloatRead\dist`
 - Installer: `E:\AI-900\FloatRead\release\FloatRead-v0.5.0.zip`
-- Size: 446,647 bytes
-- SHA-256: `e53cb85aede3f00f787d7febc05c59747c4621496c5d03498f6a7af92f04117d`
-- ZIP inventory: 20 extension runtime files; no tests, `.env`, `.secrets`, source maps, logs or `node_modules`.
+- Size: 696,569 bytes
+- SHA-256: `79ef38565c93c71d25796e29f9a351aafce2568de5e9ef3597808361f3dac846`
+- ZIP inventory: 30 extension runtime files; no tests, `.env`, `.secrets`, source maps, logs or `node_modules`.
 - Manifest: MV3, version 0.5.0, unchanged permission set, local-only extension CSP and no `unlimitedStorage` permission.
 
 ## Installation

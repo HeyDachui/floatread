@@ -29,3 +29,5 @@ FloatRead 0.5.0 adds an automatic translation-memory layer without changing the 
 Extract `release/FloatRead-v0.5.0.zip`, load the extracted directory at `chrome://extensions`, press **Reload** on an existing FloatRead card, and refresh the site tab. Use `release/FloatRead-v0.4.1.zip` to return to the preserved stable release.
 
 Final automated and package evidence is recorded in `PROGRESS.md` after release verification.
+
+The final candidate ZIP contains 30 runtime files and is 696,569 bytes. The ten added Maple/Piko state images total 246,750 bytes after reviewed WebP compression.
