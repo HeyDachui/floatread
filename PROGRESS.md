@@ -769,3 +769,29 @@ Release evidence:
 - Secret scan: passed before packaging and again after the real smoke record; ignored owner-retained secret was not copied to any artifact.
 
 Acceptance conclusion: formal, controlled functional, automated quality, real DeepSeek V3 Prompt/stream and installable-package evidence passed. Authenticated-X long-session continuity remains owner-observed acceptance, not an automated claim.
+
+## Version 0.4.0 product expansion — started 2026-07-22
+
+Current goal:
+
+- Add fast, smart and precise page-translation levels while preserving AI translation quality.
+- Add a lightweight detected-language decision without extra AI calls before consent.
+- Stop new Provider batches while the page is hidden, allow at most one already-submitted batch to finish, and resume on return only when the user did not explicitly stop.
+- Add enhanced page strategies for X, TED and Reddit while retaining the generic-page fallback.
+- Keep direct replacement and Token-only usage reporting; do not add price estimates.
+- Replace the built-in pet's superficial motion with natural blink, walk, turn and click feedback; keep user-uploaded single-image pets on the lighter local-processing path.
+
+Independent pet-module handoff:
+
+- Owner: current FloatRead primary task.
+- Visible execution task: `019f8991-8299-7ac1-b1f1-11d54ecf3473` on host `local`.
+- Scope: built-in pet animation module and dedicated tests only; no translation, Provider, permissions, version, release or credential changes.
+- Primary trigger: owner pulls the completed task result, inspects the real files, runs repository-wide tests, requests targeted repair if needed, then integrates or rejects it.
+- Current state: running; no completion claim has been accepted.
+
+Knowledge-cycle Before:
+
+- Query attempted through the configured local connection layer for MV3 translation modes, hidden-tab Token control, X/TED/Reddit adapters and pet animation.
+- Result: FloatRead is not configured in the connector, so there was no relevant hit or query id. No external candidate was adopted; implementation proceeds from current repository evidence and platform documentation.
+
+Stopping evidence for this round will include schema migration, strict message validation, timing instrumentation, hidden-tab tests, language-decision tests, platform-strategy tests, pet-module acceptance, full lint/type/unit/integration/E2E/package gates and a bounded real DeepSeek comparison. None of those are claimed complete at this starting checkpoint.
