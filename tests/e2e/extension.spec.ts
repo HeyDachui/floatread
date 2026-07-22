@@ -110,6 +110,11 @@ test("selection changes ready state and the companion remains visible after drag
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
   await page.mouse.move(80, 280, { steps: 6 });
+  await expect(host.locator(".fr-mochi-art")).toHaveAttribute("data-interaction", "walking");
+  await page.screenshot({
+    path: resolve(projectRoot, "output/playwright/pet-walking.png"),
+    fullPage: true,
+  });
   await page.mouse.up();
   const after = await companion.boundingBox();
   if (!after) throw new Error("dragged companion bounding box missing");
