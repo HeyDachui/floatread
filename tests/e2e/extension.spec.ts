@@ -161,6 +161,47 @@ test("starts page translation even when text remains selected", async () => {
   await page.close();
 });
 
+test("catches up to the current viewport after a rapid scroll", async () => {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 1_000, height: 760 });
+  await page.goto(fixtureUrl);
+  const host = page.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+  await page.evaluate(() => {
+    const top = Array.from({ length: 8 }, (_, index) => {
+      const paragraph = document.createElement("p");
+      paragraph.id = `rapid-top-${index}`;
+      paragraph.lang = "en";
+      paragraph.textContent = `Rapid scroll old viewport sentence ${index}.`;
+      paragraph.style.height = "58px";
+      paragraph.style.margin = "0";
+      return paragraph;
+    });
+    const spacer = document.createElement("div");
+    spacer.style.height = "1200px";
+    const current = document.createElement("p");
+    current.id = "rapid-current";
+    current.lang = "en";
+    current.textContent = "Translate the viewport I am reading now.";
+    current.style.height = "80px";
+    document.body.replaceChildren(...top, spacer, current);
+  });
+
+  const companion = host.locator("button.fr-companion");
+  await companion.click();
+  await expect(page.locator("#rapid-top-0")).toHaveText(
+    "页面译文：Rapid scroll old viewport sentence 0.",
+  );
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+
+  await expect(companion).toHaveClass(/fr-catching-up/u);
+  await expect(host.locator(".fr-toast").filter({ hasText: /太快啦|Too fast!/u })).toBeVisible();
+  await expect(page.locator("#rapid-current")).toHaveText(
+    "页面译文：Translate the viewport I am reading now.",
+  );
+  await page.close();
+});
+
 test("keeps a page translation failure visible with a recovery action", async () => {
   const page = await context.newPage();
   await page.goto(fixtureUrl);

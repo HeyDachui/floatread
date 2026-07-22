@@ -11,7 +11,7 @@ import {
 } from "../../src/page-translation/complete";
 import { ProviderFailure } from "../../src/providers/types";
 import { collectVisiblePageScan, collectVisiblePageSegments } from "../../src/content/page-scanner";
-import { restoreOriginalSelectionText } from "../../src/content/page-translator";
+import { isRapidScrollJump, restoreOriginalSelectionText } from "../../src/content/page-translator";
 import {
   getSiteLanguagePreferences,
   getPageTranslationMemory,
@@ -121,6 +121,14 @@ describe("page translation prompt", () => {
     expect(parseCompletedPageTranslationItems('{"translations":[{"id":"seg_0"', ["seg_0"])).toEqual(
       new Map(),
     );
+  });
+});
+
+describe("rapid page scrolling", () => {
+  it("distinguishes a fast viewport jump from ordinary reading scroll", () => {
+    expect(isRapidScrollJump(0, 700, 800, 300)).toBe(true);
+    expect(isRapidScrollJump(0, 400, 800, 300)).toBe(false);
+    expect(isRapidScrollJump(0, 700, 800, 700)).toBe(false);
   });
 });
 

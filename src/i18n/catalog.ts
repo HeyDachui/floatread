@@ -52,6 +52,7 @@ const zhCN = {
   pageTranslationWatching: "页面翻译已开启，已处理 {0} 处。",
   pageTranslationNoMatch: "页面翻译已开启，当前可见区域没有符合语言设置的文字。",
   pageTranslationBackgroundPaused: "页面在后台，已暂停提交新的翻译内容。",
+  scrollTooFast: "太快啦，我先跟上你现在看到的内容～",
   detectedLanguageQuestion: "检测到{0}，是否翻译？",
   translateOnce: "仅本次",
   translateAlwaysHere: "此网站以后都翻译",
@@ -340,6 +341,7 @@ const en: Record<MessageKey, string> = {
   pageTranslationNoMatch:
     "Page translation is on, but no visible text matches the language settings.",
   pageTranslationBackgroundPaused: "This page is in the background; new translation is paused.",
+  scrollTooFast: "Too fast! I’ll catch up with what you’re viewing now.",
   detectedLanguageQuestion: "Detected {0}. Translate it?",
   translateOnce: "This time",
   translateAlwaysHere: "Always on this site",
