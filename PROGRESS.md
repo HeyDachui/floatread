@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: V2.3 dynamic-page safety replacement — automated release complete; manual X acceptance pending
+- Current phase: 0.5.0 pet-system expansion — automated release candidate complete; owner visual acceptance pending
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -75,6 +75,42 @@ The first dependency installation downloaded packages but exited with `ERR_PNPM_
 - Release/store screenshots have not been fabricated; the real-build capture checklist remains open.
 - The human regression checklist is prepared but is not falsely marked executed.
 - Only DeepSeek has a real API smoke record; other Provider adapters remain protocol-tested without live credentials.
+
+## Version 0.5.0 pet-system expansion — 2026-07-23
+
+Goal: keep the owner-accepted `stable-v0.4.1` source and ZIP unchanged while expanding the 0.5.0 candidate from one visually repetitive built-in pet into a reusable multi-pet, multi-state system.
+
+Delivered:
+
+- Three built-in original pets: Mochi, Maple red panda and Piko penguin.
+- Five independent authored WebP state frames for Maple and Piko: idle, content found, translating, complete and error.
+- Shared click, drag-walk, direction turn, low-frequency idle and rapid-scroll catch-up reactions; Mochi retains its layered blink, paw and tail behavior.
+- Human-readable bilingual state labels and a visual Settings library grouped into Pet companions and Other appearances.
+- Existing local PNG/JPG pet creation remains code-free and local; it deliberately uses single-image motion rather than claiming to generate new illustrated frames.
+- All new animations obey the user toggle and `prefers-reduced-motion`.
+- Ten 512 × 512 assets were compressed from about 1.3 MB lossless to 246,750 bytes total at reviewed browser-display quality.
+
+Controlled failure and correction:
+
+- The first Piko image-generation request failed from a network error and produced no adopted output. A single retry succeeded and only the reviewed second result entered the repository.
+- The first full E2E run found the Settings preview-state buttons visible but not clickable because the preview layer suppressed pointer events. The tabs now explicitly accept pointer events; the targeted rerun and complete CI suite passed.
+
+Actual verification:
+
+| Command                 | Actual result                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------- |
+| `pnpm lint`             | Passed with zero warnings                                                                       |
+| `pnpm typecheck`        | Passed                                                                                          |
+| `pnpm test`             | Passed: 27 files, 140 tests                                                                     |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                                                        |
+| `pnpm test:e2e`         | Passed: 20 Chromium MV3 tests, including both new pet state sets and live no-reload application |
+| `pnpm run ci`           | Passed end-to-end                                                                               |
+| `pnpm format:check`     | Passed                                                                                          |
+| `pnpm package`          | Passed: 30-file dist/ZIP verification, MV3 load and two secret scans                            |
+
+Implementation commit: `af8501a39b8ae3c0478514f4563047ce33f5bfcb` (`feat: expand the built-in pet system`).
+
+Acceptance state: formal existence, runtime operation and automated quality passed. Visual quality was inspected from the actual Settings screenshot and final transparent assets. Natural feel on the owner's real X/TED/Reddit pages remains the owner acceptance item, so this stays a 0.5.0 release candidate and does not replace `stable-v0.4.1`.
 
 ## Phase 1 result
 
