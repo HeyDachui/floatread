@@ -13,7 +13,11 @@ import {
   saveProviderProfile,
 } from "../storage/providers";
 import { deleteProviderSecret, getProviderSecret, saveProviderSecret } from "../storage/secrets";
-import { isPageTranslationEnabled, setPageTranslationEnabled } from "../storage/page-translation";
+import {
+  clearLegacyPageTranslationMemory,
+  isPageTranslationEnabled,
+  setPageTranslationEnabled,
+} from "../storage/page-translation";
 import {
   getSettings,
   restoreDefaultSettings,
@@ -297,7 +301,7 @@ export async function routeTrustedProviderMessage(
       await updateCachePolicy(message.cache);
       return { ok: true };
     case "CLEAR_RESULT_CACHE":
-      await clearAllCaches();
+      await Promise.all([clearAllCaches(), clearLegacyPageTranslationMemory()]);
       return { ok: true };
     case "RESTORE_DEFAULT_SETTINGS":
       await restoreDefaultSettings();

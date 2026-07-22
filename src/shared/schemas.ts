@@ -16,7 +16,7 @@ export const cachePolicySchema = z
   .object({
     mode: z.enum(["persistent", "session", "off"]),
     ttlDays: z.number().int().min(1).max(90),
-    maxEntries: z.number().int().min(1).max(2_000),
+    maxEntries: z.number().int().min(1).max(20_000),
     maxBytes: z.number().int().min(1_000_000).max(100_000_000),
   })
   .strict();

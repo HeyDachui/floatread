@@ -54,8 +54,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   cache: {
     mode: "persistent",
-    ttlDays: 7,
-    maxEntries: 200,
+    ttlDays: 30,
+    maxEntries: 20_000,
     maxBytes: 10_000_000,
   },
   companionPosition: {
@@ -157,7 +157,17 @@ export async function getSettings(): Promise<AppSettings> {
 export async function updateCachePolicy(cache: AppSettings["cache"]): Promise<void> {
   const parsed = cachePolicySchema.parse(cache);
   const settings = await getSettings();
-  await chrome.storage.local.set({ [SETTINGS_KEY]: { ...settings, cache: parsed } });
+  await chrome.storage.local.set({
+    [SETTINGS_KEY]: {
+      ...settings,
+      cache: {
+        mode: parsed.mode,
+        ttlDays: 30,
+        maxEntries: 20_000,
+        maxBytes: 10_000_000,
+      },
+    },
+  });
 }
 
 export async function updateAppearance(appearance: AppearanceOverrides): Promise<void> {

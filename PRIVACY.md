@@ -35,7 +35,7 @@ When page translation is enabled, bounded visible text batches and fixed transla
 
 ## Local cache and deletion
 
-Cache keys are stable hashes of normalized text, source/target language, reading mode/segment kind, Provider kind/origin, model and Prompt version. Cached records contain generated text and metadata, never credentials. Page UI memory is bounded to 2,000 hashed records. Users can stop/clear page translation, clear local usage and result caches, remove Provider credentials, delete imported skins or restore defaults from Settings.
+Cache keys are stable hashes of normalized text, source/target language, reading mode/segment kind, Provider kind/origin, model and Prompt version. Cached records contain generated text and metadata, never credentials or the original source text. Automatic local memory is capped at 10 MB: recent results and repeated long-term text each target about 5 MB and may borrow unused space from the other tier. A short or functional translation is promoted only after repeated reuse. Users can keep memory on this device, limit it to the current browser session, turn it off, or clear it without changing Provider credentials. Legacy 0.4.x page-memory records migrate lazily so cache work never blocks translation.
 
 开启某个网站的页面翻译后，FloatRead 会处理当前可见及接近视口的未选中文字，并随滚动渐进处理新内容；不会预读无限时间线。停止会取消当前批次，清除会恢复仍存在的原文节点并关闭该网站的持续翻译偏好。
 

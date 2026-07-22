@@ -112,7 +112,9 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.4.1.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.5.0.zip`, not `dist-e2e`.
+- [ ] Translate the same short menu phrase three times; Settings moves it from recent memory to long-term memory and increases the reuse/estimated-Token counters.
+- [ ] Confirm the memory card exposes only automatic/session/off, usage and clear controls—not TTL, entry-count or MB tuning.
 - [ ] Start page translation, select an already translated post, then run Natural Chinese; “Original” must show the real source text rather than the visible page translation.
 - [ ] While Natural Chinese is loading, reload the extension to break its connection; the spinner must become a retryable error, and Stop/close must still respond immediately.
 - [ ] With X already open, press Reload for FloatRead in `chrome://extensions`; the existing page reconnects without requiring a page refresh.

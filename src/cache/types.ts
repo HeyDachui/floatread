@@ -16,10 +16,24 @@ export interface CachePolicy {
   maxBytes: number;
 }
 
+export type CacheTier = "recent" | "long_term";
+export type CacheNamespace = "reading" | "page_translation";
+
+export interface CachePutOptions {
+  namespace?: CacheNamespace;
+  promotable?: boolean;
+  estimatedTokens?: number;
+}
+
 export interface CacheRecord {
-  schemaVersion: 1;
+  schemaVersion: 2;
   key: string;
   output: string;
+  namespace: CacheNamespace;
+  tier: CacheTier;
+  hitCount: number;
+  promotable: boolean;
+  estimatedTokens: number;
   createdAt: number;
   lastAccessedAt: number;
   expiresAt: number;
@@ -30,11 +44,23 @@ export interface CacheStats {
   entries: number;
   bytes: number;
   expiredRemoved: number;
+  recentEntries: number;
+  recentBytes: number;
+  longTermEntries: number;
+  longTermBytes: number;
+  reuseHits: number;
+  estimatedTokensSaved: number;
 }
 
 export interface ResultCache {
   get(key: string, now?: number): Promise<CacheRecord | undefined>;
-  put(key: string, output: string, policy: CachePolicy, now?: number): Promise<void>;
+  put(
+    key: string,
+    output: string,
+    policy: CachePolicy,
+    now?: number,
+    options?: CachePutOptions,
+  ): Promise<void>;
   clear(): Promise<void>;
   stats(now?: number): Promise<CacheStats>;
 }

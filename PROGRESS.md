@@ -938,3 +938,46 @@ Acceptance conclusion:
 - Low performance finding: accepted. Manual and release wording now measure Fast/Precise without promising Fast wins every individual call.
 - Full decision record: `docs/AUDIT_RESPONSE_0.4.1.md`.
 - Handoff closure for the supplied excerpt: triage complete; no code defect confirmed. Real Chrome background >45 seconds/worker inactivity remains the next manual release trigger.
+
+## Version 0.5.0 automatic local memory — 2026-07-22
+
+Object and stable boundary:
+
+- Loop object: FloatRead translation reuse and the user-visible local-memory controls.
+- Stable input: owner-accepted 0.4.1 on X and TED, including original-source precision reading, immediate Stop, visible-only scanning, Provider routing, Token ledger, permissions and companion behavior.
+- Stable artifact: annotated Git tag `stable-v0.4.1` points to commit `fbd1487`; `release/FloatRead-v0.4.1.zip` remains unchanged with SHA-256 `f46c9872ee611ba9142e90a4f1cb4732dcccd1f46cd5b25a26a75d62a664498d`.
+- Development isolation: all 0.5.0 work is on branch `feature/automatic-memory-v0.5.0`.
+
+Changed variable and implementation:
+
+- Replace the separate 2,000-record page memory and user-tuned reading cache behavior with one automatic 10 MB result-memory budget.
+- Recent and long-term tiers each target 5 MB. The targets are soft: either tier may borrow unused space, and overflow first reclaims the borrowing tier.
+- UI/functional text and source phrases up to 240 characters are eligible for promotion. They enter recent memory and become long-term after two cache hits (the third encounter). Long-term records can remain for one year; recent records expire after 30 days.
+- Language pair, segment kind/reading mode, Provider origin, model and Prompt version remain part of the hash identity, so incompatible translation settings do not reuse an old result.
+- Page-memory migration is lazy and requested-key-only. At most the current bounded page batch is written during one migration step; the remaining legacy records stay intact if the new write fails.
+- Batch writes use one IndexedDB capacity pass rather than one full capacity scan per translated segment.
+- Settings now expose automatic local storage, current-session storage or off, recent/long-term usage, reuse count, estimated saved Token and clear. TTL, entry-count and MB tuning are no longer user-facing.
+- API keys, original source text and synchronized storage remain outside the result-memory database. Cache failure remains a silent miss and cannot block or retry a Provider request.
+
+Evidence so far:
+
+| Command                                  | Actual result                                                                                                                                                               |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm run ci` on untouched 0.4.1         | Lint, typecheck, 133 unit, 2 integration, build, dist verification and secret scan passed; 18 E2E tests passed and the final test's `afterAll` browser-close hook timed out |
+| Single rerun of final 0.4.1 E2E          | Passed in 3.7 seconds; confirms the full-run failure was an intermittent test cleanup timeout, not a failed Stop assertion                                                  |
+| `pnpm test` after core 0.5.0 change      | Passed: 27 files, 135 tests                                                                                                                                                 |
+| `pnpm lint` after core 0.5.0 change      | Passed, zero warnings                                                                                                                                                       |
+| `pnpm typecheck` after core 0.5.0 change | Passed                                                                                                                                                                      |
+
+New regression coverage:
+
+- Repeated eligible text remains recent after one reuse and is promoted after the second reuse.
+- Reuse count and estimated saved Token are derived from local records.
+- A tier may borrow unused capacity; when total capacity is exceeded, recent overflow is removed before protected long-term memory.
+- Legacy page memory migrates only the requested key and retains unrequested legacy records.
+
+Current status and stopping condition:
+
+- Core production and unit-level controlled behavior is implemented.
+- Remaining before completion: full integration/E2E rerun, production package/secret scan, installed settings-memory UI inspection, 0.5.0 commit and release hashes.
+- Keep 0.4.1 stable unchanged. Stop and return to the stable artifact if 0.5.0 changes page translation, cancellation, API-key isolation or visible-page responsiveness.
