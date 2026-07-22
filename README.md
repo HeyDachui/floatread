@@ -111,7 +111,7 @@ Read [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md) and the [threat model]
 
 ## Skins
 
-Mochi remains the default pet; Maple and Piko add distinct five-state artwork. Users can also drop one PNG/JPG into Settings; FloatRead locally removes border-connected light background pixels, crops the subject, converts it to transparent WebP and applies built-in single-image motions. Native, Lens, Glass Orb, Pixel Bot, Ink and Terminal remain available. Community `.floatread-skin` packages contain only strict JSON and PNG/WebP; executable or remote content is rejected. See [skin authoring](docs/SKINS.md).
+Mochi remains the default pet; Maple and Piko add distinct five-state artwork. Users can also drop one PNG/JPG into Settings; FloatRead locally removes border-connected light background pixels, crops the subject, converts it to transparent WebP and applies built-in single-image motions. Native, Lens, Glass Orb, Pixel Bot, Ink and Terminal remain available. Community `.floatread-skin` packages contain only strict JSON and PNG/WebP; executable or remote content is rejected. See the [pet customization guide](docs/PET_CUSTOMIZATION.md) and [skin authoring reference](docs/SKINS.md).
 
 ## Contributing
 

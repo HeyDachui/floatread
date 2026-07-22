@@ -115,7 +115,7 @@ FloatRead 不请求历史记录、Cookie、下载记录、广泛标签页访问�
 
 ## 皮肤制作与导入
 
-最简单的方式是在设置中拖入一张 PNG/JPG：扩展在本地去除与边缘相连的浅色背景、裁剪、生成透明 WebP，并套用内置动作。社区包仍是本地 `.floatread-skin` ZIP，只允许严格 JSON 与 PNG/WebP；JavaScript、HTML、SVG、CSS、字体、远程 URL 和可执行表达式都会被拒绝。制作方法与容量限制见 [皮肤文档](docs/SKINS.md)。
+最简单的方式是在设置中拖入一张 PNG/JPG：扩展在本地去除与边缘相连的浅色背景、裁剪、生成透明 WebP，并套用内置动作。社区包仍是本地 `.floatread-skin` ZIP，只允许严格 JSON 与 PNG/WebP；JavaScript、HTML、SVG、CSS、字体、远程 URL 和可执行表达式都会被拒绝。普通用户请阅读[宠物制作与定制指南](docs/PET_CUSTOMIZATION.md)，高级包格式和容量限制见[皮肤文档](docs/SKINS.md)。
 
 ## 参与贡献
 
