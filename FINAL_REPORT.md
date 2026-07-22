@@ -1,6 +1,6 @@
 # FloatRead 0.5.0 verification report
 
-Date: 2026-07-22
+Date: 2026-07-23
 Status: automated release candidate ready for owner testing; 0.4.1 remains the owner-accepted stable version.
 
 ## Delivered outcome
@@ -13,10 +13,11 @@ The accepted 0.4.1 translation, Stop, visible-only scanning, Provider, permissio
 
 ## Version isolation and recovery
 
-| Purpose                         | Git reference                     | Commit    |
-| ------------------------------- | --------------------------------- | --------- |
-| Owner-tested stable baseline    | `main`, tag `stable-v0.4.1`       | `fbd1487` |
-| Automatic-memory implementation | `feature/automatic-memory-v0.5.0` | `ec8175c` |
+| Purpose                                                 | Git reference                     | Commit    |
+| ------------------------------------------------------- | --------------------------------- | --------- |
+| Owner-tested stable baseline                            | `main`, tag `stable-v0.4.1`       | `fbd1487` |
+| Automatic-memory implementation                         | `feature/automatic-memory-v0.5.0` | `ec8175c` |
+| Rapid-scroll current-viewport priority and pet feedback | `feature/automatic-memory-v0.5.0` | `5879d3d` |
 
 Stable installer: `release/FloatRead-v0.4.1.zip`
 Stable SHA-256: `f46c9872ee611ba9142e90a4f1cb4732dcccd1f46cd5b25a26a75d62a664498d`
@@ -42,16 +43,16 @@ No 0.5.0 code was committed to `main`. Returning to 0.4.1 requires loading the p
 | `pnpm format:check`               | Passed                                                                                       |
 | `pnpm lint`                       | Passed, zero warnings                                                                        |
 | `pnpm typecheck`                  | Passed                                                                                       |
-| `pnpm test`                       | Passed: 27 files, 136 tests                                                                  |
+| `pnpm test`                       | Passed: 27 files, 138 tests                                                                  |
 | `pnpm test:integration`           | Passed: 2 files, 2 tests                                                                     |
-| `pnpm test:e2e`                   | Passed: 19 real Chromium MV3 tests                                                           |
+| `pnpm test:e2e`                   | Passed: 20 real Chromium MV3 tests                                                           |
 | `pnpm run ci`                     | Passed end-to-end after the final UI locator correction                                      |
 | `pnpm build` / `pnpm verify:dist` | Passed; 20 production files                                                                  |
 | `pnpm package`                    | Passed: build, dist verification, two secret scans, ZIP verification and production MV3 load |
 | `pnpm test:release-load`          | Passed: Service Worker plus Popup, Settings and Onboarding loaded                            |
 | `pnpm scan:secrets`               | Passed across 641 tracked/build/archive text files                                           |
 
-New controlled tests prove promotion, tier borrowing/reclamation, long-term protection, Token-savings statistics, requested-key-only legacy migration and the simplified settings surface. Existing Chromium tests still prove Stop, cancel, original-source precision reading, visible-page translation, no automatic reload restart, Popup, skin/pet, keyboard and reduced-motion paths.
+New controlled tests prove promotion, tier borrowing/reclamation, long-term protection, Token-savings statistics, requested-key-only legacy migration, rapid-scroll cancellation/debounce/cooldown and the simplified settings surface. Chromium also proves that a partially completed old batch stops, the pet displays its catch-up reaction and the current viewport translates next. Existing tests still prove Stop, cancel, original-source precision reading, visible-page translation, no automatic reload restart, Popup, skin/pet, keyboard and reduced-motion paths.
 
 One baseline-only observation is retained honestly: the first untouched-0.4.1 full E2E run passed 18 assertions but timed out closing Chromium in the final `afterAll`; the final test passed immediately when rerun alone. The final 0.5.0 suite later passed 19/19 in one run.
 
@@ -59,8 +60,8 @@ One baseline-only observation is retained honestly: the first untouched-0.4.1 fu
 
 - Production directory: `E:\AI-900\FloatRead\dist`
 - Installer: `E:\AI-900\FloatRead\release\FloatRead-v0.5.0.zip`
-- Size: 445,775 bytes
-- SHA-256: `521beb3e012b33b185b257bf97a1d61af1289646ec02eded8d9c71edd9332812`
+- Size: 446,647 bytes
+- SHA-256: `e53cb85aede3f00f787d7febc05c59747c4621496c5d03498f6a7af92f04117d`
 - ZIP inventory: 20 extension runtime files; no tests, `.env`, `.secrets`, source maps, logs or `node_modules`.
 - Manifest: MV3, version 0.5.0, unchanged permission set, local-only extension CSP and no `unlimitedStorage` permission.
 

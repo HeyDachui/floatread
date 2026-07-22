@@ -10,6 +10,8 @@ FloatRead 0.5.0 adds an automatic translation-memory layer without changing the 
 - Settings show recent/long-term usage, reuse count and conservative estimated Token savings.
 - Users choose only automatic local storage, current browser session or off; technical TTL, entry and MB controls are removed.
 - Legacy 0.4.x page memory migrates only when a matching record is requested, avoiding an upgrade-time scan or translation delay.
+- A rapid scroll across roughly one viewport cancels the stale unfinished batch and prioritizes the settled current viewport.
+- The pet briefly reacts and says “太快啦，我先跟上你现在看到的内容～”. The message is rate-limited and uses no AI or Token.
 
 ## Safety boundaries
 
@@ -17,6 +19,7 @@ FloatRead 0.5.0 adds an automatic translation-memory layer without changing the 
 - Cache keys include language, mode/segment kind, Provider origin, model and Prompt version, so material translation-setting changes do not reuse incompatible output.
 - API keys and original source text are not stored in the memory database. Generated translation text and non-secret metadata remain local and can be cleared independently.
 - No `unlimitedStorage` permission was added.
+- Small reading scrolls do not cancel work; only a rapid large jump changes the active batch. Provider work already completed before cancellation may still have consumed Token.
 
 ## Install
 
