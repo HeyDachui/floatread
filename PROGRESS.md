@@ -997,3 +997,46 @@ Project-loop conclusion:
 - Main eliminated risk: migration and page-batch writes are bounded; neither performs a full 2,000-record rewrite or one full capacity scan per segment.
 - Kept invariant: cache failure is only a miss; it cannot block Stop, page translation, precision reading or Provider completion.
 - Next deciding evidence: owner compares 0.5.0 with the accepted 0.4.1 path on live X/TED, repeats one menu phrase three times, checks the memory card and confirms page responsiveness. Promote only if those observations agree with automation.
+
+## Version 0.5.0 rapid-scroll current-viewport priority — 2026-07-23
+
+Controlled change:
+
+- Stable `main` and tag `stable-v0.4.1` were not changed. Work continued only on `feature/automatic-memory-v0.5.0`.
+- When page translation is busy and the page moves at least `max(480 px, 0.85 viewport)` within 600 ms, Content immediately invalidates the old job, clears only its unfinished node map and sends `PAGE_TRANSLATE_CANCEL` to Background.
+- Scroll events replace one 220 ms settle timer. This prioritizes the final current viewport without creating a Provider request for every wheel event.
+- Small/slow reading scrolls retain the old one-batch-at-a-time behavior.
+- A catch-up notice is emitted at most once per 20 seconds. The companion shows “太快啦，我先跟上你现在看到的内容～” for two seconds and applies a 700 ms catch-up reaction; `prefers-reduced-motion` continues to suppress artwork animation.
+- The notice uses local UI only and causes no AI request or Token use. Provider work completed before cancellation may still be billable; documentation does not promise otherwise.
+
+Regression and production evidence:
+
+| Command                 | Actual result                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `pnpm lint`             | Passed, zero warnings                                                           |
+| `pnpm typecheck`        | Passed                                                                          |
+| `pnpm test`             | Passed: 27 files, 138 tests                                                     |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                                        |
+| `pnpm test:e2e`         | Passed: 20 Chromium MV3 tests                                                   |
+| `pnpm run ci`           | Passed end to end                                                               |
+| `pnpm package`          | Passed build, 20-file dist/ZIP checks, two secret scans and production MV3 load |
+
+Real Chromium controlled path:
+
+- Eight visible English sentences formed the old batch. After the first two results arrived, the page jumped to the bottom viewport.
+- The remaining six old-viewport sentences stayed untranslated, demonstrating that the stale batch stopped applying results.
+- The companion received `fr-catching-up`, displayed the bilingual catch-up message path, and the bottom current-viewport sentence translated next.
+- The first browser run already proved cancellation/current-viewport priority but exposed that the normal “translating” status visually masked the catch-up message. The UI was corrected so error state remains highest priority, catch-up message comes next, then normal translation status. The targeted rerun and final 20-test suite passed.
+
+Artifacts and commits:
+
+- Implementation commit: `5879d3d` (`feat: prioritize current viewport after rapid scroll`).
+- Release candidate: `release/FloatRead-v0.5.0.zip`, 446,647 bytes.
+- SHA-256: `e53cb85aede3f00f787d7febc05c59747c4621496c5d03498f6a7af92f04117d`.
+- Stable rollback remains `release/FloatRead-v0.4.1.zip` / tag `stable-v0.4.1`.
+
+Project-loop conclusion:
+
+- Actual improvement: fast navigation no longer lets an unfinished old viewport monopolize the translation lane; current reading position becomes the next bounded batch.
+- Preserved invariants: explicit activation, one current batch, direct-text replacement, immediate Stop, no hidden-tab batches, same Provider/cache identity and no new permission.
+- Remaining observation: real mouse-wheel/touchpad feel and the subjective 0.85-screen threshold require owner use on live X/TED/Reddit. Automation proves the state transition and rendered response, not the owner's preferred sensitivity.

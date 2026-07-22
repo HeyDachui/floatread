@@ -109,6 +109,9 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Restore defaults leaves the extension usable.
 - [ ] Chinese, English and browser-auto modes update the complete settings shell; these UI choices are separate from page translation languages.
 - [ ] Starting and stopping page translation creates one local usage session with request/cache and Provider-reported token totals.
+- [ ] While an eight-segment batch is active, rapidly scroll more than one viewport; the pet shows the catch-up message once, unfinished old-viewport text stops changing and the settled current viewport translates next.
+- [ ] Continue rapid scrolling for ten seconds; the message does not repeat more than once during the 20-second cooldown, while viewport reprioritization still works.
+- [ ] With reduced motion enabled, rapid-scroll reprioritization and the text message still work but the catch-up movement does not animate.
 
 ## Release inspection
 

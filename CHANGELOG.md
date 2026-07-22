@@ -12,6 +12,8 @@ All notable changes are documented here. The project follows semantic versioning
 - Add local counts for recent memory, long-term memory, reuse hits and conservative estimated Token savings.
 - Simplify Settings to automatic/session/off, statistics and clear; remove user-facing TTL, entry-count and MB controls.
 - Keep cache failures non-blocking and keep API keys, source text, sync storage and Content Script outside the memory database.
+- Detect a rapid jump of roughly 0.85 viewport within 600 ms, cancel the now-stale page batch and debounce the current-viewport scan for 220 ms so old content cannot hold up what the user is reading.
+- Add a two-second pet message—“太快啦，我先跟上你现在看到的内容～”—with a short catch-up reaction, a 20-second notice cooldown and existing reduced-motion suppression.
 
 ## [0.4.1] - 2026-07-22
 

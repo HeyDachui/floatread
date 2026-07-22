@@ -18,6 +18,7 @@ Request counts, cache hits, and Provider-reported input/output/total tokens are 
 - Key points: what the text says, why it matters, what it omits, and clearly labeled inference.
 - Explain terms: plain-Chinese explanations grounded in the selected text.
 - One-click visible-page translation with progressive processing as the user scrolls.
+- Rapid-scroll catch-up: a stale unfinished batch is cancelled after a large fast jump, then the settled current viewport is prioritized with a rate-limited pet message.
 - Fast, Smart (recommended) and Precise page-translation levels; migrated users keep the previous Precise behavior.
 - One to five source languages and one target language; the extension UI itself remains Chinese/English.
 - A local detected-language choice: this time, always on this site, or ignore—without an AI call before consent.
@@ -38,7 +39,7 @@ FloatRead has no developer server, account, payment, analytics, advertising or t
 
 ## How page translation works
 
-After the user explicitly starts translation, FloatRead scans only current-viewport text in selected source languages. Detection happens locally. It uses semantic HTML rather than X private selectors. Precise, Smart and Fast cap batches at 6/6,000, 8/8,000 and 12/12,000 segments/characters respectively. New visible content is translated while scrolling; infinite timelines are never preloaded, and hidden tabs submit no new batch.
+After the user explicitly starts translation, FloatRead scans only current-viewport text in selected source languages. Detection happens locally. It uses semantic HTML rather than X private selectors. Precise, Smart and Fast cap batches at 6/6,000, 8/8,000 and 12/12,000 segments/characters respectively. New visible content is translated while scrolling; a large rapid jump cancels the unfinished stale batch and waits briefly for the new viewport to settle. Infinite timelines are never preloaded, and hidden tabs submit no new batch.
 
 Translations replace visible text-node values and can change wrapping. A restricted child-list observer detects newly added posts and menus without continuously rewriting React-controlled character data. Stop aborts the Background batch, disables restart for the origin and preserves completed translations; Clear also restores surviving original text nodes. Reloading a page never automatically starts AI translation.
 
