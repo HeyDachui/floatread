@@ -27,10 +27,23 @@ describe("settings migrations", () => {
         unknownLegacyField: "ignored",
       }),
     ).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       enabled: false,
       defaultMode: "key_points",
       cache: DEFAULT_SETTINGS.cache,
+    });
+  });
+
+  it("preserves the old page behavior as precise when migrating V2 settings", () => {
+    expect(
+      migrateAppSettings({
+        ...DEFAULT_SETTINGS,
+        schemaVersion: 2,
+        translation: { sourceLanguages: ["en"], targetLanguage: "zh-Hans" },
+      }),
+    ).toMatchObject({
+      schemaVersion: 3,
+      translation: { quality: "precise" },
     });
   });
 

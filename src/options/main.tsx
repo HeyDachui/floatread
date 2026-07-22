@@ -701,6 +701,23 @@ export function OptionsApp(): React.JSX.Element {
           </div>
         </div>
         <div className="language-builder">
+          <label className="target-language">
+            <span>{t("translationQuality")}</span>
+            <select
+              value={translation.quality}
+              onChange={(event) =>
+                setTranslation({
+                  ...translation,
+                  quality: event.target.value as TranslationPreferences["quality"],
+                })
+              }
+            >
+              <option value="smart">{t("translationQualitySmart")}</option>
+              <option value="fast">{t("translationQualityFast")}</option>
+              <option value="precise">{t("translationQualityPrecise")}</option>
+            </select>
+            <small>{t("translationQualityIntro")}</small>
+          </label>
           <fieldset>
             <legend>{t("translateTheseLanguages")}</legend>
             {translation.sourceLanguages.map((language, index) => (
@@ -780,6 +797,7 @@ export function OptionsApp(): React.JSX.Element {
                   (item) => item !== targetLanguage,
                 );
                 setTranslation({
+                  quality: translation.quality,
                   targetLanguage,
                   sourceLanguages:
                     sourceLanguages.length > 0

@@ -24,7 +24,8 @@ const bootstrap: PublicBootstrap = {
   providerConfigured: false,
   locale: "zh_CN",
   pageTranslationEnabled: false,
-  translation: { sourceLanguages: ["en"], targetLanguage: "zh-Hans" },
+  translation: { sourceLanguages: ["en"], targetLanguage: "zh-Hans", quality: "smart" },
+  ignoredDetectedLanguages: [],
 };
 
 afterEach(() => {

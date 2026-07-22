@@ -17,6 +17,9 @@ export const translationLanguageSchema = z.enum([
 
 export type TranslationLanguage = z.infer<typeof translationLanguageSchema>;
 
+export const pageTranslationQualitySchema = z.enum(["fast", "smart", "precise"]);
+export type PageTranslationQuality = z.infer<typeof pageTranslationQualitySchema>;
+
 export const translationPreferencesSchema = z
   .object({
     sourceLanguages: z
@@ -25,6 +28,7 @@ export const translationPreferencesSchema = z
       .max(5)
       .refine((items) => new Set(items).size === items.length, "翻译语言不能重复。"),
     targetLanguage: translationLanguageSchema,
+    quality: pageTranslationQualitySchema.default("smart"),
   })
   .strict()
   .refine(
@@ -37,6 +41,7 @@ export type TranslationPreferences = z.infer<typeof translationPreferencesSchema
 export const DEFAULT_TRANSLATION_PREFERENCES: TranslationPreferences = {
   sourceLanguages: ["en"],
   targetLanguage: "zh-Hans",
+  quality: "smart",
 };
 
 export const TRANSLATION_LANGUAGE_KEYS: Record<TranslationLanguage, string> = {

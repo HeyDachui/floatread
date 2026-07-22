@@ -26,6 +26,24 @@ describe("content message protocol", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("accepts only a bounded site-language decision and never a page text payload", () => {
+    expect(
+      contentToBackgroundSchema.safeParse({
+        type: "SET_SITE_LANGUAGE_DECISION",
+        language: "ja",
+        decision: "always",
+      }).success,
+    ).toBe(true);
+    expect(
+      contentToBackgroundSchema.safeParse({
+        type: "SET_SITE_LANGUAGE_DECISION",
+        language: "ja",
+        decision: "always",
+        text: "must-not-cross-this-message",
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("page translation port protocol", () => {

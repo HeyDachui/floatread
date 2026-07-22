@@ -13,7 +13,7 @@ import { collectVisiblePageScan, type PageTextSegment } from "./page-scanner";
 export type PageTranslationState =
   | { status: "idle"; translatedCount: number; detectedLanguages?: TranslationLanguage[] }
   | {
-      status: "scanning" | "translating" | "watching";
+      status: "scanning" | "translating" | "watching" | "background_paused";
       translatedCount: number;
       detectedLanguages?: TranslationLanguage[];
     }
@@ -42,6 +42,7 @@ let scheduleTimer: ReturnType<typeof setTimeout> | undefined;
 let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 let reconnectStableTimer: ReturnType<typeof setTimeout> | undefined;
 let reconnectAttempts = 0;
+let backgroundPaused = false;
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_STABLE_MS = 2_000;
 const applied = new Map<Text, AppliedTranslation>();
@@ -82,6 +83,11 @@ function ensurePort(): chrome.runtime.Port {
       currentJobId = null;
       pending.clear();
       stopWatching();
+      if (backgroundPaused || document.hidden) {
+        backgroundPaused = true;
+        publish({ status: "background_paused", translatedCount: translatedCount() });
+        return;
+      }
       if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
         failReconnect();
         return;
@@ -95,6 +101,7 @@ function ensurePort(): chrome.runtime.Port {
 
 function failReconnect(): void {
   active = false;
+  backgroundPaused = false;
   busy = false;
   currentJobId = null;
   pending.clear();
@@ -104,6 +111,7 @@ function failReconnect(): void {
   if (reconnectStableTimer) clearTimeout(reconnectStableTimer);
   reconnectStableTimer = undefined;
   stopWatching();
+  document.removeEventListener("visibilitychange", onVisibilityChange);
   publish({
     status: "error",
     translatedCount: translatedCount(),
@@ -180,9 +188,11 @@ function handleEvent(event: PageTranslationPortOutgoing): void {
     pending.clear();
     busy = false;
     active = false;
+    backgroundPaused = false;
     currentJobId = null;
     clearReconnect();
     stopWatching();
+    document.removeEventListener("visibilitychange", onVisibilityChange);
     publish({
       status: "error",
       translatedCount: translatedCount(),
@@ -194,7 +204,9 @@ function handleEvent(event: PageTranslationPortOutgoing): void {
     pending.clear();
     busy = false;
     currentJobId = null;
-    if (active) {
+    if (active && backgroundPaused) {
+      publish({ status: "background_paused", translatedCount: translatedCount() });
+    } else if (active) {
       publish({ status: "watching", translatedCount: translatedCount() });
       scheduleScan(400);
     } else publish({ status: "paused", translatedCount: translatedCount() });
@@ -207,13 +219,19 @@ function skippedNodes(): Set<Text> {
 
 function scan(): void {
   scheduleTimer = undefined;
-  if (!active || busy || !currentSessionId) return;
+  if (!active || busy || !currentSessionId || backgroundPaused || document.hidden) return;
   publish({ status: "scanning", translatedCount: translatedCount() });
+  const limits =
+    translationPreferences.quality === "fast"
+      ? { segments: 12, characters: 12_000 }
+      : translationPreferences.quality === "smart"
+        ? { segments: 8, characters: 8_000 }
+        : { segments: 6, characters: 6_000 };
   const scanResult = collectVisiblePageScan(
     skippedNodes(),
     document,
-    6,
-    6_000,
+    limits.segments,
+    limits.characters,
     translationPreferences,
   );
   publish({
@@ -246,12 +264,30 @@ function scan(): void {
 }
 
 function scheduleScan(delay = 260): void {
-  if (!active) return;
+  if (!active || backgroundPaused || document.hidden) return;
   if (scheduleTimer) return;
   scheduleTimer = setTimeout(scan, delay);
 }
 
 const onViewportChange = (): void => scheduleScan(300);
+
+const onVisibilityChange = (): void => {
+  if (!active) return;
+  if (document.hidden) {
+    backgroundPaused = true;
+    stopWatching();
+    if (!busy) publish({ status: "background_paused", translatedCount: translatedCount() });
+    return;
+  }
+  backgroundPaused = false;
+  if (!port) {
+    scheduleReconnect(0);
+    return;
+  }
+  startWatching();
+  publish({ status: "scanning", translatedCount: translatedCount() });
+  scheduleScan(0);
+};
 
 function startWatching(): void {
   if (!observer && document.body) {
@@ -276,6 +312,7 @@ export function startPageTranslation(
 ): void {
   if (active) return;
   clearReconnect();
+  backgroundPaused = document.hidden;
   translationPreferences = preferences;
   currentSessionId = crypto.randomUUID();
   ensurePort().postMessage({
@@ -284,14 +321,43 @@ export function startPageTranslation(
     translation: translationPreferences,
   });
   active = true;
-  startWatching();
-  publish({ status: "scanning", translatedCount: translatedCount() });
-  scheduleScan(0);
+  document.addEventListener("visibilitychange", onVisibilityChange);
+  if (backgroundPaused) {
+    publish({ status: "background_paused", translatedCount: translatedCount() });
+  } else {
+    startWatching();
+    publish({ status: "scanning", translatedCount: translatedCount() });
+    scheduleScan(0);
+  }
+}
+
+export function addPageTranslationSourceLanguage(language: TranslationLanguage): boolean {
+  if (
+    language === translationPreferences.targetLanguage ||
+    translationPreferences.sourceLanguages.includes(language) ||
+    translationPreferences.sourceLanguages.length >= 5
+  )
+    return false;
+  translationPreferences = {
+    ...translationPreferences,
+    sourceLanguages: [...translationPreferences.sourceLanguages, language],
+  };
+  if (active && currentSessionId) {
+    ensurePort().postMessage({
+      type: "PAGE_TRANSLATION_SESSION_START",
+      sessionId: currentSessionId,
+      translation: translationPreferences,
+    });
+    scheduleScan(0);
+  }
+  return true;
 }
 
 export function pausePageTranslation(reason: "stopped" | "cleared" | "error" = "stopped"): void {
   active = false;
+  backgroundPaused = false;
   clearReconnect();
+  document.removeEventListener("visibilitychange", onVisibilityChange);
   stopWatching();
   if (currentJobId) {
     ensurePort().postMessage({

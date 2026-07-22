@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { runtimeSkinSchema } from "../skins/schema";
-import { translationPreferencesSchema } from "../translation/languages";
+import { translationLanguageSchema, translationPreferencesSchema } from "../translation/languages";
 
 export const readerModeSchema = z.enum(["natural_zh", "key_points", "explain_terms"]);
 export const clickBehaviorSchema = z.enum(["show_actions", "run_default_mode"]);
@@ -49,5 +49,6 @@ export const publicBootstrapSchema = z
     locale: uiLocaleSchema,
     pageTranslationEnabled: z.boolean(),
     translation: translationPreferencesSchema,
+    ignoredDetectedLanguages: z.array(translationLanguageSchema).max(12),
   })
   .strict();

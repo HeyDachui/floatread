@@ -135,7 +135,7 @@ async function runBatch(
         providerKind: profile.kind,
         providerBaseUrl: profile.baseUrl,
         model: profile.model,
-        promptVersion: PAGE_TRANSLATION_PROMPT_VERSION,
+        promptVersion: `${PAGE_TRANSLATION_PROMPT_VERSION}-${job.translation.quality}`,
       }),
     })),
   );
@@ -163,6 +163,7 @@ async function runBatch(
     const prompt = buildPageTranslationPrompt(
       misses.map((item) => item.segment),
       job.translation.targetLanguage,
+      job.translation.quality,
     );
     const timer = setTimeout(() => job.controller.abort(), profile.timeoutMs);
     const heartbeat = setInterval(
@@ -319,7 +320,7 @@ export function registerPageTranslationPorts(): void {
         translation:
           session?.id === message.sessionId
             ? session.translation
-            : { sourceLanguages: ["en"], targetLanguage: "zh-Hans" },
+            : { sourceLanguages: ["en"], targetLanguage: "zh-Hans", quality: "smart" },
       };
       activeByTab.set(tabId, job);
       void executeBatch(port, job, message.segments);

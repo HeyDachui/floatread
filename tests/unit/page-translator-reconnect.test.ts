@@ -37,6 +37,7 @@ afterEach(() => {
   vi.resetModules();
   vi.unstubAllGlobals();
   document.body.replaceChildren();
+  Object.defineProperty(document, "hidden", { configurable: true, value: false });
 });
 
 describe("page translator connection recovery", () => {
@@ -99,5 +100,46 @@ describe("page translator connection recovery", () => {
     );
     await vi.advanceTimersByTimeAsync(10_000);
     expect(connect).toHaveBeenCalledTimes(3);
+  });
+
+  it("submits no new batch while hidden and resumes when the page returns", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 400,
+      bottom: 40,
+      width: 400,
+      height: 40,
+      toJSON: () => ({}),
+    });
+    const connected = fakePort();
+    vi.stubGlobal("chrome", { runtime: { connect: vi.fn(() => connected) } });
+    const translator = await import("../../src/content/page-translator");
+
+    translator.startPageTranslation();
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    document.body.innerHTML =
+      '<main><p lang="en">This hidden page must not submit another batch.</p></main>';
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(
+      connected.postMessage.mock.calls.filter(
+        ([message]) => (message as { type?: string }).type === "PAGE_TRANSLATE_BATCH",
+      ),
+    ).toHaveLength(0);
+    expect(translator.getPageTranslationState().status).toBe("background_paused");
+
+    Object.defineProperty(document, "hidden", { configurable: true, value: false });
+    document.dispatchEvent(new Event("visibilitychange"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(
+      connected.postMessage.mock.calls.filter(
+        ([message]) => (message as { type?: string }).type === "PAGE_TRANSLATE_BATCH",
+      ),
+    ).toHaveLength(1);
+    translator.pausePageTranslation();
   });
 });

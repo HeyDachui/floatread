@@ -1,5 +1,6 @@
 import type { RuntimeSkinDefinition } from "../skins/types";
 import type { TranslationPreferences } from "../translation/languages";
+import type { TranslationLanguage } from "../translation/languages";
 
 export type ReaderMode = "natural_zh" | "key_points" | "explain_terms";
 export type ClickBehavior = "show_actions" | "run_default_mode";
@@ -36,4 +37,5 @@ export interface PublicBootstrap {
   locale: UiLocale;
   pageTranslationEnabled: boolean;
   translation: TranslationPreferences;
+  ignoredDetectedLanguages: TranslationLanguage[];
 }

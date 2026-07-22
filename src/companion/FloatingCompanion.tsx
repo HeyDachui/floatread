@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { createGenerationClient, type GenerationClient } from "../content/generation-client";
 import { createSelectionManager, type SelectionSnapshot } from "../content/selection-manager";
 import {
+  addPageTranslationSourceLanguage,
   clearPageTranslation,
   getPageTranslationState,
   pausePageTranslation,
@@ -22,7 +23,7 @@ import type { CompanionPosition, PublicBootstrap, ReaderMode } from "../shared/t
 import type { BackgroundResponse } from "../shared/messages";
 import { skinAssetResponseSchema } from "../skins/schema";
 import type { SkinState } from "../skins/types";
-import { TRANSLATION_LANGUAGE_KEYS } from "../translation/languages";
+import { TRANSLATION_LANGUAGE_KEYS, type TranslationLanguage } from "../translation/languages";
 import { CompanionArtwork } from "./CompanionArtwork";
 import { isDragGesture } from "./drag-controller";
 import { ResultPanel } from "./ResultPanel";
@@ -61,6 +62,12 @@ export function FloatingCompanion({
   const [skinImageUrl, setSkinImageUrl] = useState<string | undefined>(undefined);
   const [pageTranslation, setPageTranslation] =
     useState<PageTranslationState>(getPageTranslationState());
+  const [sessionSourceLanguages, setSessionSourceLanguages] = useState(
+    bootstrap.translation.sourceLanguages,
+  );
+  const [ignoredDetectedLanguages, setIgnoredDetectedLanguages] = useState(
+    bootstrap.ignoredDetectedLanguages,
+  );
   const t = useMemo(() => createTranslator(bootstrap.locale), [bootstrap.locale]);
   const modeLabels: Array<{ mode: ReaderMode; label: string; description: string }> = [
     { mode: "natural_zh", label: t("modeNatural"), description: t("modeNaturalDesc") },
@@ -86,7 +93,19 @@ export function FloatingCompanion({
   const isGenerating = readerState.value === "requesting" || readerState.value === "streaming";
   const isPageTranslating =
     pageTranslation.status === "scanning" || pageTranslation.status === "translating";
-  const isPageActive = isPageTranslating || pageTranslation.status === "watching";
+  const isPageActive =
+    isPageTranslating ||
+    pageTranslation.status === "watching" ||
+    pageTranslation.status === "background_paused";
+  const suggestedLanguage =
+    sessionSourceLanguages.length < 5
+      ? pageTranslation.detectedLanguages?.find(
+          (language) =>
+            language !== bootstrap.translation.targetLanguage &&
+            !sessionSourceLanguages.includes(language) &&
+            !ignoredDetectedLanguages.includes(language),
+        )
+      : undefined;
   const visualState =
     isGenerating || isPageTranslating
       ? "thinking"
@@ -100,9 +119,11 @@ export function FloatingCompanion({
         ? pageTranslation.translatedCount === 0
           ? t("pageTranslationNoMatch")
           : t("pageTranslationWatching", String(pageTranslation.translatedCount))
-        : pageTranslation.status === "error"
-          ? pageTranslation.message
-          : null;
+        : pageTranslation.status === "background_paused"
+          ? t("pageTranslationBackgroundPaused")
+          : pageTranslation.status === "error"
+            ? pageTranslation.message
+            : null;
 
   useEffect(() => {
     if (bootstrap.skin.availableAssets.length === 0) {
@@ -348,6 +369,31 @@ export function FloatingCompanion({
     setContextMenuOpen(false);
   };
 
+  const decideDetectedLanguage = (
+    language: TranslationLanguage,
+    decision: "once" | "always" | "ignore",
+  ): void => {
+    if (decision === "ignore") {
+      setIgnoredDetectedLanguages((current) => [...new Set([...current, language])]);
+      void chrome.runtime.sendMessage({
+        type: "SET_SITE_LANGUAGE_DECISION",
+        language,
+        decision: "ignore",
+      });
+      return;
+    }
+    if (addPageTranslationSourceLanguage(language)) {
+      setSessionSourceLanguages((current) => [...new Set([...current, language])]);
+    }
+    if (decision === "always") {
+      void chrome.runtime.sendMessage({
+        type: "SET_SITE_LANGUAGE_DECISION",
+        language,
+        decision: "always",
+      });
+    }
+  };
+
   const sideClass = position.edge === "left" ? "fr-side-left" : "fr-side-right";
 
   return (
@@ -385,6 +431,36 @@ export function FloatingCompanion({
           aria-live={pageTranslation.status === "error" ? "assertive" : "polite"}
         >
           <span>{pageStatusText}</span>
+          {suggestedLanguage ? (
+            <div className="fr-language-suggestion">
+              <strong>
+                {t(
+                  "detectedLanguageQuestion",
+                  t(TRANSLATION_LANGUAGE_KEYS[suggestedLanguage] as MessageKey),
+                )}
+              </strong>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => decideDetectedLanguage(suggestedLanguage, "once")}
+                >
+                  {t("translateOnce")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => decideDetectedLanguage(suggestedLanguage, "always")}
+                >
+                  {t("translateAlwaysHere")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => decideDetectedLanguage(suggestedLanguage, "ignore")}
+                >
+                  {t("ignoreLanguage")}
+                </button>
+              </div>
+            </div>
+          ) : null}
           {pageTranslation.status === "error" ? (
             <button
               type="button"

@@ -4,6 +4,11 @@ import {
   type TranslationLanguage,
   type TranslationPreferences,
 } from "../translation/languages";
+import {
+  classifyPlatformText,
+  detectPagePlatform,
+  shouldSkipPlatformText,
+} from "./platform-profile";
 
 export type PageSegmentKind = "content" | "ui";
 
@@ -83,6 +88,7 @@ export function collectVisiblePageScan(
 ): PageScanResult {
   const root = documentRef.body;
   if (!root) return { segments: [], detectedLanguages: [] };
+  const platform = detectPagePlatform(documentRef.location.hostname);
   const walker = documentRef.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const candidates: Array<{ segment: PageTextSegment; top: number; order: number }> = [];
   let counter = 0;
@@ -94,6 +100,7 @@ export function collectVisiblePageScan(
     if (skipped.has(node)) continue;
     const element = node.parentElement;
     if (!element || element.closest(BLOCKED_SELECTOR)) continue;
+    if (shouldSkipPlatformText(platform, element)) continue;
     const original = node.nodeValue ?? "";
     const text = normalize(original);
     if (/^(?:https?:\/\/|www\.|@)[^\s]+$/iu.test(text) || text.length > 12_000) continue;
@@ -111,7 +118,7 @@ export function collectVisiblePageScan(
       !preferences.sourceLanguages.includes(sourceLanguage)
     )
       continue;
-    const kind = classify(element, text);
+    const kind = classifyPlatformText(platform, element, text) ?? classify(element, text);
     if (!kind) continue;
     candidates.push({
       segment: { id: `seg_${counter}`, text, kind, node, original, sourceLanguage },

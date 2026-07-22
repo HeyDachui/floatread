@@ -54,7 +54,9 @@ if (window.top === window) {
           sendResponse({
             visible: isFloatReadMounted(),
             pageTranslation: {
-              active: ["scanning", "translating", "watching"].includes(pageState.status),
+              active: ["scanning", "translating", "watching", "background_paused"].includes(
+                pageState.status,
+              ),
               status: pageState.status,
               translatedCount: pageState.translatedCount,
             },

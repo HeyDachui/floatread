@@ -347,6 +347,9 @@ test("switches the settings interface between English and Simplified Chinese", a
   const sourceLanguages = page.locator(".language-row select");
   await expect(sourceLanguages).toHaveCount(2);
   await sourceLanguages.nth(1).selectOption("ja");
+  const qualitySelect = page.getByLabel(/页面翻译档位|Page translation level/u);
+  await qualitySelect.selectOption("fast");
+  await expect(qualitySelect).toHaveValue("fast");
   await page.getByRole("button", { name: /保存翻译语言|Save translation languages/u }).click();
   await expect(page.getByRole("status")).toContainText(
     /翻译语言已保存|Translation languages saved/u,
@@ -578,6 +581,17 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
     document.body.append(menu);
   });
   await expect(fixture.getByRole("menuitem")).toHaveText("账户设置");
+
+  await fixture.evaluate(() => {
+    const french = document.createElement("p");
+    french.id = "detected-french";
+    french.lang = "fr";
+    french.textContent = "Les utilisateurs et les modèles sont disponibles.";
+    document.body.append(french);
+  });
+  await expect(host.getByText(/检测到法语|Detected French/u)).toBeVisible();
+  await host.getByRole("button", { name: /仅本次|This time/u }).click();
+  await expect(fixture.locator("#detected-french")).toContainText("页面译文：");
 
   await fixture.evaluate(() => {
     const storm = setInterval(() => {

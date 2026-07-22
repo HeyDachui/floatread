@@ -11,10 +11,12 @@ import {
 import { ProviderFailure } from "../../src/providers/types";
 import { collectVisiblePageScan, collectVisiblePageSegments } from "../../src/content/page-scanner";
 import {
+  getSiteLanguagePreferences,
   getPageTranslationMemory,
   isPageTranslationEnabled,
   putPageTranslationMemory,
   setPageTranslationEnabled,
+  setSiteLanguageDecision,
 } from "../../src/storage/page-translation";
 
 afterEach(() => {
@@ -41,6 +43,24 @@ describe("page translation prompt", () => {
       parsePageTranslationResponse('{"translations":[{"id":"seg_0","text":"译文"}]}', ["seg_0"]),
     ).toEqual(new Map([["seg_0", "译文"]]));
     expect(parsePageTranslationResponse('{"translations":[]}', ["seg_0"])).toBeNull();
+  });
+
+  it("uses distinct instructions and smaller output budgets for all three quality levels", () => {
+    const segments = [
+      {
+        id: "seg_0",
+        kind: "content" as const,
+        text: "A useful learning page.",
+        sourceLanguage: "en" as const,
+      },
+    ];
+    const fast = buildPageTranslationPrompt(segments, "zh-Hans", "fast");
+    const smart = buildPageTranslationPrompt(segments, "zh-Hans", "smart");
+    const precise = buildPageTranslationPrompt(segments, "zh-Hans", "precise");
+    expect(fast.systemPrompt).toContain("不润色");
+    expect(smart.systemPrompt).toContain("kind=content");
+    expect(precise.systemPrompt).toContain("结合上下文");
+    expect(fast.maxOutputTokens).toBeLessThan(precise.maxOutputTokens);
   });
 
   it("retries malformed or retryable completion once and never loops", async () => {
@@ -246,6 +266,7 @@ describe("visible page scanner", () => {
     const scan = collectVisiblePageScan(new Set(), document, 10, 10_000, {
       sourceLanguages: ["en", "fr"],
       targetLanguage: "zh-Hans",
+      quality: "smart",
     });
     expect(scan.detectedLanguages).toEqual(["en", "fr", "ja"]);
     expect(scan.segments.map((segment) => segment.sourceLanguage)).toEqual(["en", "fr"]);
@@ -272,5 +293,28 @@ describe("persistent page translation state", () => {
     );
     await setPageTranslationEnabled("https://x.com/home", false);
     await expect(isPageTranslationEnabled("https://x.com/home")).resolves.toBe(false);
+  });
+
+  it("remembers accepted and ignored languages per exact site origin", async () => {
+    const values: Record<string, unknown> = {};
+    vi.stubGlobal("chrome", {
+      storage: {
+        local: {
+          get: vi.fn(async (key: string) => ({ [key]: values[key] })),
+          set: vi.fn(async (items: Record<string, unknown>) => Object.assign(values, items)),
+          remove: vi.fn(async (key: string) => delete values[key]),
+        },
+      },
+    });
+    await setSiteLanguageDecision("https://www.ted.com/talks/example", "ja", "always");
+    await setSiteLanguageDecision("https://www.ted.com/talks/example", "fr", "ignore");
+    await expect(getSiteLanguagePreferences("https://www.ted.com/about")).resolves.toEqual({
+      alwaysTranslate: ["ja"],
+      ignored: ["fr"],
+    });
+    await expect(getSiteLanguagePreferences("https://www.reddit.com/r/test")).resolves.toEqual({
+      alwaysTranslate: [],
+      ignored: [],
+    });
   });
 });

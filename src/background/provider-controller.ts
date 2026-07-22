@@ -60,7 +60,14 @@ async function getPopupState(targetTabId?: number): Promise<unknown> {
   let pageTranslationStatus:
     | {
         active: boolean;
-        status: "idle" | "scanning" | "translating" | "watching" | "paused" | "error";
+        status:
+          | "idle"
+          | "scanning"
+          | "translating"
+          | "watching"
+          | "background_paused"
+          | "paused"
+          | "error";
         translatedCount: number;
       }
     | undefined;
@@ -83,15 +90,27 @@ async function getPopupState(targetTabId?: number): Promise<unknown> {
       if (
         typeof pageState?.active === "boolean" &&
         typeof pageState.status === "string" &&
-        ["idle", "scanning", "translating", "watching", "paused", "error"].includes(
-          pageState.status,
-        ) &&
+        [
+          "idle",
+          "scanning",
+          "translating",
+          "watching",
+          "background_paused",
+          "paused",
+          "error",
+        ].includes(pageState.status) &&
         typeof pageState.translatedCount === "number"
       ) {
         pageTranslationStatus = {
           active: pageState.active,
           status: pageState.status as
-            "idle" | "scanning" | "translating" | "watching" | "paused" | "error",
+            | "idle"
+            | "scanning"
+            | "translating"
+            | "watching"
+            | "background_paused"
+            | "paused"
+            | "error",
           translatedCount: pageState.translatedCount,
         };
       }

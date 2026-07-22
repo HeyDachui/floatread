@@ -22,6 +22,13 @@ export const contentToBackgroundSchema = z.discriminatedUnion("type", [
     .strict(),
   z.object({ type: z.literal("GET_ACTIVE_SKIN_ASSET"), state: skinStateSchema }).strict(),
   z.object({ type: z.literal("SET_PAGE_TRANSLATION_PREFERENCE"), enabled: z.boolean() }).strict(),
+  z
+    .object({
+      type: z.literal("SET_SITE_LANGUAGE_DECISION"),
+      language: translationLanguageSchema,
+      decision: z.enum(["always", "ignore"]),
+    })
+    .strict(),
 ]);
 
 export type ContentToBackgroundMessage = z.infer<typeof contentToBackgroundSchema>;

@@ -669,7 +669,20 @@
 .fr-page-status {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 9px;
+}
+
+.fr-language-suggestion {
+  display: grid;
+  width: 100%;
+  gap: 7px;
+}
+
+.fr-language-suggestion > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .fr-page-status-error {

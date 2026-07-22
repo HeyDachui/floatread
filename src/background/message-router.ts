@@ -6,7 +6,12 @@ import {
 import { getRuntimeSkin, getSkinStateAsset } from "../skins/storage";
 import { isSitePaused } from "../storage/site-pauses";
 import { getPublicBootstrap, getSettings, updateCompanionPosition } from "../storage/settings";
-import { isPageTranslationEnabled, setPageTranslationEnabled } from "../storage/page-translation";
+import {
+  getSiteLanguagePreferences,
+  isPageTranslationEnabled,
+  setPageTranslationEnabled,
+  setSiteLanguageDecision,
+} from "../storage/page-translation";
 import { cancelPageTranslationForTab } from "./page-translation-manager";
 import { routeTrustedProviderMessage } from "./provider-controller";
 
@@ -31,10 +36,21 @@ async function routeMessage(
   switch (parsed.data.type) {
     case "GET_PUBLIC_BOOTSTRAP": {
       const bootstrap = await getPublicBootstrap();
+      const siteLanguages = await getSiteLanguagePreferences(sender.tab?.url ?? sender.url);
+      const sourceLanguages = [
+        ...new Set([
+          ...bootstrap.translation.sourceLanguages,
+          ...siteLanguages.alwaysTranslate.filter(
+            (language) => language !== bootstrap.translation.targetLanguage,
+          ),
+        ]),
+      ].slice(0, 5);
       const effectiveBootstrap = {
         ...bootstrap,
         enabled: bootstrap.enabled && !(await isSitePaused(sender.tab?.url ?? sender.url)),
         pageTranslationEnabled: await isPageTranslationEnabled(sender.tab?.url ?? sender.url),
+        translation: { ...bootstrap.translation, sourceLanguages },
+        ignoredDetectedLanguages: siteLanguages.ignored,
       };
       return {
         ok: true,
@@ -77,6 +93,14 @@ async function routeMessage(
         cancelPageTranslationForTab(sender.tab.id);
       }
       return { ok: true };
+    case "SET_SITE_LANGUAGE_DECISION": {
+      const data = await setSiteLanguageDecision(
+        sender.tab?.url ?? sender.url,
+        parsed.data.language,
+        parsed.data.decision,
+      );
+      return { ok: true, data };
+    }
   }
 }
 

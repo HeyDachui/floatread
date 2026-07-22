@@ -18,7 +18,7 @@ const SETTINGS_KEY = "appSettings";
 
 export const appSettingsSchema = z
   .object({
-    schemaVersion: z.literal(2),
+    schemaVersion: z.literal(3),
     enabled: z.boolean(),
     defaultMode: readerModeSchema,
     clickBehavior: clickBehaviorSchema,
@@ -35,7 +35,7 @@ export const appSettingsSchema = z
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   enabled: true,
   defaultMode: "natural_zh",
   clickBehavior: "show_actions",
@@ -65,6 +65,27 @@ export const DEFAULT_SETTINGS: AppSettings = {
   locale: "auto",
   translation: DEFAULT_TRANSLATION_PREFERENCES,
 };
+
+const appSettingsV2Schema = z
+  .object({
+    schemaVersion: z.literal(2),
+    enabled: z.boolean(),
+    defaultMode: readerModeSchema,
+    clickBehavior: clickBehaviorSchema,
+    activeProviderId: z.string().min(1).nullable(),
+    activeSkinId: z.string().min(1),
+    appearance: appearanceOverridesSchema,
+    cache: cachePolicySchema,
+    companionPosition: companionPositionSchema,
+    locale: z.enum(["auto", "zh_CN", "en"]),
+    translation: z
+      .object({
+        sourceLanguages: translationPreferencesSchema.shape.sourceLanguages,
+        targetLanguage: translationPreferencesSchema.shape.targetLanguage,
+      })
+      .strict(),
+  })
+  .strict();
 
 const appSettingsV1Schema = z
   .object({
@@ -96,9 +117,16 @@ const legacySettingsV0Schema = z
 export function migrateAppSettings(raw: unknown): AppSettings | null {
   const current = appSettingsSchema.safeParse(raw);
   if (current.success) return current.data;
+  const v2 = appSettingsV2Schema.safeParse(raw);
+  if (v2.success)
+    return {
+      ...v2.data,
+      schemaVersion: 3,
+      translation: { ...v2.data.translation, quality: "precise" },
+    };
   const v1 = appSettingsV1Schema.safeParse(raw);
   if (v1.success)
-    return { ...v1.data, schemaVersion: 2, translation: DEFAULT_TRANSLATION_PREFERENCES };
+    return { ...v1.data, schemaVersion: 3, translation: DEFAULT_TRANSLATION_PREFERENCES };
   const legacy = legacySettingsV0Schema.safeParse(raw);
   if (!legacy.success) return null;
   return {
@@ -204,5 +232,6 @@ export async function getPublicBootstrap(): Promise<PublicBootstrap> {
     locale,
     pageTranslationEnabled: false,
     translation: settings.translation,
+    ignoredDetectedLanguages: [],
   };
 }

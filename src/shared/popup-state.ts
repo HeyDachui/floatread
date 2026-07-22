@@ -13,7 +13,15 @@ export const popupStateSchema = z
       .object({
         enabled: z.boolean(),
         active: z.boolean(),
-        status: z.enum(["idle", "scanning", "translating", "watching", "paused", "error"]),
+        status: z.enum([
+          "idle",
+          "scanning",
+          "translating",
+          "watching",
+          "background_paused",
+          "paused",
+          "error",
+        ]),
         translatedCount: z.number().int().nonnegative(),
       })
       .strict(),
