@@ -1,6 +1,6 @@
-# FloatRead 0.2.3 safety release notes
+# FloatRead 0.3.3 connection recovery release notes
 
-FloatRead 0.2.3 is an urgent safety release. It removes 0.2.2's immediate React text-node reapplication, coalesces dynamic-page scans, reduces normal batches to six segments / 6,000 characters, makes Stop persistent, aborts the Background job independently, and prevents every reload-time automatic restart.
+FloatRead 0.3.3 repairs the disconnected companion that can remain on an already-open X tab after an unpacked-extension reload. Every Manifest V3 Service Worker lifetime now checks declared-site tabs, leaves healthy contexts alone and replaces only stale contexts.
 
 ## Highlights
 
@@ -14,11 +14,11 @@ FloatRead 0.2.3 is an urgent safety release. It removes 0.2.2's immediate React 
 
 ## Install
 
-Remove or reload 0.2.2 before returning to X. Extract `release/FloatRead-v0.2.3.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
+Extract `release/FloatRead-v0.3.3.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. When updating the workspace build, press **Reload** once; an already-open X tab should reconnect without a page refresh. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
 
 ## Verification status
 
-Automated results and exact commands are recorded in `PROGRESS.md`. A real DeepSeek `deepseek-v4-flash` strict two-segment page batch passed in addition to connection/ordinary/stream/cancel smoke tests; no output body or credential was recorded. Complete `MANUAL_TESTING.md` before store publication.
+Automated results and exact commands are recorded in `PROGRESS.md`. This connection-only round made no real Provider call and consumed no new tokens. The earlier DeepSeek `deepseek-v4-flash` smoke remains historical Provider evidence, not evidence for this connection fix. Complete `MANUAL_TESTING.md` before store publication.
 
 ## Known release prerequisites
 

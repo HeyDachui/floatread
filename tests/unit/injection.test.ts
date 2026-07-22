@@ -57,6 +57,13 @@ describe("content-script recovery", () => {
     vi.stubGlobal("chrome", {
       tabs: { query, sendMessage },
       scripting: { executeScript },
+      runtime: {
+        getManifest: () => ({
+          content_scripts: [
+            { matches: ["https://x.com/*", "https://twitter.com/*", "chrome://settings/*"] },
+          ],
+        }),
+      },
     });
 
     await reconnectDeclaredSiteTabs();

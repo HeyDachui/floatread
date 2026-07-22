@@ -1,8 +1,15 @@
 import type { BackgroundToContentMessage } from "../shared/messages";
 
 const ALLOWED_SCHEMES = new Set(["http:", "https:"]);
-const DECLARED_SITE_PATTERNS = ["https://x.com/*", "https://twitter.com/*"];
 const injectionByTab = new Map<number, Promise<void>>();
+
+function declaredSitePatterns(): string[] {
+  const matches =
+    chrome.runtime
+      .getManifest()
+      .content_scripts?.flatMap((contentScript) => contentScript.matches ?? []) ?? [];
+  return [...new Set(matches.filter((pattern) => /^https?:\/\//u.test(pattern)))];
+}
 
 export function isInjectableUrl(value: string | undefined): boolean {
   if (!value) return false;
@@ -48,7 +55,7 @@ export async function ensureContentScript(tab: chrome.tabs.Tab): Promise<void> {
 }
 
 export async function reconnectDeclaredSiteTabs(): Promise<void> {
-  const tabs = await chrome.tabs.query({ url: DECLARED_SITE_PATTERNS });
+  const tabs = await chrome.tabs.query({ url: declaredSitePatterns() });
   await Promise.allSettled(
     tabs.map(async (tab) => {
       if (typeof tab.id !== "number") return;

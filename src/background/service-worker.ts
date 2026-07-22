@@ -20,6 +20,11 @@ registerContextMenuClicks();
 registerGenerationPorts();
 registerPageTranslationPorts();
 
+// A manual unpacked-extension reload starts a fresh Service Worker but does
+// not reliably emit onInstalled. Probe open declared-site tabs on every worker
+// lifetime so an invalidated Content Script is replaced before the user clicks.
+void initialization.then(reconnectDeclaredSiteTabs).catch(() => undefined);
+
 chrome.runtime.onInstalled.addListener((details) => {
   void initialization.then(async () => {
     if (details.reason === "install") {

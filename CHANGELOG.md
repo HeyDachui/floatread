@@ -2,6 +2,18 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.3.3] - 2026-07-22
+
+### Fixed
+
+- Repair already-open declared-site tabs whenever the Manifest V3 Service Worker starts, including same-version unpacked-extension reloads that do not reliably emit `runtime.onInstalled`.
+- Derive recoverable site patterns from the built manifest instead of maintaining a second hard-coded list.
+
+### Verified
+
+- Add a Service Worker startup regression proving open-tab recovery runs without an install/update event.
+- Keep healthy tabs untouched and retain the existing serialized stale-context reinjection checks.
+
 ## [0.3.2] - 2026-07-22
 
 ### Fixed

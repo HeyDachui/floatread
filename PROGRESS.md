@@ -614,3 +614,49 @@ Release evidence:
 - Real Provider calls this round: none; no new Token usage.
 
 Acceptance conclusion: formal existence, controlled functional operation and automated release quality passed. The failure reason will now be observable at the real X entry. Authenticated-X recovery is pending one owner reload and click; it is not claimed as already passed.
+
+## Version 0.3.3 Service Worker startup recovery round — 2026-07-22
+
+Owner acceptance report: page translation still failed after 0.3.2. This time the authenticated X tab was inspected directly in the owner's Chrome profile. The FloatRead companion was present and displayed the persistent message `页面翻译连接已断开，请重试。` while the page remained untranslated. This is direct evidence that the failure occurred before credentials, Provider routing or text scanning.
+
+Controlled diagnosis and changes:
+
+- 0.3.1 recovery was attached only to `runtime.onInstalled`. Reloading the same unpacked version starts a fresh Manifest V3 Service Worker but does not reliably emit that event, leaving the old visible Content Script disconnected.
+- Open declared-site tabs are now probed on every Service Worker lifetime, after storage initialization. Healthy receivers are left untouched; only missing/stale contexts use the existing serialized reinjection path.
+- Recoverable match patterns are derived from the built manifest and filtered to HTTP(S), eliminating a duplicate hard-coded site list.
+- Scanner limits, mutation behavior, Provider routing, prompt/cache versions, stop/abort behavior, credentials and permissions were held constant.
+
+Regression design and project-loop evidence:
+
+- A deterministic Service Worker startup test proves recovery is invoked without firing `runtime.onInstalled`.
+- Existing injection tests still prove healthy-context reuse, stale-context reinjection and injection serialization.
+- An attempted browser test using `chrome.runtime.reload()` was rejected because Chromium closes Playwright's extension browser context itself, so it cannot observe post-reload behavior in the same harness. This harness limitation was not reported as a product failure; the test was replaced by the deterministic startup regression.
+- The isolated variable is the recovery trigger. The next real-use acceptance signal is whether the already-open authenticated X tab starts translating after one extension Reload without refreshing the page.
+
+Knowledge-cycle closure:
+
+- The project knowledge connector was queried before changing the repeated failure path, but FloatRead had no configured/relevant connected knowledge object (`no_relevant_hit`). No external recommendation was adopted.
+- Current-project evidence was used instead: the live disconnected-status screenshot plus the 0.3.1/0.3.2 progress record. The prior rule to avoid character-data observer loops and keep bounded scanning unchanged was preserved.
+- Result: project-local recovery evidence was added here; no new cross-project reusable knowledge object was created (`no_reusable_finding`).
+
+Actual verification:
+
+| Command                 | Actual result                                                  |
+| ----------------------- | -------------------------------------------------------------- |
+| `pnpm lint`             | Passed, zero warnings                                          |
+| `pnpm typecheck`        | Passed                                                         |
+| `pnpm test`             | Passed: 23 files, 110 tests                                    |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                       |
+| `pnpm test:e2e`         | Passed: 18 real Chromium extension tests                       |
+| `pnpm format:check`     | Passed                                                         |
+| `pnpm package`          | Passed: build, two secret scans, ZIP verification and MV3 load |
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.3.3.zip`
+- ZIP size: 435,887 bytes
+- SHA-256: `efa5fdf3ed2ee85f215c713ddd01f9f506425a09d34ab36e375532f3810208cb`
+- Secret scan: passed across tracked source, build and archive text files; no credential was printed or retained.
+- Real Provider calls this round: none; no new Token usage.
+
+Acceptance conclusion: repository, automated function and package quality gates passed. The exact live failure is now covered by startup recovery, but authenticated-X recovery still requires one owner Reload and click; it is not claimed as already observed.
