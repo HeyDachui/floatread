@@ -215,6 +215,32 @@ test("streams a selected passage through Background and Mock Provider", async ()
   await page.close();
 });
 
+test("precision reading uses the original source after page text was translated", async () => {
+  const page = await context.newPage();
+  await page.goto(fixtureUrl);
+  const host = page.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+  const companion = host.locator("button.fr-companion");
+
+  await companion.click();
+  await expect(page.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
+  await selectFixtureSource(page);
+  await companion.click({ button: "right" });
+  await host.getByRole("menuitem", { name: /自然中文|Natural Chinese/u }).click();
+
+  const panel = host.locator(".fr-result-panel");
+  await expect(panel.locator(".fr-output-text")).toHaveText(
+    "我们已重置受影响的 Codex 用户的使用限额。",
+  );
+  await panel.locator(".fr-original").evaluate((details) => {
+    (details as HTMLDetailsElement).open = true;
+  });
+  await expect(panel.locator(".fr-original div")).toHaveText(
+    "We reset usage limits for affected Codex users.",
+  );
+  await page.close();
+});
+
 test("cancels an active stream and keeps partial content", async () => {
   const page = await context.newPage();
   await page.goto(fixtureUrl);

@@ -27,6 +27,7 @@ export type PageTranslationState =
 
 interface AppliedTranslation {
   original: string;
+  sourceText: string;
   translation: string;
 }
 
@@ -48,6 +49,30 @@ const RECONNECT_STABLE_MS = 2_000;
 const applied = new Map<Text, AppliedTranslation>();
 const pending = new Map<string, PageTextSegment>();
 const listeners = new Set<(value: PageTranslationState) => void>();
+
+export function restoreOriginalSelectionText(
+  selectedText: string,
+  translations: Iterable<Pick<AppliedTranslation, "sourceText" | "translation">>,
+): string {
+  let restored = selectedText;
+  const records = [...translations]
+    .filter((record) => record.translation.length > 0 && record.sourceText.length > 0)
+    .sort((left, right) => right.translation.length - left.translation.length);
+  for (const record of records) {
+    const index = restored.indexOf(record.translation);
+    if (index < 0) continue;
+    restored = `${restored.slice(0, index)}${record.sourceText}${restored.slice(index + record.translation.length)}`;
+  }
+  return restored;
+}
+
+export function getOriginalTextForPrecisionReading(selectedText: string): string {
+  const currentTranslations: AppliedTranslation[] = [];
+  for (const [node, record] of applied) {
+    if (node.isConnected && node.nodeValue === record.translation) currentTranslations.push(record);
+  }
+  return restoreOriginalSelectionText(selectedText, currentTranslations);
+}
 
 function publish(next: PageTranslationState): void {
   state = {
@@ -172,7 +197,11 @@ function handleEvent(event: PageTranslationPortOutgoing): void {
     if (!segment || !segment.node.isConnected) return;
     if (segment.node.nodeValue !== segment.original) return;
     segment.node.nodeValue = event.text;
-    applied.set(segment.node, { original: segment.original, translation: event.text });
+    applied.set(segment.node, {
+      original: segment.original,
+      sourceText: segment.text,
+      translation: event.text,
+    });
     publish({ status: "translating", translatedCount: translatedCount() });
     return;
   }
@@ -354,30 +383,37 @@ export function addPageTranslationSourceLanguage(language: TranslationLanguage):
 }
 
 export function pausePageTranslation(reason: "stopped" | "cleared" | "error" = "stopped"): void {
+  const jobId = currentJobId;
+  const sessionId = currentSessionId;
   active = false;
   backgroundPaused = false;
   clearReconnect();
   document.removeEventListener("visibilitychange", onVisibilityChange);
   stopWatching();
-  if (currentJobId) {
-    ensurePort().postMessage({
-      type: "PAGE_TRANSLATE_CANCEL",
-      jobId: currentJobId,
-      sessionId: currentSessionId,
-    });
-  }
-  if (currentSessionId) {
-    ensurePort().postMessage({
-      type: "PAGE_TRANSLATION_SESSION_END",
-      sessionId: currentSessionId,
-      reason,
-    });
-  }
   currentSessionId = null;
   currentJobId = null;
   busy = false;
   pending.clear();
   publish({ status: "paused", translatedCount: translatedCount() });
+  if (!port) return;
+  try {
+    if (jobId) {
+      port.postMessage({
+        type: "PAGE_TRANSLATE_CANCEL",
+        jobId,
+        sessionId,
+      });
+    }
+    if (sessionId) {
+      port.postMessage({
+        type: "PAGE_TRANSLATION_SESSION_END",
+        sessionId,
+        reason,
+      });
+    }
+  } catch {
+    port = null;
+  }
 }
 
 export function clearPageTranslation(): void {

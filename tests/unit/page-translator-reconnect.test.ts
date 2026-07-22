@@ -142,4 +142,19 @@ describe("page translator connection recovery", () => {
     ).toHaveLength(1);
     translator.pausePageTranslation();
   });
+
+  it("updates to paused immediately even when the translation Port is already dead", async () => {
+    const connected = fakePort();
+    connected.postMessage
+      .mockImplementationOnce(() => undefined)
+      .mockImplementation(() => {
+        throw new Error("Attempting to use a disconnected port object");
+      });
+    vi.stubGlobal("chrome", { runtime: { connect: vi.fn(() => connected) } });
+    const translator = await import("../../src/content/page-translator");
+
+    translator.startPageTranslation();
+    expect(() => translator.pausePageTranslation()).not.toThrow();
+    expect(translator.getPageTranslationState().status).toBe("paused");
+  });
 });

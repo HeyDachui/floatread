@@ -1,20 +1,22 @@
-# FloatRead 0.4.0 最终交付报告
+# FloatRead 0.4.1 最终交付报告
 
 报告日期：2026-07-22
 
 锁定工作区：`E:\AI-900\FloatRead`
 
-发布版本：`0.4.0`
+发布版本：`0.4.1`
 
 ## 1. 完成概述
 
-FloatRead 0.4.0 已形成可运行、可测试、可构建和可安装的 Chrome Manifest V3 扩展。页面翻译新增快速、智能、精细三档，支持发现其他语言后再询问用户，切到后台后不再提交新批次，并为 X、TED、Reddit 提供不依赖私有节点名的页面策略。内置 Mochi 增加眨眼、行走、转身、点击与请求状态反馈。
+FloatRead 0.4.1 已形成可运行、可测试、可构建和可安装的 Chrome Manifest V3 扩展。它保留 0.4.0 的三档翻译、语言询问、后台 Token 保护、X/TED/Reddit 策略和 Mochi 动画，并修复了页面已经翻译后精读读取译文、精读连接无限转圈以及失效连接无法停止的问题。
 
 受控 Chromium 流程、真实 DeepSeek 最小请求和生产 ZIP 均已通过。真实登录态 X/TED/Reddit 长时间滚动、实际切换标签页和宠物自然度仍需所有者人工观察，不冒充已通过。
 
 ## 2. 实际实现功能
 
 - 页面直接替换翻译；快速、智能（默认推荐）、精细三档。
+- 页面译文被选中后执行精读时，还原对应真实原文；“原文”面板和 Provider 输入不再读取屏幕上的译文。
+- 精读 Port 断开时立即显示可重试错误，Retry 建立新连接；Stop/关闭即使在失效连接上也立即响应。
 - 本地发现其他语言，提供“仅本次、此网站以后都翻译、忽略”。用户同意前不因提醒调用 AI。
 - 页面隐藏后停止扫描和新请求；允许一个已提交批次完成，返回时仅在用户未主动停止的情况下继续。
 - X、TED、Reddit 增强语义策略，普通网页通用策略；TED 实时字幕、计时和高频进度区域跳过。
@@ -44,7 +46,7 @@ FloatRead/
 │   └── popup/options/...    # Popup、设置和 Onboarding
 ├── tests/{unit,integration,e2e}/
 ├── dist/                    # 生产扩展，20 个文件
-└── release/FloatRead-v0.4.0.zip
+└── release/FloatRead-v0.4.1.zip
 ```
 
 ## 4. Git 提交记录
@@ -106,10 +108,11 @@ FloatRead/
 
 本轮只测试一个 Provider/模型，没有并行消耗多把 Key，没有保存译文正文。
 
-| Provider / 模型                | 检查                      | 结果 |                    耗时 |                     Token |
-| ------------------------------ | ------------------------- | ---- | ----------------------: | ------------------------: |
-| DeepSeek / `deepseek-v4-flash` | Fast 六段流式严格 JSON    | 通过 | 1,909 ms；首段 1,398 ms | 405 输入 + 110 输出 = 515 |
-| DeepSeek / `deepseek-v4-flash` | Precise 六段流式严格 JSON | 通过 | 1,683 ms；首段 1,147 ms | 406 输入 + 110 输出 = 516 |
+| Provider / 模型                | 检查                       | 结果 |                    耗时 |                     Token |
+| ------------------------------ | -------------------------- | ---- | ----------------------: | ------------------------: |
+| DeepSeek / `deepseek-v4-flash` | Fast 六段流式严格 JSON     | 通过 | 1,909 ms；首段 1,398 ms | 405 输入 + 110 输出 = 515 |
+| DeepSeek / `deepseek-v4-flash` | Precise 六段流式严格 JSON  | 通过 | 1,683 ms；首段 1,147 ms | 406 输入 + 110 输出 = 516 |
+| DeepSeek / `deepseek-v4-flash` | 报告推文的自然中文流式结果 | 通过 |                1,288 ms |  365 输入 + 52 输出 = 417 |
 
 Fast 在本次小样本低于两秒，但没有比 Precise 快；226ms 差异属于单次 Provider/网络波动。它的确定性优势是长页面每批容纳量更大。不得据此宣传“任何网络下必然更快”。
 
@@ -121,17 +124,18 @@ Fast 在本次小样本低于两秒，但没有比 Precise 快；226ms 差异属
 
 ## 10. 实际执行的测试
 
-| 命令                       | 真实结果                                          |
-| -------------------------- | ------------------------------------------------- |
-| `pnpm format`              | 通过                                              |
-| `pnpm lint`                | 通过，零警告                                      |
-| `pnpm typecheck`           | 通过                                              |
-| `pnpm test`                | 26 文件、129 测试通过                             |
-| `pnpm test:integration`    | 2 文件、2 测试通过                                |
-| `pnpm test:e2e`            | 18 条真实 Chromium 扩展流程通过                   |
-| `pnpm format:check`        | 通过                                              |
-| `pnpm package`             | 构建、清单、两次秘密扫描、ZIP 和 MV3 加载全部通过 |
-| `pnpm smoke:deepseek-page` | Fast/Precise 各一个最小流式请求通过               |
+| 命令                          | 真实结果                                          |
+| ----------------------------- | ------------------------------------------------- |
+| `pnpm format`                 | 通过                                              |
+| `pnpm lint`                   | 通过，零警告                                      |
+| `pnpm typecheck`              | 通过                                              |
+| `pnpm test`                   | 27 文件、133 测试通过                             |
+| `pnpm test:integration`       | 2 文件、2 测试通过                                |
+| `pnpm test:e2e`               | 19 条真实 Chromium 扩展流程通过                   |
+| `pnpm format:check`           | 通过                                              |
+| `pnpm package`                | 构建、清单、两次秘密扫描、ZIP 和 MV3 加载全部通过 |
+| `pnpm smoke:deepseek-page`    | Fast/Precise 各一个最小流式请求通过               |
+| `pnpm smoke:deepseek-natural` | 报告推文的自然中文最小流式请求通过                |
 
 ## 11. 未执行或仍需人工的测试
 
@@ -150,15 +154,15 @@ Fast 在本次小样本低于两秒，但没有比 Precise 快；226ms 差异属
 ## 13. 构建产物
 
 - 解压目录：`E:\AI-900\FloatRead\dist`
-- 发布 ZIP：`E:\AI-900\FloatRead\release\FloatRead-v0.4.0.zip`
-- ZIP 大小：443,368 字节
+- 发布 ZIP：`E:\AI-900\FloatRead\release\FloatRead-v0.4.1.zip`
+- ZIP 大小：443,831 字节
 - ZIP 文件数：20
-- SHA-256：`585a909944c9568a633f56328220283dc6876b4ad5ca35c7baa4b91b3fcbea0f`
+- SHA-256：`f46c9872ee611ba9142e90a4f1cb4732dcccd1f46cd5b25a26a75d62a664498d`
 - 生产 MV3 加载测试：3 个扩展页面已验证。
 
 ## 14. 本地安装步骤
 
-1. 解压 `release/FloatRead-v0.4.0.zip` 到固定目录；也可直接使用仓库的 `dist`。
+1. 解压 `release/FloatRead-v0.4.1.zip` 到固定目录；也可直接使用仓库的 `dist`。
 2. Chrome 打开 `chrome://extensions`。
 3. 开启“开发者模式”。
 4. 点击“加载已解压的扩展程序”，选择解压目录或 `E:\AI-900\FloatRead\dist`。

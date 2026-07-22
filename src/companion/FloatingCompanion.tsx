@@ -4,6 +4,7 @@ import { createSelectionManager, type SelectionSnapshot } from "../content/selec
 import {
   addPageTranslationSourceLanguage,
   clearPageTranslation,
+  getOriginalTextForPrecisionReading,
   getPageTranslationState,
   pausePageTranslation,
   startPageTranslation,
@@ -288,12 +289,13 @@ export function FloatingCompanion({
     if (readerState.value !== "idle" && isGenerating) {
       generationClient.current?.cancel(readerState.requestId);
     }
+    const sourceText = getOriginalTextForPrecisionReading(text);
     const requestId = crypto.randomUUID();
-    dispatch({ type: "START", requestId, mode, originalText: text });
+    dispatch({ type: "START", requestId, mode, originalText: sourceText });
     setFocusPanelOnOpen(focusOnOpen);
     setActionMenuOpen(false);
     setContextMenuOpen(false);
-    generationClient.current?.start(requestId, text, mode);
+    generationClient.current?.start(requestId, sourceText, mode);
   };
 
   const selectMode = (mode: ReaderMode, focusOnOpen = false): void => {

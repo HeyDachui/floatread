@@ -111,7 +111,9 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.4.0.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.4.1.zip`, not `dist-e2e`.
+- [ ] Start page translation, select an already translated post, then run Natural Chinese; “Original” must show the real source text rather than the visible page translation.
+- [ ] While Natural Chinese is loading, reload the extension to break its connection; the spinner must become a retryable error, and Stop/close must still respond immediately.
 - [ ] With X already open, press Reload for FloatRead in `chrome://extensions`; the existing page reconnects without requiring a page refresh.
 - [ ] Start page translation and confirm the first visible post changes before below-the-fold content; off-screen text waits until it enters the viewport.
 - [ ] Confirm mixed display text such as `ChatGPT Work => ChatGPT HelpMeWithEverything?` preserves `ChatGPT` but translates the descriptive words.

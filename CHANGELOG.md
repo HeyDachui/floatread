@@ -2,6 +2,18 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.4.1] - 2026-07-22
+
+### Fixed
+
+- Restore the original page text before precision reading when the user selects text that FloatRead has already replaced with a page translation.
+- End a precision-reading spinner with a clear retryable error when its Manifest V3 Port disconnects, and create a fresh connection on Retry.
+- Make Stop update locally and immediately even when the precision-reading or page-translation Port is already dead.
+
+### Verified
+
+- Add the reported `@ChatGPTapp writing feature` selection-source regression, disconnected precision-client tests, dead-Port Stop tests and a real Chromium translated-page-to-Natural-Chinese flow.
+
 ## [0.4.0] - 2026-07-22
 
 ### Added

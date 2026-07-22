@@ -859,3 +859,66 @@ Production-delivery acceptance:
 - Functional operation: passed for controlled Chromium extension flows, real DeepSeek Fast/Precise batches and release loading.
 - Required quality: automated gates and bounded visual inspection passed. Natural pet motion, live hidden-tab switching and authenticated X/TED/Reddit long-session behavior remain manual/unknown rather than falsely passed.
 - Ready for owner testing: yes. Store/publication readiness remains blocked on canonical branding, approved screenshots and completion of the manual live-site checklist.
+
+## Version 0.4.1 precision-reading source and Stop recovery — 2026-07-22
+
+Owner evidence:
+
+- A complete public `@ChatGPTapp writing feature` post was first page-translated, then Natural Chinese remained spinning and could not be stopped.
+- The owner observed that precision reading appeared to follow the currently rendered page language rather than the real source language.
+
+Controlled attribution and changes:
+
+- The Natural Chinese Prompt already unconditionally requested Simplified Chinese and accepted no UI-locale parameter. The language coupling was therefore not in the Prompt.
+- Page translation stores original and translated Text-node values, but selection capture read only `window.getSelection().toString()`. Once the page had been translated, precision reading sent the visible translation back as its source. Applied translations now retain their normalized source text, and the selected text is restored before Natural Chinese, Key Points or Explain Terms starts. The panel's “Original” view uses that same restored source.
+- Precision generation used one long-lived Port without a disconnect transition. A lost Service Worker/Port could leave the reducer in requesting/streaming forever. The client now emits a retryable error for the active request on disconnect and creates a fresh Port on Retry.
+- Sending Stop to an already dead Port could throw before the local reducer changed state. Precision Stop now swallows dead-Port errors after clearing its active id. Page-translation Stop captures the outgoing ids, clears local active/busy/pending state and publishes `paused` first, then only best-effort notifies a still-live Port.
+- Held constant: Natural Chinese Prompt wording/version, Provider/model, credentials, page Prompt/cache, platform profiles, direct replacement, permissions and Token accounting.
+
+Regression evidence:
+
+- The exact reported tweet fragments are covered by a source-restoration unit test.
+- Generation-client tests prove an active disconnect becomes a retryable error, Retry opens a second Port, and Stop never throws on a dead Port.
+- Page-translator test proves dead-Port Stop immediately reaches `paused`.
+- A real Chromium extension test performs: start page translation → select the visible Chinese replacement → run Natural Chinese → verify the output follows the original English and the Original panel displays English.
+
+Actual verification:
+
+| Command                       | Actual result                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------ |
+| `pnpm format`                 | Passed                                                                         |
+| `pnpm lint`                   | Passed, zero warnings                                                          |
+| `pnpm typecheck`              | Passed                                                                         |
+| `pnpm test`                   | Passed: 27 files, 133 tests                                                    |
+| `pnpm test:integration`       | Passed: 2 files, 2 tests                                                       |
+| `pnpm test:e2e`               | Passed: 19 real Chromium extension tests                                       |
+| `pnpm format:check`           | Passed                                                                         |
+| `pnpm package`                | Passed: build, dist/ZIP verification, two secret scans and production MV3 load |
+| `pnpm smoke:deepseek-natural` | Passed: one bounded Natural Chinese stream using the reported public tweet     |
+
+Real Provider and release evidence:
+
+- DeepSeek / `deepseek-v4-flash`: 1,288 ms, 109 output characters, 365 input + 52 output = 417 Token.
+- Retained checks: Chinese present, `ChatGPTapp` preserved, targeted English sentences absent. The output body and credential were not logged or saved.
+- ZIP: `release/FloatRead-v0.4.1.zip`; 443,831 bytes; 20 entries.
+- SHA-256: `f46c9872ee611ba9142e90a4f1cb4732dcccd1f46cd5b25a26a75d62a664498d`.
+- The owner-retained test key remains only in Git-ignored `.secrets/FloatRead-APIKEY.txt`, outside tracked source, `dist` and ZIP.
+
+Project-loop conclusion:
+
+- Object: precision reading invoked after direct page replacement, plus its Stop path.
+- Actual change: downstream precision reading now consumes original-source identity, and disconnected requests leave the spinner deterministically.
+- Stopping evidence: source-restoration unit proof, dead-Port unit proofs, full Chromium path, real Provider metadata and installable package all passed.
+- Remaining owner observation: reload 0.4.1 on the authenticated X page and repeat the exact report. Natural wording remains a human quality judgment; automated metadata only proves language conversion and preservation constraints.
+
+Knowledge-cycle After:
+
+- Before result: FloatRead remains unconfigured in the local connector, so there was no relevant hit, query id or adopted external recommendation.
+- Bounded reusable finding: when a client replaces rendered source text but offers downstream selection-based analysis, the selection path must preserve original-source identity instead of trusting rendered `Selection.toString()`. This applies to controlled DOM replacement systems; it does not authorize reading hidden or unselected source content.
+- Bounded reusable finding: user cancellation should update local UI/state before best-effort transport notification, because a dead transport is exactly when cancellation must remain usable. This does not replace server-side abort when the transport is healthy.
+- Evidence is the reported failure, source-map change, dead-Port tests and Chromium path. These findings remain project-local because no configured natural consumer exists.
+
+Acceptance conclusion:
+
+- Formal existence, controlled function, automated quality, real DeepSeek metadata and installable package passed.
+- The owner can test 0.4.1 directly. Authenticated-X observation is still unknown and is not represented as passed.

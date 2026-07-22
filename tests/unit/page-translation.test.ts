@@ -10,6 +10,7 @@ import {
 } from "../../src/page-translation/complete";
 import { ProviderFailure } from "../../src/providers/types";
 import { collectVisiblePageScan, collectVisiblePageSegments } from "../../src/content/page-scanner";
+import { restoreOriginalSelectionText } from "../../src/content/page-translator";
 import {
   getSiteLanguagePreferences,
   getPageTranslationMemory,
@@ -118,6 +119,25 @@ describe("page translation prompt", () => {
     expect(onUsage).toHaveBeenCalledWith(20, 8);
     expect(parseCompletedPageTranslationItems('{"translations":[{"id":"seg_0"', ["seg_0"])).toEqual(
       new Map(),
+    );
+  });
+});
+
+describe("precision reading over a translated page", () => {
+  it("restores the original tweet text before natural Chinese reads it", () => {
+    const visibleSelection =
+      "@ChatGPTapp 写作功能\nChat 现在可以先提出几个有针对性的问题来了解上下文，然后再写作。";
+    expect(
+      restoreOriginalSelectionText(visibleSelection, [
+        { sourceText: "writing feature", translation: "写作功能" },
+        {
+          sourceText:
+            "Chat can now ask a few targeted questions to understand the context before it writes",
+          translation: "Chat 现在可以先提出几个有针对性的问题来了解上下文，然后再写作。",
+        },
+      ]),
+    ).toBe(
+      "@ChatGPTapp writing feature\nChat can now ask a few targeted questions to understand the context before it writes",
     );
   });
 });

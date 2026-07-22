@@ -27,6 +27,7 @@ This record contains no credential, Authorization header, selected private text 
 | V3 streamed mixed-name batch | Passed | 1,245 ms | First item 1,111 ms; 310 input / 49 output  |
 | V4 Fast page batch           | Passed | 1,909 ms | First item 1,398 ms; 405 input / 110 output |
 | V4 Precise page batch        | Passed | 1,683 ms | First item 1,147 ms; 406 input / 110 output |
+| V4.1 Natural Chinese tweet   | Passed | 1,288 ms | 109 chars; 365 input / 52 output tokens     |
 
 ## Controlled initial failure and fix
 
@@ -47,5 +48,7 @@ The V0.3 retest exercised the new source/target-language prompt and cache versio
 The V3 retest exercised the production streaming parser and the new mixed-name rule with `ChatGPT Work => ChatGPT HelpMeWithEverything?` plus the fixed harmless Codex sentence. Both ids returned, the mixed-name result differed from its source while preserving `ChatGPT`, and the first safe item was available before the full batch completed. Only timings, lengths, success flags and Provider-reported usage were retained; no output body was saved.
 
 The V4 comparison used six harmless X/TED/Reddit/generic representative segments. Fast and Precise each made exactly one bounded streaming request and returned all six strict ids. Fast used 515 total Token and Precise used 516. Fast completed in 1,909 ms with the first item at 1,398 ms; Precise completed in 1,683 ms with the first item at 1,147 ms. This one small-batch observation proves both modes function and that Fast stayed below two seconds, but it does **not** prove Fast is always faster: network/model variance made it 226 ms slower in this sample. Fast's deterministic throughput advantage is its larger 12-segment/12,000-character batch versus Precise's 6-segment/6,000-character batch, so a same-page long-session comparison remains a manual performance check.
+
+The V4.1 smoke used the owner's public `@ChatGPTapp writing feature` regression text after the controlled Chromium path had already proved that a translated page selection is restored to its original source. One Natural Chinese stream completed in 1,288 ms using 365 input + 52 output = 417 Token. The retained metadata proves the response contained Chinese, preserved `ChatGPTapp`, and did not leave the two targeted English sentences untranslated. The output body was inspected only in process and was not logged or saved; natural style remains an owner judgment rather than a metadata claim.
 
 After this V3 test, `.secrets/FloatRead-APIKEY.txt` remains locally present and Git-ignored because the owner explicitly requested that the low-limit test credential be retained. It is not tracked, built, packaged or scanned as repository content and must never be treated as a production credential.
