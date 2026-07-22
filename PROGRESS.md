@@ -660,3 +660,57 @@ Release evidence:
 - Real Provider calls this round: none; no new Token usage.
 
 Acceptance conclusion: repository, automated function and package quality gates passed. The exact live failure is now covered by startup recovery, but authenticated-X recovery still requires one owner Reload and click; it is not claimed as already observed.
+
+## Version 0.3.4 visible-first incremental translation round — 2026-07-22
+
+Owner acceptance report: after loading 0.3.3, the authenticated X page connected and displayed `正在翻译可见页面，已完成 0 处…`, but no text changed for more than ten seconds. The owner asked whether FloatRead was translating beyond the visible page.
+
+Live-X evidence and attribution:
+
+- A viewport screenshot showed multiple fully visible English posts and a connected active companion, excluding the prior disconnected-context cause.
+- A bounded read-only measurement of the real page found 72 text nodes intersecting the 1,920×855 viewport and 13 additional nodes inside the old 280-pixel below-viewport margin. Therefore 0.3.3 was not strictly viewport-only, although it was not scanning the entire timeline.
+- DOM-order samples began with clipped keyboard-shortcut assistance and left navigation labels. Because the scanner stopped after six accepted nodes, the first batch could precede the post body the owner was reading.
+- Production page batches used non-streaming completion and posted results only after validating the entire JSON object. A live request could therefore remain at zero until every item completed even when generation had begun.
+
+Controlled changes:
+
+- Text visibility now uses the text node's Range rectangle, rejects clipped/hidden/`aria-hidden` content and requires strict viewport intersection with no preloading margin.
+- Candidate collection ranks visible article content before UI labels, then follows visual top position. Menus still translate after content and remain cacheable.
+- Provider page output now streams. Only complete JSON item objects that pass the existing strict id/text schema are posted early; the full response is still validated before caching and batch completion.
+- DeepSeek streaming requests ask for usage metadata so input/output Token records remain available when the Provider supplies them.
+- The three changes are coupled to one user-visible latency path: scan less, select the currently read content first, and expose each safe result without waiting for unrelated batch items.
+
+Project-loop boundaries:
+
+- Changed variables: viewport boundary, first-batch priority and result-delivery timing.
+- Held constant: six-segment/6,000-character limits, child-list-only mutation observation, explicit user activation, Provider/model/profile, prompt text and version, cache key, one-retry limit, timeout, immediate Stop/abort, credentials and permissions.
+- Stopping condition for this loop is a real authenticated-X 0.3.4 run where the first visible post changes promptly, below-the-fold text waits for scrolling and a second click stops the active request.
+
+Knowledge-cycle After:
+
+- Before status: `no_relevant_hit`; the FloatRead project is not configured in the local knowledge connector, so no external/local candidate was adopted and no feedback query id exists.
+- Reusable candidate from current evidence: on virtualized dynamic pages, parent-element geometry can misclassify clipped accessibility text as visible; text-node Range geometry plus strict viewport intersection is the safer boundary. When an AI returns structured batches, validating and emitting complete individual objects provides visible progress without rendering incomplete JSON.
+- Evidence: the real-X 72/13 node measurement, DOM-order samples, new unit cases and Chromium below-viewport regression. This applies to client-side dynamic pages; it should be reconsidered for canvas content, cross-origin frames or layouts where Range rectangles are unavailable.
+- Suggested reception: retain in this project record until a configured knowledge consumer exists; it was not promoted to a global rule or Skill.
+
+Actual verification:
+
+| Command                 | Actual result                                                  |
+| ----------------------- | -------------------------------------------------------------- |
+| `pnpm lint`             | Passed, zero warnings                                          |
+| `pnpm typecheck`        | Passed                                                         |
+| `pnpm test`             | Passed: 23 files, 113 tests                                    |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                       |
+| `pnpm test:e2e`         | Passed: 18 real Chromium extension tests                       |
+| `pnpm format:check`     | Passed                                                         |
+| `pnpm package`          | Passed: build, two secret scans, ZIP verification and MV3 load |
+
+Release evidence:
+
+- ZIP: `release/FloatRead-v0.3.4.zip`
+- ZIP size: 436,667 bytes
+- SHA-256: `98cbbd5ca9059db0b33725ab6f5f3a6beae42019113303298288125825c984aa`
+- Secret scan: passed across tracked source, build and archive text files; no credential was printed or retained.
+- Real Provider calls this round: none; no new Token usage.
+
+Acceptance conclusion: formal repository, controlled function, automated quality and installable-package checks passed. The owner's authenticated X path is not claimed as passed until 0.3.4 is reloaded and observed through the three stopping-condition checks above.

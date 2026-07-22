@@ -2,6 +2,20 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.3.4] - 2026-07-22
+
+### Fixed
+
+- Restrict page translation to text intersecting the current viewport instead of preloading a 280-pixel margin above and below it.
+- Exclude clipped, hidden and accessibility-only text more reliably by measuring each text node rather than a large parent box.
+- Prioritize visible article content before navigation and menu labels, so the first request works on the text the user is reading.
+- Stream validated translation items back as each JSON item completes instead of waiting for the entire batch response.
+
+### Verified
+
+- Add strict below-viewport scanner and real Chromium extension regressions.
+- Add incremental JSON item parsing, early write-back and DeepSeek streaming usage tests.
+
 ## [0.3.3] - 2026-07-22
 
 ### Fixed

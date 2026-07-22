@@ -536,9 +536,22 @@ test("translates visible page text, follows dynamic menus, stops, resumes, and r
   await host.waitFor({ state: "attached" });
   const companion = host.locator("button.fr-companion");
 
+  await fixture.evaluate(() => {
+    const belowViewport = document.createElement("p");
+    belowViewport.id = "below-viewport";
+    belowViewport.lang = "en";
+    belowViewport.textContent = "This text is outside the current viewport and must wait.";
+    belowViewport.style.position = "absolute";
+    belowViewport.style.top = `${window.innerHeight + 120}px`;
+    document.body.append(belowViewport);
+  });
+
   await companion.click();
   await expect(fixture.locator("#source")).toHaveText("我们已重置受影响的 Codex 用户的使用限额。");
   await expect(fixture.locator("#multiline")).toContainText("页面译文：");
+  await expect(fixture.locator("#below-viewport")).toHaveText(
+    "This text is outside the current viewport and must wait.",
+  );
   const hostResetValue = await fixture.evaluate(async () => {
     const source = document.querySelector("#source");
     const node = source?.firstChild;

@@ -127,6 +127,30 @@ describe("Provider adapters", () => {
     });
   });
 
+  it("requests token usage while streaming DeepSeek page output", async () => {
+    const fetcher = fetchMock(
+      streamResponse(
+        'data: {"choices":[{"delta":{"content":"{\\"translations\\":[]}"}}],"usage":{"prompt_tokens":9,"completion_tokens":4}}\n\n' +
+          "data: [DONE]\n\n",
+      ),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    const events = await collect(
+      deepSeekAdapter.stream(
+        { ...REQUEST, responseFormat: "json_object" },
+        profile("deepseek"),
+        "sk-example-not-real",
+        new AbortController().signal,
+      ),
+    );
+    expect(events).toContainEqual({ type: "usage", inputTokens: 9, outputTokens: 4 });
+    const [, init] = fetcher.mock.calls[0] ?? [];
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      stream: true,
+      stream_options: { include_usage: true },
+    });
+  });
+
   it("uses Anthropic Messages headers and text delta events", async () => {
     const fetcher = fetchMock(
       streamResponse(

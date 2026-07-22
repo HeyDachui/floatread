@@ -3,7 +3,7 @@ import {
   buildPageTranslationPrompt,
   PAGE_TRANSLATION_PROMPT_VERSION,
 } from "../page-translation/prompt";
-import { completePageTranslationWithSingleRetry } from "../page-translation/complete";
+import { streamPageTranslationWithSingleRetry } from "../page-translation/complete";
 import { validateProviderUrl } from "../providers/config";
 import { getProviderAdapter } from "../providers/router";
 import { ProviderFailure } from "../providers/types";
@@ -167,10 +167,11 @@ async function runBatch(
     try {
       const adapter = getProviderAdapter(profile.kind);
       const secret = await getProviderSecret(profile.id, profile.secretStorageMode);
-      const results = await completePageTranslationWithSingleRetry(
-        async () => {
+      const streamedIds = new Set<string>();
+      const results = await streamPageTranslationWithSingleRetry(
+        async function* () {
           await addUsage(job.sessionId, { requests: 1 });
-          const completion = await adapter.complete(
+          yield* adapter.stream(
             {
               requestId: job.jobId,
               systemPrompt: prompt.systemPrompt,
@@ -183,29 +184,41 @@ async function runBatch(
             secret,
             job.controller.signal,
           );
-          await addUsage(job.sessionId, {
-            inputTokens: completion.inputTokens ?? 0,
-            outputTokens: completion.outputTokens ?? 0,
-            usageAvailable:
-              completion.inputTokens !== undefined && completion.outputTokens !== undefined,
-          });
-          return completion.text;
         },
         misses.map((item) => item.segment.id),
         job.controller.signal,
+        (id, text) => {
+          streamedIds.add(id);
+          post(port, {
+            type: "PAGE_SEGMENT_RESULT",
+            jobId: job.jobId,
+            id,
+            text,
+            cached: false,
+          });
+        },
+        async (inputTokens, outputTokens) => {
+          await addUsage(job.sessionId, {
+            inputTokens: inputTokens ?? 0,
+            outputTokens: outputTokens ?? 0,
+            usageAvailable: inputTokens !== undefined && outputTokens !== undefined,
+          });
+        },
       );
       const memoryWrites: Array<{ key: string; translation: string }> = [];
       for (const item of misses) {
         const translated = results.get(item.segment.id);
         if (!translated) continue;
         memoryWrites.push({ key: item.key, translation: translated });
-        post(port, {
-          type: "PAGE_SEGMENT_RESULT",
-          jobId: job.jobId,
-          id: item.segment.id,
-          text: translated,
-          cached: false,
-        });
+        if (!streamedIds.has(item.segment.id)) {
+          post(port, {
+            type: "PAGE_SEGMENT_RESULT",
+            jobId: job.jobId,
+            id: item.segment.id,
+            text: translated,
+            cached: false,
+          });
+        }
       }
       await putPageTranslationMemory(memoryWrites);
       await addUsage(job.sessionId, { translatedSegments: memoryWrites.length });

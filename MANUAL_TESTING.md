@@ -98,8 +98,9 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.3.3.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.3.4.zip`, not `dist-e2e`.
 - [ ] With X already open, press Reload for FloatRead in `chrome://extensions`; the existing page reconnects without requiring a page refresh.
+- [ ] Start page translation and confirm the first visible post changes before below-the-fold content; off-screen text waits until it enters the viewport.
 - [ ] `manifest.json` is MV3, version matches, CSP is local-only and permissions match `docs/PERMISSIONS.md`.
 - [ ] ZIP inventory contains no tests, source maps, `.env`, `.secrets`, logs, `node_modules` or unrelated screenshots.
 - [ ] `pnpm scan:secrets` and `pnpm verify:release` pass after packaging.

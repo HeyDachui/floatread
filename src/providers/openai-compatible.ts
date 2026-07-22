@@ -43,6 +43,7 @@ function requestInit(
         ? { response_format: { type: "json_object" } }
         : {}),
       ...(kind === "deepseek" ? { thinking: { type: "disabled" } } : {}),
+      ...(stream && kind === "deepseek" ? { stream_options: { include_usage: true } } : {}),
       stream,
     }),
     signal,

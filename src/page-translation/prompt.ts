@@ -10,19 +10,15 @@ export interface PageTranslationPromptSegment {
   sourceLanguage: TranslationLanguage;
 }
 
-export const pageTranslationResponseSchema = z
+const pageTranslationItemSchema = z
   .object({
-    translations: z
-      .array(
-        z
-          .object({
-            id: z.string().min(1).max(64),
-            text: z.string().min(1).max(16_000),
-          })
-          .strict(),
-      )
-      .max(12),
+    id: z.string().min(1).max(64),
+    text: z.string().min(1).max(16_000),
   })
+  .strict();
+
+export const pageTranslationResponseSchema = z
+  .object({ translations: z.array(pageTranslationItemSchema).max(12) })
   .strict();
 
 export function buildPageTranslationPrompt(
@@ -75,4 +71,55 @@ export function parsePageTranslationResponse(
   } catch {
     return null;
   }
+}
+
+export function parseCompletedPageTranslationItems(
+  raw: string,
+  expectedIds: string[],
+): Map<string, string> {
+  const results = new Map<string, string>();
+  const keyIndex = raw.search(/"translations"\s*:/u);
+  if (keyIndex < 0) return results;
+  const arrayStart = raw.indexOf("[", keyIndex);
+  if (arrayStart < 0) return results;
+
+  const expected = new Set(expectedIds);
+  let objectStart = -1;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = arrayStart + 1; index < raw.length; index += 1) {
+    const character = raw[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+    if (character === '"') {
+      inString = true;
+      continue;
+    }
+    if (character === "{") {
+      if (depth === 0) objectStart = index;
+      depth += 1;
+      continue;
+    }
+    if (character !== "}" || depth === 0) continue;
+    depth -= 1;
+    if (depth !== 0 || objectStart < 0) continue;
+    try {
+      const parsed = pageTranslationItemSchema.safeParse(
+        JSON.parse(raw.slice(objectStart, index + 1)) as unknown,
+      );
+      if (parsed.success && expected.has(parsed.data.id) && !results.has(parsed.data.id)) {
+        const text = parsed.data.text.trim();
+        if (text) results.set(parsed.data.id, text);
+      }
+    } catch {
+      // The complete response validator reports malformed output after streaming ends.
+    }
+    objectStart = -1;
+  }
+  return results;
 }

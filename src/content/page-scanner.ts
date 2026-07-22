@@ -30,23 +30,37 @@ function normalize(value: string): string {
   return value.normalize("NFC").replace(/\s+/gu, " ").trim();
 }
 
-function isVisible(element: HTMLElement, viewportMargin: number): boolean {
+function textRect(node: Text, element: HTMLElement): DOMRect {
+  const range = element.ownerDocument.createRange();
+  range.selectNodeContents(node);
+  const rangeWithRect = range as Range & { getBoundingClientRect?: () => DOMRect };
+  const rect = rangeWithRect.getBoundingClientRect?.() ?? element.getBoundingClientRect();
+  range.detach();
+  return rect;
+}
+
+function isVisible(node: Text, element: HTMLElement): { visible: boolean; top: number } {
   const style = getComputedStyle(element);
   if (
     style.display === "none" ||
     style.visibility === "hidden" ||
-    (style.opacity !== "" && Number(style.opacity) === 0)
+    (style.opacity !== "" && Number(style.opacity) === 0) ||
+    (style.clipPath !== "" && style.clipPath !== "none") ||
+    (style.clip !== "" && style.clip !== "auto") ||
+    element.closest("[aria-hidden='true'],[hidden]")
   ) {
-    return false;
+    return { visible: false, top: 0 };
   }
-  const rect = element.getBoundingClientRect();
-  if (rect.width === 0 && rect.height === 0) return false;
-  return (
-    rect.bottom >= -viewportMargin &&
-    rect.top <= window.innerHeight + viewportMargin &&
-    rect.right >= 0 &&
-    rect.left <= window.innerWidth
-  );
+  const rect = textRect(node, element);
+  if (rect.width === 0 && rect.height === 0) return { visible: false, top: rect.top };
+  return {
+    visible:
+      rect.bottom >= 0 &&
+      rect.top <= window.innerHeight &&
+      rect.right >= 0 &&
+      rect.left <= window.innerWidth,
+    top: rect.top,
+  };
 }
 
 function classify(element: HTMLElement, text: string): PageSegmentKind | null {
@@ -70,12 +84,11 @@ export function collectVisiblePageScan(
   const root = documentRef.body;
   if (!root) return { segments: [], detectedLanguages: [] };
   const walker = documentRef.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const segments: PageTextSegment[] = [];
-  let characters = 0;
+  const candidates: Array<{ segment: PageTextSegment; top: number; order: number }> = [];
   let counter = 0;
   const detected = new Set<TranslationLanguage>();
   let current = walker.nextNode();
-  while (current && segments.length < limit) {
+  while (current) {
     const node = current as Text;
     current = walker.nextNode();
     if (skipped.has(node)) continue;
@@ -83,12 +96,9 @@ export function collectVisiblePageScan(
     if (!element || element.closest(BLOCKED_SELECTOR)) continue;
     const original = node.nodeValue ?? "";
     const text = normalize(original);
-    if (
-      /^(?:https?:\/\/|www\.|@)[^\s]+$/iu.test(text) ||
-      text.length > 12_000 ||
-      !isVisible(element, 280)
-    )
-      continue;
+    if (/^(?:https?:\/\/|www\.|@)[^\s]+$/iu.test(text) || text.length > 12_000) continue;
+    const visibility = isVisible(node, element);
+    if (!visibility.visible) continue;
     const languageContainer = element.closest("[lang]");
     const sourceLanguage = detectTextLanguage(
       text,
@@ -103,15 +113,32 @@ export function collectVisiblePageScan(
       continue;
     const kind = classify(element, text);
     if (!kind) continue;
-    if (characters + text.length > maxCharacters) {
-      if (segments.length === 0 && text.length <= 12_000) {
-        segments.push({ id: `seg_${counter++}`, text, kind, node, original, sourceLanguage });
-        break;
-      }
+    candidates.push({
+      segment: { id: `seg_${counter}`, text, kind, node, original, sourceLanguage },
+      top: visibility.top,
+      order: counter,
+    });
+    counter += 1;
+  }
+
+  candidates.sort((left, right) => {
+    const kindOrder = Number(left.segment.kind === "ui") - Number(right.segment.kind === "ui");
+    if (kindOrder !== 0) return kindOrder;
+    if (left.top !== right.top) return left.top - right.top;
+    return left.order - right.order;
+  });
+
+  const segments: PageTextSegment[] = [];
+  let characters = 0;
+  for (const candidate of candidates) {
+    if (segments.length >= limit) break;
+    const { segment } = candidate;
+    if (characters + segment.text.length > maxCharacters) {
+      if (segments.length === 0 && segment.text.length <= 12_000) segments.push(segment);
       continue;
     }
-    segments.push({ id: `seg_${counter++}`, text, kind, node, original, sourceLanguage });
-    characters += text.length;
+    segments.push(segment);
+    characters += segment.text.length;
   }
   return { segments, detectedLanguages: [...detected] };
 }

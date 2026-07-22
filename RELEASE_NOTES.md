@@ -1,6 +1,6 @@
-# FloatRead 0.3.3 connection recovery release notes
+# FloatRead 0.3.4 visible-first translation release notes
 
-FloatRead 0.3.3 repairs the disconnected companion that can remain on an already-open X tab after an unpacked-extension reload. Every Manifest V3 Service Worker lifetime now checks declared-site tabs, leaves healthy contexts alone and replaces only stale contexts.
+FloatRead 0.3.4 makes page translation truly visible-first. It scans only text intersecting the current viewport, ignores clipped accessibility-only text, prioritizes article content over navigation, and writes each validated streamed translation immediately instead of waiting for a complete batch.
 
 ## Highlights
 
@@ -14,11 +14,11 @@ FloatRead 0.3.3 repairs the disconnected companion that can remain on an already
 
 ## Install
 
-Extract `release/FloatRead-v0.3.3.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. When updating the workspace build, press **Reload** once; an already-open X tab should reconnect without a page refresh. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
+Extract `release/FloatRead-v0.3.4.zip`, then load the extracted directory at `chrome://extensions` using **Load unpacked**. When updating the workspace build, press **Reload** once. The adjacent `.sha256` and `-files.txt` files are generated and verified by `pnpm package`.
 
 ## Verification status
 
-Automated results and exact commands are recorded in `PROGRESS.md`. This connection-only round made no real Provider call and consumed no new tokens. The earlier DeepSeek `deepseek-v4-flash` smoke remains historical Provider evidence, not evidence for this connection fix. Complete `MANUAL_TESTING.md` before store publication.
+Automated results and exact commands are recorded in `PROGRESS.md`. This round made no real Provider call and consumed no new tokens. The earlier DeepSeek `deepseek-v4-flash` smoke remains historical Provider evidence; real-X latency and visual quality still require the owner's post-reload check. Complete `MANUAL_TESTING.md` before store publication.
 
 ## Known release prerequisites
 

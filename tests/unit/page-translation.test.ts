@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildPageTranslationPrompt,
+  parseCompletedPageTranslationItems,
   parsePageTranslationResponse,
 } from "../../src/page-translation/prompt";
-import { completePageTranslationWithSingleRetry } from "../../src/page-translation/complete";
+import {
+  completePageTranslationWithSingleRetry,
+  streamPageTranslationWithSingleRetry,
+} from "../../src/page-translation/complete";
 import { ProviderFailure } from "../../src/providers/types";
 import { collectVisiblePageScan, collectVisiblePageSegments } from "../../src/content/page-scanner";
 import {
@@ -59,6 +63,41 @@ describe("page translation prompt", () => {
     ).rejects.toMatchObject({ publicError: { code: "INVALID_API_KEY" } });
     expect(forbidden).toHaveBeenCalledTimes(1);
   });
+
+  it("emits each completed streamed translation before the full batch finishes", async () => {
+    const onTranslation = vi.fn();
+    const onUsage = vi.fn();
+    const stream = async function* () {
+      yield { type: "start" } as const;
+      yield {
+        type: "delta",
+        text: '{"translations":[{"id":"seg_0","text":"第一段"},',
+      } as const;
+      expect(onTranslation).toHaveBeenCalledWith("seg_0", "第一段");
+      yield { type: "delta", text: '{"id":"seg_1","text":"第二段"}]}' } as const;
+      yield { type: "usage", inputTokens: 20, outputTokens: 8 } as const;
+      yield { type: "done" } as const;
+    };
+
+    await expect(
+      streamPageTranslationWithSingleRetry(
+        stream,
+        ["seg_0", "seg_1"],
+        new AbortController().signal,
+        onTranslation,
+        onUsage,
+      ),
+    ).resolves.toEqual(
+      new Map([
+        ["seg_0", "第一段"],
+        ["seg_1", "第二段"],
+      ]),
+    );
+    expect(onUsage).toHaveBeenCalledWith(20, 8);
+    expect(parseCompletedPageTranslationItems('{"translations":[{"id":"seg_0"', ["seg_0"])).toEqual(
+      new Map(),
+    );
+  });
 });
 
 describe("visible page scanner", () => {
@@ -82,8 +121,36 @@ describe("visible page scanner", () => {
     `;
     const segments = collectVisiblePageSegments(new Set());
     expect(segments.map(({ text, kind }) => ({ text, kind }))).toEqual([
-      { text: "Home timeline", kind: "ui" },
       { text: "A detailed post about browser translation quality.", kind: "content" },
+      { text: "Home timeline", kind: "ui" },
+    ]);
+  });
+
+  it("strictly excludes text below the viewport instead of preloading it", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      const top = Number(this.dataset.top ?? 0);
+      return {
+        x: 0,
+        y: top,
+        top,
+        left: 0,
+        right: 400,
+        bottom: top + 40,
+        width: 400,
+        height: 40,
+        toJSON: () => ({}),
+      };
+    });
+    document.body.innerHTML = `
+      <main>
+        <article><p lang="en" data-top="10">This post is inside the current viewport.</p></article>
+        <article><p lang="en" data-top="900">This post is below the current viewport.</p></article>
+      </main>
+    `;
+    expect(collectVisiblePageSegments(new Set()).map((segment) => segment.text)).toEqual([
+      "This post is inside the current viewport.",
     ]);
   });
 
