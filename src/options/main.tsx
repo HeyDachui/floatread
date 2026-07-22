@@ -48,8 +48,8 @@ const PROVIDER_ORDER: ProviderKind[] = [
 
 const DEFAULT_CACHE_POLICY: CachePolicy = {
   mode: "persistent",
-  ttlDays: 7,
-  maxEntries: 200,
+  ttlDays: 30,
+  maxEntries: 20_000,
   maxBytes: 10_000_000,
 };
 
@@ -99,6 +99,12 @@ export function OptionsApp(): React.JSX.Element {
     entries: 0,
     bytes: 0,
     expiredRemoved: 0,
+    recentEntries: 0,
+    recentBytes: 0,
+    longTermEntries: 0,
+    longTermBytes: 0,
+    reuseHits: 0,
+    estimatedTokensSaved: 0,
   });
   const [skins, setSkins] = useState<RuntimeSkinDefinition[]>([]);
   const [activeSkinId, setActiveSkinIdState] = useState("mochi");
@@ -1228,6 +1234,38 @@ export function OptionsApp(): React.JSX.Element {
           </span>
         </div>
         <p className="cache-intro">{t("cacheIntro")}</p>
+        <div className="usage-summary" aria-label={t("cacheTitle")}>
+          <div>
+            <span>{t("cacheLongTerm")}</span>
+            <strong>
+              {t(
+                "cacheUsage",
+                String(cacheStats.longTermEntries),
+                formatBytes(cacheStats.longTermBytes),
+              )}
+            </strong>
+          </div>
+          <div>
+            <span>{t("cacheRecent")}</span>
+            <strong>
+              {t(
+                "cacheUsage",
+                String(cacheStats.recentEntries),
+                formatBytes(cacheStats.recentBytes),
+              )}
+            </strong>
+          </div>
+          <div>
+            <span>{t("cacheReuse")}</span>
+            <strong>
+              {t(
+                "cacheReuseValue",
+                String(cacheStats.reuseHits),
+                String(cacheStats.estimatedTokensSaved),
+              )}
+            </strong>
+          </div>
+        </div>
         <div className="cache-controls">
           <label>
             <span>{t("cacheLocation")}</span>
@@ -1243,46 +1281,6 @@ export function OptionsApp(): React.JSX.Element {
               <option value="persistent">{t("cachePersistent")}</option>
               <option value="session">{t("cacheSession")}</option>
               <option value="off">{t("cacheOff")}</option>
-            </select>
-          </label>
-          <label>
-            <span>{t("cacheExpiry")}</span>
-            <select
-              value={cachePolicy.ttlDays}
-              onChange={(event) =>
-                setCachePolicy({ ...cachePolicy, ttlDays: Number(event.target.value) })
-              }
-            >
-              <option value={1}>{t("days", "1")}</option>
-              <option value={7}>{t("days", "7")}</option>
-              <option value={30}>{t("days", "30")}</option>
-              <option value={90}>{t("days", "90")}</option>
-            </select>
-          </label>
-          <label>
-            <span>{t("maxEntries")}</span>
-            <input
-              type="number"
-              min={1}
-              max={2_000}
-              value={cachePolicy.maxEntries}
-              onChange={(event) =>
-                setCachePolicy({ ...cachePolicy, maxEntries: Number(event.target.value) })
-              }
-            />
-          </label>
-          <label>
-            <span>{t("maxCapacity")}</span>
-            <select
-              value={cachePolicy.maxBytes}
-              onChange={(event) =>
-                setCachePolicy({ ...cachePolicy, maxBytes: Number(event.target.value) })
-              }
-            >
-              <option value={5_000_000}>5 MB</option>
-              <option value={10_000_000}>10 MB</option>
-              <option value={25_000_000}>25 MB</option>
-              <option value={50_000_000}>50 MB</option>
             </select>
           </label>
         </div>

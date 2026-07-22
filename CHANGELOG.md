@@ -2,6 +2,17 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.5.0] - 2026-07-22
+
+- Preserve the owner-tested 0.4.1 repository state as annotated Git tag `stable-v0.4.1` before starting this release.
+- Replace separate page/reading cache behavior with one automatic 10 MB local-memory service backed by trusted extension storage.
+- Use soft 5 MB targets for recent results and repeated long-term text; either tier may borrow unused capacity, while overflow reclaims the borrowing tier first.
+- Promote eligible UI text and short phrases after two cache reuses (the third encounter), retain long-term entries for up to one year, and invalidate naturally through the existing language/model/Prompt-aware hash key.
+- Migrate the legacy 2,000-record page memory lazily in requested batches so an upgrade cannot freeze page translation.
+- Add local counts for recent memory, long-term memory, reuse hits and conservative estimated Token savings.
+- Simplify Settings to automatic/session/off, statistics and clear; remove user-facing TTL, entry-count and MB controls.
+- Keep cache failures non-blocking and keep API keys, source text, sync storage and Content Script outside the memory database.
+
 ## [0.4.1] - 2026-07-22
 
 ### Fixed

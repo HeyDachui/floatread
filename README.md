@@ -2,7 +2,7 @@
 
 FloatRead is a free, source-available, serverless, bring-your-own-key page translator for Chromium browsers. Translation starts only when the user clicks the companion, then progressively handles visible content in the selected source languages. Main content receives natural translation, while menus reuse persistent local translation memory. Selection reading remains available for deeper analysis.
 
-> Current release: `0.4.1`. Page translation defaults to English; users can select Fast, Smart or Precise, add source languages and choose one target language.
+> Current development release: `0.5.0`. The owner-tested `0.4.1` baseline remains available as Git tag `stable-v0.4.1`. Page translation defaults to English; users can select Fast, Smart or Precise, add source languages and choose one target language.
 
 [简体中文](README.zh-CN.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Manual testing](MANUAL_TESTING.md)
 
@@ -22,6 +22,7 @@ Request counts, cache hits, and Provider-reported input/output/total tokens are 
 - One to five source languages and one target language; the extension UI itself remains Chinese/English.
 - A local detected-language choice: this time, always on this site, or ignore—without an AI call before consent.
 - Local per-session request, cache-hit and input/output/total token accounting from Start to Stop.
+- Automatic 10 MB local translation memory: repeated short/functional text can graduate from recent memory to a protected long-term tier; the two 5 MB targets borrow unused space from each other.
 - Hidden pages submit no new Provider batch and resume only when the user returns without explicitly stopping.
 - Enhanced semantic profiles for X, TED and Reddit, with a generic active-tab fallback elsewhere.
 - Precision translation for article/post content and concise translation for navigation, menus and buttons.
@@ -49,7 +50,7 @@ Release screenshots are intentionally not fabricated. Maintainers should capture
 
 ## Install a release build
 
-1. Obtain `FloatRead-v0.4.1.zip` and verify its SHA-256 against the adjacent `.sha256` file.
+1. Obtain `FloatRead-v0.5.0.zip` and verify its SHA-256 against the adjacent `.sha256` file.
 2. Extract the ZIP to a permanent local folder.
 3. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. Open FloatRead settings, add a Provider, grant the exact endpoint origin when prompted, and test the connection.

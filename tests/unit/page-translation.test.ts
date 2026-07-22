@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildPageTranslationPrompt,
@@ -336,5 +337,30 @@ describe("persistent page translation state", () => {
       alwaysTranslate: [],
       ignored: [],
     });
+  });
+
+  it("moves only requested legacy records into automatic memory", async () => {
+    const key = "b".repeat(64);
+    const untouchedKey = "c".repeat(64);
+    const values: Record<string, unknown> = {
+      pageTranslationMemoryV1: [
+        { key, translation: "账户设置", updatedAt: 1 },
+        { key: untouchedKey, translation: "未请求", updatedAt: 1 },
+      ],
+    };
+    vi.stubGlobal("chrome", {
+      storage: {
+        local: {
+          get: vi.fn(async (storageKey: string) => ({ [storageKey]: values[storageKey] })),
+          set: vi.fn(async (items: Record<string, unknown>) => Object.assign(values, items)),
+          remove: vi.fn(async (storageKey: string) => delete values[storageKey]),
+        },
+      },
+    });
+
+    await expect(getPageTranslationMemory([key])).resolves.toEqual(new Map([[key, "账户设置"]]));
+    expect(values.pageTranslationMemoryV1).toEqual([
+      { key: untouchedKey, translation: "未请求", updatedAt: 1 },
+    ]);
   });
 });

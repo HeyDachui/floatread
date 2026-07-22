@@ -292,6 +292,20 @@ test("reuses an identical result from cache without running Mock again", async (
     "Mock 自然中文：A unique cache proof passage for FloatRead.",
   );
   await expect(panel.locator(".fr-provider-tag")).toContainText(/缓存|cached/u);
+  await panel.getByRole("button", { name: /关闭结果面板|Close result panel/u }).click();
+  await companion.click({ button: "right" });
+  await host.getByRole("menuitem", { name: naturalMode }).click();
+  await expect(panel.locator(".fr-provider-tag")).toContainText(/缓存|cached/u);
+
+  const worker = context.serviceWorkers()[0];
+  if (!worker) throw new Error("extension service worker missing");
+  const extensionId = new URL(worker.url()).host;
+  const settings = await context.newPage();
+  await settings.goto(`chrome-extension://${extensionId}/src/options/index.html`);
+  await expect(settings.locator(".cache-card .usage-summary > div").first()).toContainText(
+    /[1-9]\d* (?:条|entries)/u,
+  );
+  await settings.close();
   await page.close();
 });
 
@@ -374,6 +388,9 @@ test("switches the settings interface between English and Simplified Chinese", a
   await expect(page.getByRole("heading", { name: "FloatRead 设置" })).toBeVisible();
   await localeSelect.selectOption("en");
   await expect(page.getByRole("heading", { name: "FloatRead settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Automatic local memory" })).toBeVisible();
+  await expect(page.locator(".cache-card .cache-controls select")).toHaveValue("persistent");
+  await expect(page.getByText(/Maximum entries|Maximum size|Expiry/u)).toHaveCount(0);
   await page.getByRole("button", { name: /添加一种语言|Add a language/u }).click();
   const sourceLanguages = page.locator(".language-row select");
   await expect(sourceLanguages).toHaveCount(2);
