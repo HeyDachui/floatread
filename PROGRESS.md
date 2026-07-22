@@ -981,3 +981,19 @@ Current status and stopping condition:
 - Core production and unit-level controlled behavior is implemented.
 - Remaining before completion: full integration/E2E rerun, production package/secret scan, installed settings-memory UI inspection, 0.5.0 commit and release hashes.
 - Keep 0.4.1 stable unchanged. Stop and return to the stable artifact if 0.5.0 changes page translation, cancellation, API-key isolation or visible-page responsiveness.
+
+### 0.5.0 automated release-candidate verification
+
+- Implementation commit: `ec8175c` on `feature/automatic-memory-v0.5.0`.
+- Final `pnpm run ci`: passed lint, strict typecheck, 27/136 unit tests, 2/2 integration tests, production build/dist/secret checks and 19/19 Chromium extension tests.
+- Final `pnpm package`: passed production build, 20-file dist verification, secret scan, ZIP creation, 20-entry ZIP verification, production MV3 Service Worker/three-page load and second secret scan.
+- Release candidate: `release/FloatRead-v0.5.0.zip`, 445,775 bytes, SHA-256 `521beb3e012b33b185b257bf97a1d61af1289646ec02eded8d9c71edd9332812`.
+- Production Manifest is 0.5.0 with the unchanged permission set and no `unlimitedStorage` request.
+- Production-delivery acceptance: formal existence, functional operation and automated quality passed. Real owner use on authenticated live sites remains unknown for 0.5.0, so it is ready for owner testing but is not promoted over `stable-v0.4.1` yet.
+
+Project-loop conclusion:
+
+- Actual change: repeated short/function translations now affect later runs through local promotion and measured reuse, while unique recent results remain bounded and disposable.
+- Main eliminated risk: migration and page-batch writes are bounded; neither performs a full 2,000-record rewrite or one full capacity scan per segment.
+- Kept invariant: cache failure is only a miss; it cannot block Stop, page translation, precision reading or Provider completion.
+- Next deciding evidence: owner compares 0.5.0 with the accepted 0.4.1 path on live X/TED, repeats one menu phrase three times, checks the memory card and confirms page responsiveness. Promote only if those observations agree with automation.
