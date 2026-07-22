@@ -929,3 +929,12 @@ Acceptance conclusion:
 - Owner result: no problem observed. This closes the reported translated-selection, Natural Chinese spinner/Stop, connection stability and page responsiveness loop for the tested X/TED paths.
 - Acceptance scope is limited to the owner's tested X and TED sessions. Reddit remains untested by the owner and is not marked passed.
 - Project-loop status: stop this repair loop because automated regressions, real Provider metadata, installable package and owner live-use observation now agree. Reopen only if a reproducible X/TED regression appears or Reddit reveals a distinct platform issue.
+
+### External AI audit excerpt triage — 2026-07-22
+
+- Source: owner-relayed excerpt from an external AI audit of the 0.4.1 source package; auditor identity/task id was not supplied. The omitted positive portion is not treated as inspectable evidence.
+- Medium hidden-tab finding: accepted as an unresolved real-Chrome verification gap, not a confirmed defect. Immediate cancellation was not adopted because it conflicts with the approved one-in-flight-batch rule and cannot guarantee remote usage recovery after an abort.
+- Low pet finding: accepted as subjective UX feedback; no security or code change.
+- Low performance finding: accepted. Manual and release wording now measure Fast/Precise without promising Fast wins every individual call.
+- Full decision record: `docs/AUDIT_RESPONSE_0.4.1.md`.
+- Handoff closure for the supplied excerpt: triage complete; no code defect confirmed. Real Chrome background >45 seconds/worker inactivity remains the next manual release trigger.

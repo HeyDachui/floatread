@@ -17,12 +17,13 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Clicking the companion starts translation with or without a leftover selection; clicking it again stops immediately.
 - [ ] Settings can add 1–5 source languages and one target language; unselected languages remain unchanged.
 - [ ] Fast, Smart and Precise can each be selected; migrated 0.3.x settings start as Precise and a fresh profile starts as Smart.
-- [ ] On the same visible page and Provider, Fast is observably quicker than Precise without becoming an inaccurate word-for-word translation.
+- [ ] On the same sufficiently long visible page and Provider, record Fast and Precise first-result and completion times plus translation quality; do not require or claim that Fast wins every individual request.
 - [ ] A newly detected language offers This time / Always on this site / Ignore; no Provider request occurs before the choice.
 - [ ] Visible tweet/article text is translated naturally; navigation/menu/button text is concise.
 - [ ] Infinite timeline content outside the visible/near-visible window is not preloaded.
 - [ ] Scrolling progressively translates newly visible posts.
-- [ ] Switching the page to the background submits no new batch; at most one in-flight batch finishes, and returning resumes only if Stop was not clicked.
+- [ ] Start a long translation, note request/Token totals, switch to another tab for more than 45 seconds, then return: no new hidden-page batch was submitted, at most one in-flight batch finished, and translation resumes only if Stop was not clicked.
+- [ ] Repeat the background test after allowing the Manifest V3 worker to become inactive; repeated hidden-page Token growth, more than one new batch, or resume after Stop is a release-blocking failure.
 - [ ] Opening a dynamic menu translates its text; reopening the same menu uses local translation memory.
 - [ ] Stop immediately prevents new translations and late results cannot restart processing.
 - [ ] Translation progress remains visible with the completed count; it does not disappear after the former 2.5-second toast timeout.
