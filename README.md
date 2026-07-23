@@ -133,7 +133,7 @@ Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.
 
 ## Project links
 
-The current source defaults point to the provisional [FloatRead GitHub organization](https://github.com/floatread), [repository](https://github.com/floatread/floatread) and its other open-source projects. Update the centralized branding configuration when the canonical public URLs are assigned.
+Maintainer: [HeyDachui](https://github.com/HeyDachui). Repository: [HeyDachui/floatread](https://github.com/HeyDachui/floatread). Please use repository Issues for feedback.
 
 ## License
 

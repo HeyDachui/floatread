@@ -1,9 +1,9 @@
 export const BRANDING = {
   productName: "FloatRead",
-  productNameZh: "浮读",
-  authorName: "FloatRead Contributors",
-  authorUrl: "https://github.com/floatread",
-  githubUrl: "https://github.com/floatread/floatread",
-  otherProjectsUrl: "https://github.com/floatread",
-  supportUrl: "https://github.com/floatread/floatread/issues",
+  productNameZh: "锤子点读机",
+  authorName: "HeyDachui",
+  authorUrl: "https://github.com/HeyDachui",
+  githubUrl: "https://github.com/HeyDachui/floatread",
+  otherProjectsUrl: "https://github.com/HeyDachui",
+  supportUrl: "https://github.com/HeyDachui/floatread/issues",
 } as const;

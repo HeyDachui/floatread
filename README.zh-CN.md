@@ -135,7 +135,7 @@ FloatRead 不请求历史记录、Cookie、下载记录、广泛标签页访问�
 
 ## 作者与项目入口
 
-当前默认入口为临时的 [FloatRead GitHub 组织](https://github.com/floatread)、[项目仓库](https://github.com/floatread/floatread) 与其他项目。确定正式公开地址后，应统一修改品牌配置。
+维护者：[HeyDachui](https://github.com/HeyDachui)。项目仓库：[HeyDachui/floatread](https://github.com/HeyDachui/floatread)。问题反馈请使用仓库 Issues。
 
 ## 许可证
 
