@@ -2,7 +2,7 @@
 
 FloatRead is a free, source-available, serverless, bring-your-own-key page translator for Chromium browsers. Translation starts only when the user clicks the companion, then progressively handles visible content in the selected source languages. Main content receives natural translation, while menus reuse persistent local translation memory. Selection reading remains available for deeper analysis.
 
-> Current release: `0.4.1`. Page translation defaults to English; users can select Fast, Smart or Precise, add source languages and choose one target language. Publisher links are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
+> Current release: `0.4.1`. Page translation defaults to English; users can select Fast, Smart or Precise, add source languages and choose one target language.
 
 [简体中文](README.zh-CN.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Manual testing](MANUAL_TESTING.md)
 
