@@ -1103,9 +1103,12 @@ Regression evidence:
 | `pnpm test:integration` | Passed: 2 files, 2 tests            |
 | `pnpm build`            | Passed production MV3 build         |
 | `pnpm test:e2e`         | Passed: 20 Chromium extension tests |
+| `pnpm package`          | Passed packaging and release checks |
 
 Project-loop conclusion:
 
 - Actual improvement: TED and other HTTPS sites now have an understandable, explicit activation path instead of relying on an undiscoverable shortcut.
 - Preserved invariants: exact-origin permission, packaged code only, no automatic page reading before approval, one Shadow DOM host, X behavior unchanged and no broad permanent `<all_urls>` permission.
 - Remaining owner check: reload the development extension, open TED, click “在当前网站启用”, accept Chrome's prompt, then verify the pet appears immediately and after one TED page reload.
+- Implementation commit: `9bf9921` (`fix: enable FloatRead on explicit non-X sites`).
+- Updated release candidate: `release/FloatRead-v0.5.0.zip`, 698,400 bytes, SHA-256 `f06968aa2423a07f0fb0d02b117790b17a1aad8c115bfa328ebef888d9ff50ae`.
