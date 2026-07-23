@@ -28,9 +28,11 @@ const archive = unzipSync(zipBytes);
 const archiveNames = Object.keys(archive).sort();
 const distFiles = await listFiles(distRoot);
 const distNames = distFiles.map((path) => relative(distRoot, path).replaceAll("\\", "/")).sort();
+const releaseOnlyNames = ["NOTICE.txt"];
+const expectedArchiveNames = [...distNames, ...releaseOnlyNames].sort();
 
-if (JSON.stringify(archiveNames) !== JSON.stringify(distNames)) {
-  throw new Error("release ZIP file list does not exactly match dist");
+if (JSON.stringify(archiveNames) !== JSON.stringify(expectedArchiveNames)) {
+  throw new Error("release ZIP file list does not match dist plus required release notices");
 }
 
 function requireEntry(name: string): Uint8Array {
@@ -57,6 +59,17 @@ for (const name of archiveNames) {
   const data = requireEntry(name);
   if (data.byteLength === 0) {
     throw new Error(`empty release entry: ${name}`);
+  }
+  if (releaseOnlyNames.includes(name)) {
+    const text = new TextDecoder().decode(data);
+    if (
+      !text.includes("PolyForm Noncommercial License 1.0.0") ||
+      !text.includes("https://polyformproject.org/licenses/noncommercial/1.0.0") ||
+      !text.includes("Required Notice:")
+    ) {
+      throw new Error(`invalid release notice: ${name}`);
+    }
+    continue;
   }
   const distBytes = await readFile(resolve(distRoot, name));
   if (!Buffer.from(data).equals(distBytes)) {
