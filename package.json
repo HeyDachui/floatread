@@ -2,7 +2,7 @@
   "name": "floatread",
   "version": "0.4.1",
   "private": true,
-  "description": "Open-source, serverless BYOK reading companion for Chromium browsers.",
+  "description": "Free, source-available, noncommercial BYOK reading companion for Chromium browsers.",
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "engines": {

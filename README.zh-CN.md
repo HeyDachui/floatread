@@ -1,10 +1,18 @@
-# FloatRead（浮读）
+# FloatRead（锤子点读机）
 
-FloatRead 是一个开源、无开发者服务器、用户自带 API Key 的 Chromium 页面翻译助手。用户点击宠物开始后，它会随滚动翻译可见内容：正文优先自然翻译，菜单与控件使用持久本地翻译记忆；选区精读保留为辅助功能。
+> 本工具纯公开源码，旨在帮助更多同学、朋友更好地学习、工作；不收取任何费用、没有任何盈利点。请不要用于任何商业用途。
+
+FloatRead 是一个无开发者服务器、用户自带 API Key 的 Chromium 页面翻译助手。用户点击宠物开始后，它会随滚动翻译可见内容：正文优先自然翻译，菜单与控件使用持久本地翻译记忆；选区精读保留为辅助功能。
 
 > 当前版本：`0.4.1`。页面翻译默认只处理英语；用户可选择快速、智能或精细档，添加其他源语言并选择统一目标语言。源码中的发布者链接是集中管理的临时默认值；公开发布前应修改 `src/config/branding.ts`。
 
 [English](README.md) · [隐私说明](PRIVACY.md) · [安全政策](SECURITY.md) · [人工测试](MANUAL_TESTING.md)
+
+## 它怎样尽量节省 Token
+
+FloatRead 不会把整张网页、无限时间线或每一次滚动都重新交给模型。用户主动开启后，它只逐步处理当前可见区域；重复出现的菜单、按钮和短句优先复用本地翻译记忆；快速跨页时优先处理稳定后的当前屏幕；页面在后台时也不提交新批次。正文采用自然翻译，界面标签采用更简洁的翻译。
+
+从“开始”到“停止”的请求数、缓存命中，以及 Provider 返回的输入／输出／总 Token 都只保存在本机。它减少不必要的请求与重复输入，但不承诺固定节省比例或固定费用；实际消耗取决于页面、模式、模型、Provider 价格与缓存命中情况。
 
 ## 功能
 
@@ -125,10 +133,10 @@ FloatRead 不请求历史记录、Cookie、下载记录、广泛标签页访问�
 - 增加更多不可执行的社区皮肤。
 - 在不破坏隐私边界的前提下提供更细的 Provider 诊断。
 
-## 作者与开源项目入口
+## 作者与项目入口
 
-当前默认入口为临时的 [FloatRead GitHub 组织](https://github.com/floatread)、[项目仓库](https://github.com/floatread/floatread) 与其他开源项目。确定正式公开地址后，应统一修改品牌配置。
+当前默认入口为临时的 [FloatRead GitHub 组织](https://github.com/floatread)、[项目仓库](https://github.com/floatread/floatread) 与其他项目。确定正式公开地址后，应统一修改品牌配置。
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 FloatRead Contributors。
+[PolyForm Noncommercial 1.0.0](LICENSE) © 2026 FloatRead Contributors。允许非商业使用、学习、修改和分享；商业使用须另行获得维护者许可。详见 [商业使用说明](COMMERCIAL_USE.md)。

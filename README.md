@@ -1,10 +1,16 @@
 # FloatRead
 
-FloatRead is an open-source, serverless, bring-your-own-key page translator for Chromium browsers. Translation starts only when the user clicks the companion, then progressively handles visible content in the selected source languages. Main content receives natural translation, while menus reuse persistent local translation memory. Selection reading remains available for deeper analysis.
+FloatRead is a free, source-available, serverless, bring-your-own-key page translator for Chromium browsers. Translation starts only when the user clicks the companion, then progressively handles visible content in the selected source languages. Main content receives natural translation, while menus reuse persistent local translation memory. Selection reading remains available for deeper analysis.
 
 > Current release: `0.4.1`. Page translation defaults to English; users can select Fast, Smart or Precise, add source languages and choose one target language. Publisher links are centralized provisional defaults; forks should update `src/config/branding.ts` before publishing.
 
 [简体中文](README.zh-CN.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Manual testing](MANUAL_TESTING.md)
+
+## How FloatRead avoids unnecessary token use
+
+FloatRead does not send an entire page, an infinite timeline, or every scroll event to a model again. After the user starts translation, it progressively handles the visible viewport, reuses local translations for repeated short and functional text, prioritizes the settled viewport after a fast jump, and does not submit new batches while a page is hidden. Main content uses natural translation while UI labels use concise translation.
+
+Request counts, cache hits, and Provider-reported input/output/total tokens are recorded locally for the current Start-to-Stop session. These measures reduce avoidable requests and duplicate input; they do not promise a fixed token saving or cost because actual use depends on the page, mode, model, Provider pricing, and cache hits.
 
 ## What it does
 
@@ -131,4 +137,4 @@ The current source defaults point to the provisional [FloatRead GitHub organizat
 
 ## License
 
-[MIT](LICENSE) © 2026 FloatRead Contributors.
+[PolyForm Noncommercial 1.0.0](LICENSE) © 2026 FloatRead Contributors. Noncommercial use, study, modification, and sharing are welcome; commercial use requires separate permission from the maintainer. See [Commercial Use](COMMERCIAL_USE.md).
