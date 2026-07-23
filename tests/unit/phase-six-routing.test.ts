@@ -72,6 +72,7 @@ describe("Phase 6 command and localization boundaries", () => {
         origin: "https://untrusted.example",
       }).success,
     ).toBe(false);
+    expect(trustedToBackgroundSchema.safeParse({ type: "ENABLE_CURRENT_SITE" }).success).toBe(true);
   });
 
   it("serves matching Chinese and English catalogs with placeholders", () => {

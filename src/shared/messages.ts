@@ -95,6 +95,12 @@ export const trustedToBackgroundSchema = z.discriminatedUnion("type", [
     .strict(),
   z
     .object({
+      type: z.literal("ENABLE_CURRENT_SITE"),
+      targetTabId: z.number().int().positive().optional(),
+    })
+    .strict(),
+  z
+    .object({
       type: z.literal("SET_CURRENT_TAB_COMPANION"),
       visible: z.boolean(),
       targetTabId: z.number().int().positive().optional(),

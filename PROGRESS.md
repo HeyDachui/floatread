@@ -1076,3 +1076,36 @@ Project-loop conclusion:
 - Actual improvement: fast navigation no longer lets an unfinished old viewport monopolize the translation lane; current reading position becomes the next bounded batch.
 - Preserved invariants: explicit activation, one current batch, direct-text replacement, immediate Stop, no hidden-tab batches, same Provider/cache identity and no new permission.
 - Remaining observation: real mouse-wheel/touchpad feel and the subjective 0.85-screen threshold require owner use on live X/TED/Reddit. Automation proves the state transition and rendered response, not the owner's preferred sensitivity.
+
+## Version 0.5.0 non-X site activation repair — 2026-07-23
+
+Object and acceptance gap:
+
+- X loaded automatically because it is a declared Manifest site, while TED depended on a temporary user gesture.
+- The simplified Popup had removed the only discoverable activation action, so a normal user could not see how to enable TED.
+- Stable 0.4.1 remains unchanged; this repair is confined to `feature/automatic-memory-v0.5.0`.
+
+Implemented change:
+
+- Popup now shows “在当前网站启用 / Enable on this site” when the active HTTPS origin has not been enabled.
+- The click explains and requests only `${origin}/*`; denial leaves the page untouched and displays a local explanation.
+- After approval, Background verifies the permission, registers the packaged Content Script for that exact origin with session persistence, injects the current tab immediately and clears any previous site pause.
+- X/Twitter retain their declared automatic path. Registered sites and active translation jobs remain keyed per tab/origin; this does not impose a one-site limit.
+- Service Worker recovery now also reconnects open tabs belonging to explicitly registered sites.
+
+Regression evidence:
+
+| Command                 | Actual result                       |
+| ----------------------- | ----------------------------------- |
+| `pnpm lint`             | Passed, zero warnings               |
+| `pnpm typecheck`        | Passed                              |
+| `pnpm test`             | Passed: 28 files, 145 tests         |
+| `pnpm test:integration` | Passed: 2 files, 2 tests            |
+| `pnpm build`            | Passed production MV3 build         |
+| `pnpm test:e2e`         | Passed: 20 Chromium extension tests |
+
+Project-loop conclusion:
+
+- Actual improvement: TED and other HTTPS sites now have an understandable, explicit activation path instead of relying on an undiscoverable shortcut.
+- Preserved invariants: exact-origin permission, packaged code only, no automatic page reading before approval, one Shadow DOM host, X behavior unchanged and no broad permanent `<all_urls>` permission.
+- Remaining owner check: reload the development extension, open TED, click “在当前网站启用”, accept Chrome's prompt, then verify the pet appears immediately and after one TED page reload.

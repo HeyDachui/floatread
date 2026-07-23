@@ -6,6 +6,7 @@ export const popupStateSchema = z
   .object({
     globalEnabled: z.boolean(),
     supportedPage: z.boolean(),
+    siteAccess: z.boolean(),
     currentOrigin: z.string().max(2_048).nullable(),
     sitePaused: z.boolean(),
     companionVisible: z.boolean(),

@@ -7,10 +7,14 @@ import { PopupApp } from "../../src/popup/main";
 
 const native = BUILTIN_SKINS[0]!;
 
-function installChrome(): { sendMessage: ReturnType<typeof vi.fn> } {
+function installChrome(siteAccess = true): {
+  sendMessage: ReturnType<typeof vi.fn>;
+  requestPermission: ReturnType<typeof vi.fn>;
+} {
   const popupState = {
     globalEnabled: true,
     supportedPage: true,
+    siteAccess,
     currentOrigin: "https://example.com",
     sitePaused: false,
     companionVisible: true,
@@ -21,8 +25,10 @@ function installChrome(): { sendMessage: ReturnType<typeof vi.fn> } {
   };
   const sendMessage = vi.fn(async (message: { type: string }) => {
     if (message.type === "LIST_RUNTIME_SKINS") return { ok: true, data: BUILTIN_SKINS };
+    if (message.type === "ENABLE_CURRENT_SITE") popupState.siteAccess = true;
     return { ok: true, data: popupState };
   });
+  const requestPermission = vi.fn(async () => true);
   vi.stubGlobal("chrome", {
     i18n: { getUILanguage: () => "en-US" },
     runtime: {
@@ -31,9 +37,10 @@ function installChrome(): { sendMessage: ReturnType<typeof vi.fn> } {
       getURL: (path: string) => `chrome-extension://test/${path}`,
     },
     tabs: { create: vi.fn(async () => undefined) },
+    permissions: { request: requestPermission },
     storage: { local: { set: vi.fn(async () => undefined) } },
   });
-  return { sendMessage };
+  return { sendMessage, requestPermission };
 }
 
 afterEach(() => {
@@ -55,6 +62,21 @@ describe("Phase 6 extension pages", () => {
         enabled: false,
       }),
     );
+  });
+
+  it("requests exact-origin access before enabling FloatRead on a non-X site", async () => {
+    const chromeMock = installChrome(false);
+    const user = userEvent.setup();
+    render(<PopupApp />);
+
+    await user.click(await screen.findByRole("button", { name: "Enable on this site" }));
+    expect(chromeMock.requestPermission).toHaveBeenCalledWith({
+      origins: ["https://example.com/*"],
+    });
+    await waitFor(() =>
+      expect(chromeMock.sendMessage).toHaveBeenCalledWith({ type: "ENABLE_CURRENT_SITE" }),
+    );
+    expect(await screen.findByText("Available on this site")).toBeVisible();
   });
 
   it("walks a fresh user through the local no-Provider demo", async () => {

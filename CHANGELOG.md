@@ -4,6 +4,9 @@ All notable changes are documented here. The project follows semantic versioning
 
 ## [0.5.0] - 2026-07-22
 
+- Add a visible “Enable on this site” Popup action for TED and other non-X HTTPS sites.
+- Request only the current exact Origin, inject immediately after approval and register the packaged Content Script for future visits to that site.
+- Keep X/Twitter automatic loading unchanged and keep unauthorized pages untouched.
 - Expand the built-in companion system from one pet to three original pets: Mochi, Maple the red panda and Piko the penguin.
 - Give Maple and Piko five authored visual states—idle, content found, translating, complete and error—plus click, walk, turn, idle and rapid-scroll reactions.
 - Rework Settings into visual Pet companions and Other appearances groups with thumbnails and localized state labels.

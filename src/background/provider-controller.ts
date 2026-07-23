@@ -31,6 +31,7 @@ import {
 import { clearUsageSessions, getLatestUsageSession, listUsageSessions } from "../storage/usage";
 import { getActiveTab, injectAndSend, isInjectableUrl } from "./injection";
 import { cancelPageTranslationForTab } from "./page-translation-manager";
+import { enablePersistentSite, hasPersistentSiteAccess } from "./site-access";
 
 async function sendToOpenContent(
   type: "SHOW_COMPANION" | "HIDE_COMPANION" | "REFRESH_COMPANION",
@@ -131,6 +132,7 @@ async function getPopupState(targetTabId?: number): Promise<unknown> {
   return {
     globalEnabled: settings.enabled,
     supportedPage,
+    siteAccess: await hasPersistentSiteAccess(tab?.url),
     currentOrigin: pageOrigin(tab?.url),
     sitePaused: await isSitePaused(tab?.url),
     companionVisible,
@@ -280,6 +282,32 @@ export async function routeTrustedProviderMessage(
         } else {
           await injectAndSend(tab, { type: "SHOW_COMPANION" });
         }
+      }
+      return { ok: true, data: await getPopupState(message.targetTabId) };
+    }
+    case "ENABLE_CURRENT_SITE": {
+      const settings = await getSettings();
+      const tab = await getTargetTab(message.targetTabId);
+      if (!tab || !settings.enabled || !isInjectableUrl(tab.url)) {
+        return {
+          ok: false,
+          error: { code: "INVALID_MESSAGE", message: "当前页面无法启用 FloatRead。" },
+        };
+      }
+      try {
+        await setSitePaused(tab.url, false);
+        await enablePersistentSite(tab);
+      } catch (error) {
+        return {
+          ok: false,
+          error: {
+            code: "INVALID_MESSAGE",
+            message:
+              error instanceof Error && error.message === "HOST_PERMISSION_DENIED"
+                ? "尚未授权访问当前网站。"
+                : "当前页面无法启用 FloatRead。",
+          },
+        };
       }
       return { ok: true, data: await getPopupState(message.targetTabId) };
     }

@@ -100,12 +100,15 @@ FloatRead 不会收到你的 Key，但浏览器客户端存储不是硬件保险
 | `storage`          | 保存设置、网站翻译偏好、缓存、皮肤与用户选择的凭据模式。 |
 | `contextMenus`     | 用户对选中文字主动使用三种阅读模式。                     |
 | `activeTab`        | 用户点击工具栏或快捷键后，临时在当前非 X 页面启用。      |
-| `scripting`        | 在上述用户手势后挂载或移除唯一宿主节点。                 |
+| `scripting`        | 挂载唯一宿主节点，并为用户明确启用的精确网站注册脚本。   |
 | X/Twitter 明确域名 | 用户开启后渐进翻译可见 X 文本，不依赖私有推文选择器。    |
-| 可选 HTTPS 域名    | 用户配置 Provider 时才申请对应精确 Origin。              |
+| 可选 HTTPS 域名    | 用户选择的 Provider 和主动启用网站的精确 Origin。        |
 | 可选 localhost     | 用户自己的 Ollama 或本地代理。                           |
 
 FloatRead 不请求历史记录、Cookie、下载记录、广泛标签页访问、webRequest 或永久 `<all_urls>`。完整说明见 [权限说明](docs/PERMISSIONS.md)。
+
+X 在既有明确权限下自动加载。TED 等其他 HTTPS 网站需要打开 Popup，点击“在当前网站启用”；Chrome
+只申请当前精确 Origin，批准后立即显示，并记住该网站，直至用户在浏览器扩展权限中撤销。
 
 ## 隐私与安全
 

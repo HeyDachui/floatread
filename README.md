@@ -91,17 +91,21 @@ See [Provider configuration](docs/PROVIDERS.md) for protocols, defaults and Olla
 
 ## Permissions
 
-| Permission                                 | Why it exists                                                                                |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| `storage`                                  | Settings, site/page-translation preferences, caches, skins and selected credential storage.  |
-| `contextMenus`                             | User-triggered selection actions for the three reading modes.                                |
-| `activeTab`                                | Temporary access to the current non-X page after an explicit toolbar/shortcut action.        |
-| `scripting`                                | Mount or remove the single companion host after that user gesture.                           |
-| `https://x.com/*`, `https://twitter.com/*` | User-enabled progressive translation of visible X text without private post selectors.       |
-| Optional HTTPS origins                     | Direct requests to the Provider origin selected by the user; requested only when configured. |
-| Optional localhost origins                 | Local Ollama or a local proxy controlled by the user.                                        |
+| Permission                                 | Why it exists                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `storage`                                  | Settings, site/page-translation preferences, caches, skins and selected credential storage. |
+| `contextMenus`                             | User-triggered selection actions for the three reading modes.                               |
+| `activeTab`                                | Temporary access to the current non-X page after an explicit toolbar/shortcut action.       |
+| `scripting`                                | Mount the single companion host and register an explicitly enabled exact website origin.    |
+| `https://x.com/*`, `https://twitter.com/*` | User-enabled progressive translation of visible X text without private post selectors.      |
+| Optional HTTPS origins                     | Exact Provider origins and exact websites enabled by the user; never silently broadened.    |
+| Optional localhost origins                 | Local Ollama or a local proxy controlled by the user.                                       |
 
 FloatRead does not request history, cookies, downloads, broad tab access, webRequest or permanent `<all_urls>`. See the [full permission rationale](docs/PERMISSIONS.md).
+
+X loads automatically under its declared permission. On another HTTPS site such as TED, open the
+Popup and choose **Enable on this site**. Chrome asks for that exact origin; after approval,
+FloatRead loads immediately and remembers the site until the permission is revoked.
 
 ## Privacy and security
 
