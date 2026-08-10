@@ -3,7 +3,7 @@ import type { BackgroundToContentMessage } from "../shared/messages";
 const ALLOWED_SCHEMES = new Set(["http:", "https:"]);
 const injectionByTab = new Map<number, Promise<void>>();
 
-function declaredSitePatterns(): string[] {
+export function declaredSitePatterns(): string[] {
   const matches =
     chrome.runtime
       .getManifest()
@@ -55,7 +55,8 @@ export async function ensureContentScript(tab: chrome.tabs.Tab): Promise<void> {
 }
 
 export async function reconnectDeclaredSiteTabs(): Promise<void> {
-  const tabs = await chrome.tabs.query({ url: declaredSitePatterns() });
+  const { persistentContentScriptPatterns } = await import("./site-access");
+  const tabs = await chrome.tabs.query({ url: await persistentContentScriptPatterns() });
   await Promise.allSettled(
     tabs.map(async (tab) => {
       if (typeof tab.id !== "number") return;

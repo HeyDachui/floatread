@@ -16,6 +16,7 @@ import {
 import { getPageTranslationMemory, putPageTranslationMemory } from "../storage/page-translation";
 import { getActiveProviderProfile } from "../storage/providers";
 import { getProviderSecret } from "../storage/secrets";
+import { getSettings } from "../storage/settings";
 import { addUsage, endUsageSession, startUsageSession } from "../storage/usage";
 import type { TranslationLanguage, TranslationPreferences } from "../translation/languages";
 
@@ -139,7 +140,11 @@ async function runBatch(
       }),
     })),
   );
-  const memory = await getPageTranslationMemory(keyed.map((item) => item.key));
+  const settings = await getSettings();
+  const memory = await getPageTranslationMemory(
+    keyed.map((item) => item.key),
+    settings.cache,
+  );
   const misses: typeof keyed = [];
   let cacheHits = 0;
   for (const item of keyed) {
@@ -211,11 +216,21 @@ async function runBatch(
           });
         },
       );
-      const memoryWrites: Array<{ key: string; translation: string }> = [];
+      const memoryWrites: Array<{
+        key: string;
+        translation: string;
+        sourceLength: number;
+        kind: "content" | "ui";
+      }> = [];
       for (const item of misses) {
         const translated = results.get(item.segment.id);
         if (!translated) continue;
-        memoryWrites.push({ key: item.key, translation: translated });
+        memoryWrites.push({
+          key: item.key,
+          translation: translated,
+          sourceLength: item.segment.text.length,
+          kind: item.segment.kind,
+        });
         if (!streamedIds.has(item.segment.id)) {
           post(port, {
             type: "PAGE_SEGMENT_RESULT",
@@ -226,7 +241,7 @@ async function runBatch(
           });
         }
       }
-      await putPageTranslationMemory(memoryWrites);
+      await putPageTranslationMemory(memoryWrites, settings.cache);
       await addUsage(job.sessionId, { translatedSegments: memoryWrites.length });
     } finally {
       clearInterval(heartbeat);

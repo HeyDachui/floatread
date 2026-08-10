@@ -58,6 +58,29 @@ export function PopupApp(): React.JSX.Element {
     }
   };
 
+  const enableCurrentSite = async (): Promise<void> => {
+    if (!state?.currentOrigin) return;
+    setBusy(true);
+    setStatus(t("popupEnablingSite"));
+    try {
+      const granted = await chrome.permissions.request({
+        origins: [`${state.currentOrigin}/*`],
+      });
+      if (!granted) {
+        setStatus(t("popupPermissionDenied"));
+        return;
+      }
+      const response = await send(withTarget({ type: "ENABLE_CURRENT_SITE" }));
+      if (!acceptState(response)) {
+        setStatus(response.ok ? t("popupError") : response.error.message);
+      }
+    } catch {
+      setStatus(t("popupPermissionDenied"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <main
       className="popup-shell"
@@ -112,23 +135,42 @@ export function PopupApp(): React.JSX.Element {
                 <strong>
                   {!state.supportedPage
                     ? t("popupUnsupported")
-                    : t(state.sitePaused ? "popupSitePaused" : "popupSiteActive")}
+                    : !state.siteAccess
+                      ? t("popupSiteNeedsAccess")
+                      : t(state.sitePaused ? "popupSitePaused" : "popupSiteActive")}
                 </strong>
                 {state.currentOrigin ? <small>{state.currentOrigin}</small> : null}
+                {state.supportedPage && !state.siteAccess ? (
+                  <small>{t("popupSiteAccessReason")}</small>
+                ) : null}
               </div>
-              <span className="status-dot" data-active={state.supportedPage && !state.sitePaused} />
+              <span
+                className="status-dot"
+                data-active={state.supportedPage && state.siteAccess && !state.sitePaused}
+              />
             </div>
             <div className="popup-actions">
-              <button
-                type="button"
-                className="button primary"
-                disabled={busy || !state.supportedPage || !state.globalEnabled}
-                onClick={() =>
-                  void update({ type: "SET_SITE_PAUSED_CURRENT", paused: !state.sitePaused })
-                }
-              >
-                {t(state.sitePaused ? "popupResumeSite" : "popupPauseSite")}
-              </button>
+              {!state.siteAccess ? (
+                <button
+                  type="button"
+                  className="button primary"
+                  disabled={busy || !state.supportedPage || !state.globalEnabled}
+                  onClick={() => void enableCurrentSite()}
+                >
+                  {t("popupEnableSite")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="button primary"
+                  disabled={busy || !state.supportedPage || !state.globalEnabled}
+                  onClick={() =>
+                    void update({ type: "SET_SITE_PAUSED_CURRENT", paused: !state.sitePaused })
+                  }
+                >
+                  {t(state.sitePaused ? "popupResumeSite" : "popupPauseSite")}
+                </button>
+              )}
             </div>
           </section>
 

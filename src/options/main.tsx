@@ -48,8 +48,8 @@ const PROVIDER_ORDER: ProviderKind[] = [
 
 const DEFAULT_CACHE_POLICY: CachePolicy = {
   mode: "persistent",
-  ttlDays: 7,
-  maxEntries: 200,
+  ttlDays: 30,
+  maxEntries: 20_000,
   maxBytes: 10_000_000,
 };
 
@@ -72,6 +72,17 @@ const DEFAULT_READING: ReadingPreferences = {
 };
 
 const SKIN_STATES: SkinState[] = ["idle", "ready", "thinking", "success", "error"];
+const SKIN_STATE_LABEL_KEYS: Record<SkinState, MessageKey> = {
+  idle: "petStateIdle",
+  ready: "petStateReady",
+  thinking: "petStateThinking",
+  success: "petStateSuccess",
+  error: "petStateError",
+};
+
+function builtinAssetFor(skin: RuntimeSkinDefinition, state: SkinState): string | undefined {
+  return skin.builtinAssets?.[state] ?? skin.builtinAssets?.idle ?? skin.builtinAssetPath;
+}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1_000) return `${bytes} B`;
@@ -99,6 +110,12 @@ export function OptionsApp(): React.JSX.Element {
     entries: 0,
     bytes: 0,
     expiredRemoved: 0,
+    recentEntries: 0,
+    recentBytes: 0,
+    longTermEntries: 0,
+    longTermBytes: 0,
+    reuseHits: 0,
+    estimatedTokensSaved: 0,
   });
   const [skins, setSkins] = useState<RuntimeSkinDefinition[]>([]);
   const [activeSkinId, setActiveSkinIdState] = useState("mochi");
@@ -224,8 +241,9 @@ export function OptionsApp(): React.JSX.Element {
     }
     let objectUrl: string | undefined;
     let current = true;
-    if (previewSkin.builtinAssetPath) {
-      setPreviewImageUrl(chrome.runtime.getURL(previewSkin.builtinAssetPath));
+    const builtinPath = builtinAssetFor(previewSkin, previewState);
+    if (builtinPath) {
+      setPreviewImageUrl(chrome.runtime.getURL(builtinPath));
       return () => {
         current = false;
       };
@@ -995,19 +1013,49 @@ export function OptionsApp(): React.JSX.Element {
         </div>
         <div className="skin-workbench">
           <div className="skin-library" aria-label={t("skinList")}>
-            {skins.map((skin) => (
-              <button
-                key={skin.id}
-                type="button"
-                className={skin.id === previewSkinId ? "skin-choice active" : "skin-choice"}
-                onClick={() => setPreviewSkinId(skin.id)}
-              >
-                <span>{skin.name}</span>
-                <small>
-                  {t(skin.source === "builtin" ? "builtinOriginal" : "communitySkin")}
-                  {skin.id === activeSkinId ? ` · ${t("active")}` : ""}
-                </small>
-              </button>
+            {[
+              {
+                title: t("petLibraryTitle"),
+                items: skins.filter(
+                  (skin) => skin.variant === "pet" || skin.variant === "community",
+                ),
+              },
+              {
+                title: t("otherAppearanceTitle"),
+                items: skins.filter(
+                  (skin) => skin.variant !== "pet" && skin.variant !== "community",
+                ),
+              },
+            ].map((group) => (
+              <section className="skin-group" key={group.title}>
+                <h3>{group.title}</h3>
+                <div className="skin-group-grid">
+                  {group.items.map((skin) => {
+                    const thumbnail = builtinAssetFor(skin, "idle");
+                    return (
+                      <button
+                        key={skin.id}
+                        type="button"
+                        className={skin.id === previewSkinId ? "skin-choice active" : "skin-choice"}
+                        onClick={() => setPreviewSkinId(skin.id)}
+                      >
+                        {thumbnail ? (
+                          <img src={chrome.runtime.getURL(thumbnail)} alt="" />
+                        ) : (
+                          <span className="skin-choice-symbol" aria-hidden="true" />
+                        )}
+                        <span className="skin-choice-copy">
+                          <strong>{skin.name}</strong>
+                          <small>
+                            {t(skin.source === "builtin" ? "builtinOriginal" : "communitySkin")}
+                            {skin.id === activeSkinId ? ` · ${t("active")}` : ""}
+                          </small>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             ))}
           </div>
 
@@ -1015,6 +1063,7 @@ export function OptionsApp(): React.JSX.Element {
             <div
               className="skin-preview-stage fr-companion-layer"
               data-skin={previewSkin.variant}
+              data-pet={previewSkin.variant === "pet" ? previewSkin.id : undefined}
               style={
                 {
                   "--fr-accent": previewSkin.panel.accent,
@@ -1031,7 +1080,11 @@ export function OptionsApp(): React.JSX.Element {
               }
             >
               <div className={`fr-companion fr-state-${previewState}`} data-motion="none">
-                <CompanionArtwork state={previewState} imageUrl={previewImageUrl} />
+                <CompanionArtwork
+                  state={previewState}
+                  imageUrl={previewImageUrl}
+                  skinId={previewSkin.id}
+                />
               </div>
               <strong>{previewSkin.name}</strong>
               <div className="preview-state-tabs" aria-label={t("previewStates")}>
@@ -1042,7 +1095,7 @@ export function OptionsApp(): React.JSX.Element {
                     aria-pressed={previewState === state}
                     onClick={() => setPreviewState(state)}
                   >
-                    {state}
+                    {t(SKIN_STATE_LABEL_KEYS[state])}
                   </button>
                 ))}
               </div>
@@ -1228,6 +1281,38 @@ export function OptionsApp(): React.JSX.Element {
           </span>
         </div>
         <p className="cache-intro">{t("cacheIntro")}</p>
+        <div className="usage-summary" aria-label={t("cacheTitle")}>
+          <div>
+            <span>{t("cacheLongTerm")}</span>
+            <strong>
+              {t(
+                "cacheUsage",
+                String(cacheStats.longTermEntries),
+                formatBytes(cacheStats.longTermBytes),
+              )}
+            </strong>
+          </div>
+          <div>
+            <span>{t("cacheRecent")}</span>
+            <strong>
+              {t(
+                "cacheUsage",
+                String(cacheStats.recentEntries),
+                formatBytes(cacheStats.recentBytes),
+              )}
+            </strong>
+          </div>
+          <div>
+            <span>{t("cacheReuse")}</span>
+            <strong>
+              {t(
+                "cacheReuseValue",
+                String(cacheStats.reuseHits),
+                String(cacheStats.estimatedTokensSaved),
+              )}
+            </strong>
+          </div>
+        </div>
         <div className="cache-controls">
           <label>
             <span>{t("cacheLocation")}</span>
@@ -1243,46 +1328,6 @@ export function OptionsApp(): React.JSX.Element {
               <option value="persistent">{t("cachePersistent")}</option>
               <option value="session">{t("cacheSession")}</option>
               <option value="off">{t("cacheOff")}</option>
-            </select>
-          </label>
-          <label>
-            <span>{t("cacheExpiry")}</span>
-            <select
-              value={cachePolicy.ttlDays}
-              onChange={(event) =>
-                setCachePolicy({ ...cachePolicy, ttlDays: Number(event.target.value) })
-              }
-            >
-              <option value={1}>{t("days", "1")}</option>
-              <option value={7}>{t("days", "7")}</option>
-              <option value={30}>{t("days", "30")}</option>
-              <option value={90}>{t("days", "90")}</option>
-            </select>
-          </label>
-          <label>
-            <span>{t("maxEntries")}</span>
-            <input
-              type="number"
-              min={1}
-              max={2_000}
-              value={cachePolicy.maxEntries}
-              onChange={(event) =>
-                setCachePolicy({ ...cachePolicy, maxEntries: Number(event.target.value) })
-              }
-            />
-          </label>
-          <label>
-            <span>{t("maxCapacity")}</span>
-            <select
-              value={cachePolicy.maxBytes}
-              onChange={(event) =>
-                setCachePolicy({ ...cachePolicy, maxBytes: Number(event.target.value) })
-              }
-            >
-              <option value={5_000_000}>5 MB</option>
-              <option value={10_000_000}>10 MB</option>
-              <option value={25_000_000}>25 MB</option>
-              <option value={50_000_000}>50 MB</option>
             </select>
           </label>
         </div>

@@ -4,7 +4,7 @@ This file is the auditable project status source. A phase is only marked complet
 
 ## Current status
 
-- Current phase: V2.3 dynamic-page safety replacement — automated release complete; manual X acceptance pending
+- Current phase: 0.5.0 pet-system expansion — automated release candidate complete; owner visual acceptance pending
 - Workspace boundary: this repository root
 - Repository status: independent Git repository initialized on `main`
 - Product specification: `docs/source/FloatRead_Codex_Development_Spec_V1.md`
@@ -75,6 +75,42 @@ The first dependency installation downloaded packages but exited with `ERR_PNPM_
 - Release/store screenshots have not been fabricated; the real-build capture checklist remains open.
 - The human regression checklist is prepared but is not falsely marked executed.
 - Only DeepSeek has a real API smoke record; other Provider adapters remain protocol-tested without live credentials.
+
+## Version 0.5.0 pet-system expansion — 2026-07-23
+
+Goal: keep the owner-accepted `stable-v0.4.1` source and ZIP unchanged while expanding the 0.5.0 candidate from one visually repetitive built-in pet into a reusable multi-pet, multi-state system.
+
+Delivered:
+
+- Three built-in original pets: Mochi, Maple red panda and Piko penguin.
+- Five independent authored WebP state frames for Maple and Piko: idle, content found, translating, complete and error.
+- Shared click, drag-walk, direction turn, low-frequency idle and rapid-scroll catch-up reactions; Mochi retains its layered blink, paw and tail behavior.
+- Human-readable bilingual state labels and a visual Settings library grouped into Pet companions and Other appearances.
+- Existing local PNG/JPG pet creation remains code-free and local; it deliberately uses single-image motion rather than claiming to generate new illustrated frames.
+- All new animations obey the user toggle and `prefers-reduced-motion`.
+- Ten 512 × 512 assets were compressed from about 1.3 MB lossless to 246,750 bytes total at reviewed browser-display quality.
+
+Controlled failure and correction:
+
+- The first Piko image-generation request failed from a network error and produced no adopted output. A single retry succeeded and only the reviewed second result entered the repository.
+- The first full E2E run found the Settings preview-state buttons visible but not clickable because the preview layer suppressed pointer events. The tabs now explicitly accept pointer events; the targeted rerun and complete CI suite passed.
+
+Actual verification:
+
+| Command                 | Actual result                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------------- |
+| `pnpm lint`             | Passed with zero warnings                                                                       |
+| `pnpm typecheck`        | Passed                                                                                          |
+| `pnpm test`             | Passed: 27 files, 140 tests                                                                     |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                                                        |
+| `pnpm test:e2e`         | Passed: 20 Chromium MV3 tests, including both new pet state sets and live no-reload application |
+| `pnpm run ci`           | Passed end-to-end                                                                               |
+| `pnpm format:check`     | Passed                                                                                          |
+| `pnpm package`          | Passed: 30-file dist/ZIP verification, MV3 load and two secret scans                            |
+
+Implementation commit: `af8501a39b8ae3c0478514f4563047ce33f5bfcb` (`feat: expand the built-in pet system`).
+
+Acceptance state: formal existence, runtime operation and automated quality passed. Visual quality was inspected from the actual Settings screenshot and final transparent assets. Natural feel on the owner's real X/TED/Reddit pages remains the owner acceptance item, so this stays a 0.5.0 release candidate and does not replace `stable-v0.4.1`.
 
 ## Phase 1 result
 
@@ -938,3 +974,141 @@ Acceptance conclusion:
 - Low performance finding: accepted. Manual and release wording now measure Fast/Precise without promising Fast wins every individual call.
 - Full decision record: `docs/AUDIT_RESPONSE_0.4.1.md`.
 - Handoff closure for the supplied excerpt: triage complete; no code defect confirmed. Real Chrome background >45 seconds/worker inactivity remains the next manual release trigger.
+
+## Version 0.5.0 automatic local memory — 2026-07-22
+
+Object and stable boundary:
+
+- Loop object: FloatRead translation reuse and the user-visible local-memory controls.
+- Stable input: owner-accepted 0.4.1 on X and TED, including original-source precision reading, immediate Stop, visible-only scanning, Provider routing, Token ledger, permissions and companion behavior.
+- Stable artifact: annotated Git tag `stable-v0.4.1` points to commit `fbd1487`; `release/FloatRead-v0.4.1.zip` remains unchanged with SHA-256 `f46c9872ee611ba9142e90a4f1cb4732dcccd1f46cd5b25a26a75d62a664498d`.
+- Development isolation: all 0.5.0 work is on branch `feature/automatic-memory-v0.5.0`.
+
+Changed variable and implementation:
+
+- Replace the separate 2,000-record page memory and user-tuned reading cache behavior with one automatic 10 MB result-memory budget.
+- Recent and long-term tiers each target 5 MB. The targets are soft: either tier may borrow unused space, and overflow first reclaims the borrowing tier.
+- UI/functional text and source phrases up to 240 characters are eligible for promotion. They enter recent memory and become long-term after two cache hits (the third encounter). Long-term records can remain for one year; recent records expire after 30 days.
+- Language pair, segment kind/reading mode, Provider origin, model and Prompt version remain part of the hash identity, so incompatible translation settings do not reuse an old result.
+- Page-memory migration is lazy and requested-key-only. At most the current bounded page batch is written during one migration step; the remaining legacy records stay intact if the new write fails.
+- Batch writes use one IndexedDB capacity pass rather than one full capacity scan per translated segment.
+- Settings now expose automatic local storage, current-session storage or off, recent/long-term usage, reuse count, estimated saved Token and clear. TTL, entry-count and MB tuning are no longer user-facing.
+- API keys, original source text and synchronized storage remain outside the result-memory database. Cache failure remains a silent miss and cannot block or retry a Provider request.
+
+Evidence so far:
+
+| Command                                  | Actual result                                                                                                                                                               |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm run ci` on untouched 0.4.1         | Lint, typecheck, 133 unit, 2 integration, build, dist verification and secret scan passed; 18 E2E tests passed and the final test's `afterAll` browser-close hook timed out |
+| Single rerun of final 0.4.1 E2E          | Passed in 3.7 seconds; confirms the full-run failure was an intermittent test cleanup timeout, not a failed Stop assertion                                                  |
+| `pnpm test` after core 0.5.0 change      | Passed: 27 files, 135 tests                                                                                                                                                 |
+| `pnpm lint` after core 0.5.0 change      | Passed, zero warnings                                                                                                                                                       |
+| `pnpm typecheck` after core 0.5.0 change | Passed                                                                                                                                                                      |
+
+New regression coverage:
+
+- Repeated eligible text remains recent after one reuse and is promoted after the second reuse.
+- Reuse count and estimated saved Token are derived from local records.
+- A tier may borrow unused capacity; when total capacity is exceeded, recent overflow is removed before protected long-term memory.
+- Legacy page memory migrates only the requested key and retains unrequested legacy records.
+
+Current status and stopping condition:
+
+- Core production and unit-level controlled behavior is implemented.
+- Remaining before completion: full integration/E2E rerun, production package/secret scan, installed settings-memory UI inspection, 0.5.0 commit and release hashes.
+- Keep 0.4.1 stable unchanged. Stop and return to the stable artifact if 0.5.0 changes page translation, cancellation, API-key isolation or visible-page responsiveness.
+
+### 0.5.0 automated release-candidate verification
+
+- Implementation commit: `ec8175c` on `feature/automatic-memory-v0.5.0`.
+- Final `pnpm run ci`: passed lint, strict typecheck, 27/136 unit tests, 2/2 integration tests, production build/dist/secret checks and 19/19 Chromium extension tests.
+- Final `pnpm package`: passed production build, 20-file dist verification, secret scan, ZIP creation, 20-entry ZIP verification, production MV3 Service Worker/three-page load and second secret scan.
+- Release candidate: `release/FloatRead-v0.5.0.zip`, 445,775 bytes, SHA-256 `521beb3e012b33b185b257bf97a1d61af1289646ec02eded8d9c71edd9332812`.
+- Production Manifest is 0.5.0 with the unchanged permission set and no `unlimitedStorage` request.
+- Production-delivery acceptance: formal existence, functional operation and automated quality passed. Real owner use on authenticated live sites remains unknown for 0.5.0, so it is ready for owner testing but is not promoted over `stable-v0.4.1` yet.
+
+Project-loop conclusion:
+
+- Actual change: repeated short/function translations now affect later runs through local promotion and measured reuse, while unique recent results remain bounded and disposable.
+- Main eliminated risk: migration and page-batch writes are bounded; neither performs a full 2,000-record rewrite or one full capacity scan per segment.
+- Kept invariant: cache failure is only a miss; it cannot block Stop, page translation, precision reading or Provider completion.
+- Next deciding evidence: owner compares 0.5.0 with the accepted 0.4.1 path on live X/TED, repeats one menu phrase three times, checks the memory card and confirms page responsiveness. Promote only if those observations agree with automation.
+
+## Version 0.5.0 rapid-scroll current-viewport priority — 2026-07-23
+
+Controlled change:
+
+- Stable `main` and tag `stable-v0.4.1` were not changed. Work continued only on `feature/automatic-memory-v0.5.0`.
+- When page translation is busy and the page moves at least `max(480 px, 0.85 viewport)` within 600 ms, Content immediately invalidates the old job, clears only its unfinished node map and sends `PAGE_TRANSLATE_CANCEL` to Background.
+- Scroll events replace one 220 ms settle timer. This prioritizes the final current viewport without creating a Provider request for every wheel event.
+- Small/slow reading scrolls retain the old one-batch-at-a-time behavior.
+- A catch-up notice is emitted at most once per 20 seconds. The companion shows “太快啦，我先跟上你现在看到的内容～” for two seconds and applies a 700 ms catch-up reaction; `prefers-reduced-motion` continues to suppress artwork animation.
+- The notice uses local UI only and causes no AI request or Token use. Provider work completed before cancellation may still be billable; documentation does not promise otherwise.
+
+Regression and production evidence:
+
+| Command                 | Actual result                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `pnpm lint`             | Passed, zero warnings                                                           |
+| `pnpm typecheck`        | Passed                                                                          |
+| `pnpm test`             | Passed: 27 files, 138 tests                                                     |
+| `pnpm test:integration` | Passed: 2 files, 2 tests                                                        |
+| `pnpm test:e2e`         | Passed: 20 Chromium MV3 tests                                                   |
+| `pnpm run ci`           | Passed end to end                                                               |
+| `pnpm package`          | Passed build, 20-file dist/ZIP checks, two secret scans and production MV3 load |
+
+Real Chromium controlled path:
+
+- Eight visible English sentences formed the old batch. After the first two results arrived, the page jumped to the bottom viewport.
+- The remaining six old-viewport sentences stayed untranslated, demonstrating that the stale batch stopped applying results.
+- The companion received `fr-catching-up`, displayed the bilingual catch-up message path, and the bottom current-viewport sentence translated next.
+- The first browser run already proved cancellation/current-viewport priority but exposed that the normal “translating” status visually masked the catch-up message. The UI was corrected so error state remains highest priority, catch-up message comes next, then normal translation status. The targeted rerun and final 20-test suite passed.
+
+Artifacts and commits:
+
+- Implementation commit: `5879d3d` (`feat: prioritize current viewport after rapid scroll`).
+- Release candidate: `release/FloatRead-v0.5.0.zip`, 446,647 bytes.
+- SHA-256: `e53cb85aede3f00f787d7febc05c59747c4621496c5d03498f6a7af92f04117d`.
+- Stable rollback remains `release/FloatRead-v0.4.1.zip` / tag `stable-v0.4.1`.
+
+Project-loop conclusion:
+
+- Actual improvement: fast navigation no longer lets an unfinished old viewport monopolize the translation lane; current reading position becomes the next bounded batch.
+- Preserved invariants: explicit activation, one current batch, direct-text replacement, immediate Stop, no hidden-tab batches, same Provider/cache identity and no new permission.
+- Remaining observation: real mouse-wheel/touchpad feel and the subjective 0.85-screen threshold require owner use on live X/TED/Reddit. Automation proves the state transition and rendered response, not the owner's preferred sensitivity.
+
+## Version 0.5.0 non-X site activation repair — 2026-07-23
+
+Object and acceptance gap:
+
+- X loaded automatically because it is a declared Manifest site, while TED depended on a temporary user gesture.
+- The simplified Popup had removed the only discoverable activation action, so a normal user could not see how to enable TED.
+- Stable 0.4.1 remains unchanged; this repair is confined to `feature/automatic-memory-v0.5.0`.
+
+Implemented change:
+
+- Popup now shows “在当前网站启用 / Enable on this site” when the active HTTPS origin has not been enabled.
+- The click explains and requests only `${origin}/*`; denial leaves the page untouched and displays a local explanation.
+- After approval, Background verifies the permission, registers the packaged Content Script for that exact origin with session persistence, injects the current tab immediately and clears any previous site pause.
+- X/Twitter retain their declared automatic path. Registered sites and active translation jobs remain keyed per tab/origin; this does not impose a one-site limit.
+- Service Worker recovery now also reconnects open tabs belonging to explicitly registered sites.
+
+Regression evidence:
+
+| Command                 | Actual result                       |
+| ----------------------- | ----------------------------------- |
+| `pnpm lint`             | Passed, zero warnings               |
+| `pnpm typecheck`        | Passed                              |
+| `pnpm test`             | Passed: 28 files, 145 tests         |
+| `pnpm test:integration` | Passed: 2 files, 2 tests            |
+| `pnpm build`            | Passed production MV3 build         |
+| `pnpm test:e2e`         | Passed: 20 Chromium extension tests |
+| `pnpm package`          | Passed packaging and release checks |
+
+Project-loop conclusion:
+
+- Actual improvement: TED and other HTTPS sites now have an understandable, explicit activation path instead of relying on an undiscoverable shortcut.
+- Preserved invariants: exact-origin permission, packaged code only, no automatic page reading before approval, one Shadow DOM host, X behavior unchanged and no broad permanent `<all_urls>` permission.
+- Remaining owner check: reload the development extension, open TED, click “在当前网站启用”, accept Chrome's prompt, then verify the pet appears immediately and after one TED page reload.
+- Implementation commit: `9bf9921` (`fix: enable FloatRead on explicit non-X sites`).
+- Updated release candidate: `release/FloatRead-v0.5.0.zip`, 698,400 bytes, SHA-256 `f06968aa2423a07f0fb0d02b117790b17a1aad8c115bfa328ebef888d9ff50ae`.

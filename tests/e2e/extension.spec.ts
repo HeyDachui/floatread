@@ -161,6 +161,47 @@ test("starts page translation even when text remains selected", async () => {
   await page.close();
 });
 
+test("catches up to the current viewport after a rapid scroll", async () => {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 1_000, height: 760 });
+  await page.goto(fixtureUrl);
+  const host = page.locator("floatread-root");
+  await host.waitFor({ state: "attached" });
+  await page.evaluate(() => {
+    const top = Array.from({ length: 8 }, (_, index) => {
+      const paragraph = document.createElement("p");
+      paragraph.id = `rapid-top-${index}`;
+      paragraph.lang = "en";
+      paragraph.textContent = `Rapid scroll old viewport sentence ${index}.`;
+      paragraph.style.height = "58px";
+      paragraph.style.margin = "0";
+      return paragraph;
+    });
+    const spacer = document.createElement("div");
+    spacer.style.height = "1200px";
+    const current = document.createElement("p");
+    current.id = "rapid-current";
+    current.lang = "en";
+    current.textContent = "Translate the viewport I am reading now.";
+    current.style.height = "80px";
+    document.body.replaceChildren(...top, spacer, current);
+  });
+
+  const companion = host.locator("button.fr-companion");
+  await companion.click();
+  await expect(page.locator("#rapid-top-0")).toHaveText(
+    "页面译文：Rapid scroll old viewport sentence 0.",
+  );
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+
+  await expect(companion).toHaveClass(/fr-catching-up/u);
+  await expect(host.locator(".fr-toast").filter({ hasText: /太快啦|Too fast!/u })).toBeVisible();
+  await expect(page.locator("#rapid-current")).toHaveText(
+    "页面译文：Translate the viewport I am reading now.",
+  );
+  await page.close();
+});
+
 test("keeps a page translation failure visible with a recovery action", async () => {
   const page = await context.newPage();
   await page.goto(fixtureUrl);
@@ -292,6 +333,20 @@ test("reuses an identical result from cache without running Mock again", async (
     "Mock 自然中文：A unique cache proof passage for FloatRead.",
   );
   await expect(panel.locator(".fr-provider-tag")).toContainText(/缓存|cached/u);
+  await panel.getByRole("button", { name: /关闭结果面板|Close result panel/u }).click();
+  await companion.click({ button: "right" });
+  await host.getByRole("menuitem", { name: naturalMode }).click();
+  await expect(panel.locator(".fr-provider-tag")).toContainText(/缓存|cached/u);
+
+  const worker = context.serviceWorkers()[0];
+  if (!worker) throw new Error("extension service worker missing");
+  const extensionId = new URL(worker.url()).host;
+  const settings = await context.newPage();
+  await settings.goto(`chrome-extension://${extensionId}/src/options/index.html`);
+  await expect(settings.locator(".cache-card .usage-summary > div").first()).toContainText(
+    /[1-9]\d* (?:条|entries)/u,
+  );
+  await settings.close();
   await page.close();
 });
 
@@ -374,6 +429,9 @@ test("switches the settings interface between English and Simplified Chinese", a
   await expect(page.getByRole("heading", { name: "FloatRead 设置" })).toBeVisible();
   await localeSelect.selectOption("en");
   await expect(page.getByRole("heading", { name: "FloatRead settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Automatic local memory" })).toBeVisible();
+  await expect(page.locator(".cache-card .cache-controls select")).toHaveValue("persistent");
+  await expect(page.getByText(/Maximum entries|Maximum size|Expiry/u)).toHaveCount(0);
   await page.getByRole("button", { name: /添加一种语言|Add a language/u }).click();
   const sourceLanguages = page.locator(".language-row select");
   await expect(sourceLanguages).toHaveCount(2);
@@ -480,13 +538,36 @@ test("previews and applies a built-in skin to an open page without reloading it"
   const optionsPage = await context.newPage();
   await optionsPage.goto(`chrome-extension://${extensionId}/src/options/index.html`);
   await expect(
-    optionsPage.getByRole("heading", { name: /皮肤与实时预览|Skins and live preview/u }),
+    optionsPage.getByRole("heading", { name: /宠物与外观|Pets and appearance/u }),
   ).toBeVisible();
   await optionsPage.screenshot({
     path: resolve(projectRoot, "output/playwright/settings-and-pet-module.png"),
     fullPage: true,
   });
-  await expect(optionsPage.locator(".skin-choice")).toHaveCount(7);
+  await expect(optionsPage.locator(".skin-choice")).toHaveCount(9);
+  await optionsPage.getByRole("button", { name: /Piko 小企鹅/u }).click();
+  await expect(optionsPage.locator(".skin-preview-stage")).toHaveAttribute("data-pet", "piko");
+  await optionsPage
+    .locator(".skin-preview-stage")
+    .getByRole("button", { name: /遇到问题|Needs attention/u })
+    .click();
+  await expect(optionsPage.locator(".skin-preview-stage .fr-authored-pet img")).toHaveAttribute(
+    "src",
+    /error\.webp$/u,
+  );
+  await optionsPage.getByRole("button", { name: /Maple 红熊猫/u }).click();
+  const petPreview = optionsPage.locator(".skin-preview-stage");
+  await expect(petPreview).toHaveAttribute("data-pet", "maple");
+  await expect(petPreview.locator(".fr-authored-pet img")).toHaveAttribute("src", /error\.webp$/u);
+  await petPreview.getByRole("button", { name: /翻译中|Translating/u }).click();
+  await expect(petPreview.locator(".fr-authored-pet img")).toHaveAttribute(
+    "src",
+    /thinking\.webp$/u,
+  );
+  await optionsPage.getByRole("button", { name: /应用皮肤|Apply skin/u }).click();
+  await expect(host.locator(".fr-companion-layer")).toHaveAttribute("data-pet", "maple");
+  await expect(host.locator(".fr-authored-pet")).toBeAttached();
+
   await optionsPage.getByRole("button", { name: /Terminal/u }).click();
   await expect(optionsPage.locator(".skin-preview-stage")).toHaveAttribute("data-skin", "terminal");
   await optionsPage.getByLabel(/助手大小|Companion size/u).fill("72");
@@ -516,7 +597,7 @@ test("previews and applies a built-in skin to an open page without reloading it"
   await expect(optionsPage.getByRole("status")).toContainText(
     /已安全导入并应用 Terminal Export|Safely imported and applied Terminal Export/u,
   );
-  await expect(optionsPage.locator(".skin-choice")).toHaveCount(8);
+  await expect(optionsPage.locator(".skin-choice")).toHaveCount(10);
   await expect(host.locator(".fr-companion-layer")).toHaveAttribute("data-skin", "community");
   await expect(host.locator("img.fr-community-art")).toBeAttached();
   await optionsPage.close();

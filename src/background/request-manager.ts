@@ -114,7 +114,12 @@ async function runProviderRequest(
         post(port, { type: "STREAM_DONE", requestId: request.requestId });
       }
     }
-    if (output) await putCachedResult(cached.key, output, settings.cache);
+    if (output)
+      await putCachedResult(cached.key, output, settings.cache, {
+        namespace: "reading",
+        promotable: message.text.length <= 240,
+        estimatedTokens: Math.ceil(message.text.length / 4) + Math.ceil(output.length / 2),
+      });
   } finally {
     clearTimeout(timer);
   }
@@ -215,7 +220,11 @@ async function runMockRequest(
       post(port, { type: "STREAM_DELTA", requestId: request.requestId, text: delta });
     }
     post(port, { type: "STREAM_DONE", requestId: request.requestId });
-    await putCachedResult(cached.key, output, settings.cache);
+    await putCachedResult(cached.key, output, settings.cache, {
+      namespace: "reading",
+      promotable: message.text.length <= 240,
+      estimatedTokens: Math.ceil(message.text.length / 4) + Math.ceil(output.length / 2),
+    });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       post(port, {

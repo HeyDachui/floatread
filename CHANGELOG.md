@@ -2,6 +2,26 @@
 
 All notable changes are documented here. The project follows semantic versioning after the first public release.
 
+## [0.5.0] - 2026-07-22
+
+- Add a visible “Enable on this site” Popup action for TED and other non-X HTTPS sites.
+- Request only the current exact Origin, inject immediately after approval and register the packaged Content Script for future visits to that site.
+- Keep X/Twitter automatic loading unchanged and keep unauthorized pages untouched.
+- Expand the built-in companion system from one pet to three original pets: Mochi, Maple the red panda and Piko the penguin.
+- Give Maple and Piko five authored visual states—idle, content found, translating, complete and error—plus click, walk, turn, idle and rapid-scroll reactions.
+- Rework Settings into visual Pet companions and Other appearances groups with thumbnails and localized state labels.
+- Keep custom PNG/JPG pets on the safe local single-image path and preserve reduced-motion suppression across every pet type.
+- Preserve the owner-tested 0.4.1 repository state as annotated Git tag `stable-v0.4.1` before starting this release.
+- Replace separate page/reading cache behavior with one automatic 10 MB local-memory service backed by trusted extension storage.
+- Use soft 5 MB targets for recent results and repeated long-term text; either tier may borrow unused capacity, while overflow reclaims the borrowing tier first.
+- Promote eligible UI text and short phrases after two cache reuses (the third encounter), retain long-term entries for up to one year, and invalidate naturally through the existing language/model/Prompt-aware hash key.
+- Migrate the legacy 2,000-record page memory lazily in requested batches so an upgrade cannot freeze page translation.
+- Add local counts for recent memory, long-term memory, reuse hits and conservative estimated Token savings.
+- Simplify Settings to automatic/session/off, statistics and clear; remove user-facing TTL, entry-count and MB controls.
+- Keep cache failures non-blocking and keep API keys, source text, sync storage and Content Script outside the memory database.
+- Detect a rapid jump of roughly 0.85 viewport within 600 ms, cancel the now-stale page batch and debounce the current-viewport scan for 220 ms so old content cannot hold up what the user is reading.
+- Add a two-second pet message—“太快啦，我先跟上你现在看到的内容～”—with a short catch-up reaction, a 20-second notice cooldown and existing reduced-motion suppression.
+
 ## [0.4.1] - 2026-07-22
 
 ### Fixed

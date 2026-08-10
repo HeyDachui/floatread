@@ -56,7 +56,7 @@ describe("content-script recovery", () => {
     ]);
     vi.stubGlobal("chrome", {
       tabs: { query, sendMessage },
-      scripting: { executeScript },
+      scripting: { executeScript, getRegisteredContentScripts: vi.fn(async () => []) },
       runtime: {
         getManifest: () => ({
           content_scripts: [

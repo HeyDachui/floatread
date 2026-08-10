@@ -1,22 +1,33 @@
-# FloatRead 0.4.1 precision-reading recovery release notes
+# FloatRead 0.5.0 automatic local-memory release notes
 
-FloatRead 0.4.1 fixes two owner-reported precision-reading failures without changing the 0.4.0 page-translation, Provider, permission or pet boundaries.
+FloatRead 0.5.0 adds an automatic translation-memory layer without changing the owner-tested 0.4.1 translation, Stop, Provider, permission or pet boundaries. The exact 0.4.1 source state remains available at Git tag `stable-v0.4.1`; its existing ZIP and SHA-256 remain under `release/`.
 
-## Fixes
+## What changed
 
-- If a user selects text after FloatRead has already translated the page, Natural Chinese, Key Points and Explain Terms now receive the original source text instead of re-reading the visible translation.
-- If the precision-reading connection is lost, the endless spinner becomes a clear retryable error. Retry creates a fresh connection.
-- Stop and close update immediately even if the old precision-reading or page-translation connection is already dead.
+- Three original built-in pets are now available: Mochi, Maple the red panda and Piko the penguin.
+- Maple and Piko use five distinct authored state images instead of presenting every situation through one picture. All pets also react to clicks, walking/turning and rapid-scroll catch-up.
+- Settings now presents visual pet cards first, other appearances second, and human-readable state labels instead of raw internal state names.
+- One 10 MB local-memory budget now covers page translation and precision reading.
+- Recent content and repeated long-term content each target about 5 MB, but either side may borrow unused capacity.
+- Eligible menu, button and short-phrase translations move to long-term memory after the third encounter.
+- Settings show recent/long-term usage, reuse count and conservative estimated Token savings.
+- Users choose only automatic local storage, current browser session or off; technical TTL, entry and MB controls are removed.
+- Legacy 0.4.x page memory migrates only when a matching record is requested, avoiding an upgrade-time scan or translation delay.
+- A rapid scroll across roughly one viewport cancels the stale unfinished batch and prioritizes the settled current viewport.
+- The pet briefly reacts and says “太快啦，我先跟上你现在看到的内容～”. The message is rate-limited and uses no AI or Token.
+
+## Safety boundaries
+
+- Cache failure never blocks translation and never triggers an automatic Provider retry.
+- Cache keys include language, mode/segment kind, Provider origin, model and Prompt version, so material translation-setting changes do not reuse incompatible output.
+- API keys and original source text are not stored in the memory database. Generated translation text and non-secret metadata remain local and can be cleared independently.
+- No `unlimitedStorage` permission was added.
+- Small reading scrolls do not cancel work; only a rapid large jump changes the active batch. Provider work already completed before cancellation may still have consumed Token.
 
 ## Install
 
-Extract `release/FloatRead-v0.4.1.zip`, load the extracted directory at `chrome://extensions`, then press **Reload** on an existing FloatRead card and refresh the site tab.
+Extract `release/FloatRead-v0.5.0.zip`, load the extracted directory at `chrome://extensions`, press **Reload** on an existing FloatRead card, and refresh the site tab. Use `release/FloatRead-v0.4.1.zip` to return to the preserved stable release.
 
-Automated, real-Provider and package evidence is recorded in `PROGRESS.md` and `docs/REAL_API_SMOKE.md`. Authenticated-site behavior is not labeled passed until the owner observes it.
+Final automated and package evidence is recorded in `PROGRESS.md` after release verification.
 
-## Verification
-
-- 133 unit tests, 2 integration tests and 19 Chromium extension tests passed.
-- One bounded DeepSeek `deepseek-v4-flash` Natural Chinese request using the reported public tweet passed in 1.288 seconds and used 417 Token; its body was not retained.
-- Production build, 20-entry ZIP verification, secret scans and MV3 load test passed.
-- Archive: `release/FloatRead-v0.4.1.zip`, 443,831 bytes, SHA-256 `f46c9872ee611ba9142e90a4f1cb4732dcccd1f46cd5b25a26a75d62a664498d`.
+The final candidate ZIP contains 30 runtime files and is 696,569 bytes. The ten added Maple/Piko state images total 246,750 bytes after reviewed WebP compression.

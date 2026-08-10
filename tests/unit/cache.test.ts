@@ -98,4 +98,46 @@ describe("result cache", () => {
 
     await expect(indexedDbCache.get(key, 2_000)).resolves.toBeUndefined();
   });
+
+  it("promotes a repeatedly reused short translation into long-term memory", async () => {
+    const key = await keyFor("repeated menu phrase");
+    await indexedDbCache.put(key, "重复菜单", POLICY, 1_000, {
+      namespace: "page_translation",
+      promotable: true,
+      estimatedTokens: 12,
+    });
+
+    await expect(indexedDbCache.get(key, 2_000)).resolves.toMatchObject({
+      tier: "recent",
+      hitCount: 1,
+    });
+    await expect(indexedDbCache.get(key, 3_000)).resolves.toMatchObject({
+      tier: "long_term",
+      hitCount: 2,
+    });
+    await expect(indexedDbCache.stats(4_000)).resolves.toMatchObject({
+      longTermEntries: 1,
+      recentEntries: 0,
+      reuseHits: 2,
+      estimatedTokensSaved: 24,
+    });
+  });
+
+  it("lets either 5 MB tier borrow free space while protecting long-term reuse", async () => {
+    const [longKey, oldRecentKey, newRecentKey] = await Promise.all(
+      ["long", "old-recent", "new-recent"].map((text) => keyFor(text)),
+    );
+    const smallPolicy = { ...POLICY, maxEntries: 10, maxBytes: 1_000 };
+    await indexedDbCache.put(longKey ?? "", "L".repeat(80), smallPolicy, 1_000, {
+      promotable: true,
+    });
+    await indexedDbCache.get(longKey ?? "", 2_000);
+    await indexedDbCache.get(longKey ?? "", 3_000);
+    await indexedDbCache.put(oldRecentKey ?? "", "R".repeat(80), smallPolicy, 4_000);
+    await indexedDbCache.put(newRecentKey ?? "", "N".repeat(80), smallPolicy, 5_000);
+
+    await expect(indexedDbCache.get(longKey ?? "", 6_000)).resolves.toBeDefined();
+    await expect(indexedDbCache.get(oldRecentKey ?? "", 6_000)).resolves.toBeUndefined();
+    await expect(indexedDbCache.get(newRecentKey ?? "", 6_000)).resolves.toBeDefined();
+  });
 });

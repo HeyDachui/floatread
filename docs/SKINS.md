@@ -2,15 +2,24 @@
 
 FloatRead 皮肤只改变扩展自己的悬浮助手、结果面板、Popup 和设置页设计令牌。它不能修改网页、X 时间线、字体或布局，也不能执行任何代码。
 
+如果只想用一张图片制作自己的宠物，或者想了解五状态完整宠物的区别，请先阅读[宠物制作与定制指南](PET_CUSTOMIZATION.md)。本页主要记录社区包的技术格式和安全限制。
+
 ## 一张图片生成宠物
 
 设置页顶部提供本地宠物制作器：拖入或选择不超过 5 MB 的 PNG/JPG，FloatRead 会把最长边缩至最多 1024 像素，只移除与图片边缘连通的浅色区域，保留被深色轮廓包围的眼白、花纹等内部细节，随后自动裁边并转换为不超过 1.5 MB 的透明 WebP。
 
 用户可以调整去白强度并在保存前预览。生成的宠物使用 FloatRead 内置的呼吸、准备、漂浮、成功弹跳、错误摇晃与按压反馈；图片本身不会执行代码，也不会上传到服务器。JPG 只作为制作器的输入，最终安全皮肤资源仍是 WebP。
 
-## 内置皮肤
+## 内置宠物与动作
 
-V0.3 默认提供原创宠物 Mochi，并保留 Native、Lens、Glass Orb、Pixel Bot、Ink 和 Terminal。每套皮肤覆盖 `idle`、`ready`、`thinking`、`success`、`error` 五种状态，并从 FloatRead 内置动画预设中选择动效。Mochi 的生成来源记录见 [资产记录](source/MOCHI_ASSET_PROVENANCE.md)。
+FloatRead 现在提供三只原创宠物：Mochi 猫、Maple 红熊猫与 Piko 小企鹅。设置页会先显示宠物伙伴，再显示 Native、Lens、Glass Orb、Pixel Bot、Ink 和 Terminal 等其他外观。
+
+- Mochi 使用分层图像实现眨眼、挥爪和摆尾，并响应点击、拖动行走、转身、翻译和错误状态。
+- Maple 与 Piko 各自拥有 `idle`、`ready`、`thinking`、`success`、`error` 五张独立画面；状态切换不是同一张图片简单变色。
+- 三只宠物都会响应点击、拖动、方向转身和快速滚动追赶；待机时使用克制的低频动作。
+- 系统开启“减少动态效果”或用户关闭动画后，所有循环和过渡动作都会停止，但状态画面仍会更新。
+
+Mochi 的生成来源见 [Mochi 资产记录](source/MOCHI_ASSET_PROVENANCE.md)，Maple 与 Piko 的生成、处理和失败记录见 [Maple 与 Piko 资产记录](source/MAPLE_PIKO_ASSET_PROVENANCE.md)。
 
 ## 包格式
 

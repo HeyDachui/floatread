@@ -13,7 +13,11 @@ import {
   saveProviderProfile,
 } from "../storage/providers";
 import { deleteProviderSecret, getProviderSecret, saveProviderSecret } from "../storage/secrets";
-import { isPageTranslationEnabled, setPageTranslationEnabled } from "../storage/page-translation";
+import {
+  clearLegacyPageTranslationMemory,
+  isPageTranslationEnabled,
+  setPageTranslationEnabled,
+} from "../storage/page-translation";
 import {
   getSettings,
   restoreDefaultSettings,
@@ -27,6 +31,7 @@ import {
 import { clearUsageSessions, getLatestUsageSession, listUsageSessions } from "../storage/usage";
 import { getActiveTab, injectAndSend, isInjectableUrl } from "./injection";
 import { cancelPageTranslationForTab } from "./page-translation-manager";
+import { enablePersistentSite, hasPersistentSiteAccess } from "./site-access";
 
 async function sendToOpenContent(
   type: "SHOW_COMPANION" | "HIDE_COMPANION" | "REFRESH_COMPANION",
@@ -127,6 +132,7 @@ async function getPopupState(targetTabId?: number): Promise<unknown> {
   return {
     globalEnabled: settings.enabled,
     supportedPage,
+    siteAccess: await hasPersistentSiteAccess(tab?.url),
     currentOrigin: pageOrigin(tab?.url),
     sitePaused: await isSitePaused(tab?.url),
     companionVisible,
@@ -279,6 +285,32 @@ export async function routeTrustedProviderMessage(
       }
       return { ok: true, data: await getPopupState(message.targetTabId) };
     }
+    case "ENABLE_CURRENT_SITE": {
+      const settings = await getSettings();
+      const tab = await getTargetTab(message.targetTabId);
+      if (!tab || !settings.enabled || !isInjectableUrl(tab.url)) {
+        return {
+          ok: false,
+          error: { code: "INVALID_MESSAGE", message: "当前页面无法启用 FloatRead。" },
+        };
+      }
+      try {
+        await setSitePaused(tab.url, false);
+        await enablePersistentSite(tab);
+      } catch (error) {
+        return {
+          ok: false,
+          error: {
+            code: "INVALID_MESSAGE",
+            message:
+              error instanceof Error && error.message === "HOST_PERMISSION_DENIED"
+                ? "尚未授权访问当前网站。"
+                : "当前页面无法启用 FloatRead。",
+          },
+        };
+      }
+      return { ok: true, data: await getPopupState(message.targetTabId) };
+    }
     case "SET_CURRENT_TAB_COMPANION": {
       const settings = await getSettings();
       const tab = await getTargetTab(message.targetTabId);
@@ -297,7 +329,7 @@ export async function routeTrustedProviderMessage(
       await updateCachePolicy(message.cache);
       return { ok: true };
     case "CLEAR_RESULT_CACHE":
-      await clearAllCaches();
+      await Promise.all([clearAllCaches(), clearLegacyPageTranslationMemory()]);
       return { ok: true };
     case "RESTORE_DEFAULT_SETTINGS":
       await restoreDefaultSettings();

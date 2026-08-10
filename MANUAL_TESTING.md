@@ -98,9 +98,13 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Mochi is the fresh-install default, remains legible at the default size and reacts to click/state changes.
 - [ ] Mochi visibly blinks while idle, walks while dragged, turns with horizontal direction and gives restrained ready/thinking/success/error feedback.
 - [ ] At 32px, 76px and 120px, Mochi remains recognizable and its eyelids/paw/tail do not detach visually.
+- [ ] Settings shows Mochi, Maple red panda and Piko penguin as separate visual pet cards before the non-pet appearances.
+- [ ] Maple and Piko each show visibly distinct pictures for Idle, Content found, Translating, Complete and Needs attention.
+- [ ] Maple and Piko respond to click, drag-walk and horizontal turn; switching pets applies immediately to an already-open page without reload.
+- [ ] With reduced motion enabled, pet state pictures still change but idle, click, walk, turn and catch-up animation stop.
 - [ ] A PNG/JPG can be previewed, locally de-backgrounded, named and enabled as a custom pet.
 - [ ] Internal light details are preserved when enclosed by the pet outline; the source image is never uploaded.
-- [ ] Mochi plus all six earlier built-in skins switch immediately and preview five states.
+- [ ] All three pets plus all six non-pet appearances switch immediately and preview five states.
 - [ ] Appearance tokens affect only FloatRead's Shadow DOM/extension pages.
 - [ ] Valid JSON + PNG/WebP skin imports, exports and survives restart.
 - [ ] Invalid schema/MIME/extension/path traversal/duplicate/oversize/bomb/dangerous URL/executable-field packages are rejected with understandable errors.
@@ -109,10 +113,15 @@ This is an execution checklist, not a claim of completion. Record Chrome version
 - [ ] Restore defaults leaves the extension usable.
 - [ ] Chinese, English and browser-auto modes update the complete settings shell; these UI choices are separate from page translation languages.
 - [ ] Starting and stopping page translation creates one local usage session with request/cache and Provider-reported token totals.
+- [ ] While an eight-segment batch is active, rapidly scroll more than one viewport; the pet shows the catch-up message once, unfinished old-viewport text stops changing and the settled current viewport translates next.
+- [ ] Continue rapid scrolling for ten seconds; the message does not repeat more than once during the 20-second cooldown, while viewport reprioritization still works.
+- [ ] With reduced motion enabled, rapid-scroll reprioritization and the text message still work but the catch-up movement does not animate.
 
 ## Release inspection
 
-- [ ] Load the extracted production `release/FloatRead-v0.4.1.zip`, not `dist-e2e`.
+- [ ] Load the extracted production `release/FloatRead-v0.5.0.zip`, not `dist-e2e`.
+- [ ] Translate the same short menu phrase three times; Settings moves it from recent memory to long-term memory and increases the reuse/estimated-Token counters.
+- [ ] Confirm the memory card exposes only automatic/session/off, usage and clear controls—not TTL, entry-count or MB tuning.
 - [ ] Start page translation, select an already translated post, then run Natural Chinese; “Original” must show the real source text rather than the visible page translation.
 - [ ] While Natural Chinese is loading, reload the extension to break its connection; the spinner must become a retryable error, and Stop/close must still respond immediately.
 - [ ] With X already open, press Reload for FloatRead in `chrome://extensions`; the existing page reconnects without requiring a page refresh.

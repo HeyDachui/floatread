@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildPageTranslationPrompt,
@@ -10,7 +11,7 @@ import {
 } from "../../src/page-translation/complete";
 import { ProviderFailure } from "../../src/providers/types";
 import { collectVisiblePageScan, collectVisiblePageSegments } from "../../src/content/page-scanner";
-import { restoreOriginalSelectionText } from "../../src/content/page-translator";
+import { isRapidScrollJump, restoreOriginalSelectionText } from "../../src/content/page-translator";
 import {
   getSiteLanguagePreferences,
   getPageTranslationMemory,
@@ -120,6 +121,14 @@ describe("page translation prompt", () => {
     expect(parseCompletedPageTranslationItems('{"translations":[{"id":"seg_0"', ["seg_0"])).toEqual(
       new Map(),
     );
+  });
+});
+
+describe("rapid page scrolling", () => {
+  it("distinguishes a fast viewport jump from ordinary reading scroll", () => {
+    expect(isRapidScrollJump(0, 700, 800, 300)).toBe(true);
+    expect(isRapidScrollJump(0, 400, 800, 300)).toBe(false);
+    expect(isRapidScrollJump(0, 700, 800, 700)).toBe(false);
   });
 });
 
@@ -336,5 +345,30 @@ describe("persistent page translation state", () => {
       alwaysTranslate: [],
       ignored: [],
     });
+  });
+
+  it("moves only requested legacy records into automatic memory", async () => {
+    const key = "b".repeat(64);
+    const untouchedKey = "c".repeat(64);
+    const values: Record<string, unknown> = {
+      pageTranslationMemoryV1: [
+        { key, translation: "账户设置", updatedAt: 1 },
+        { key: untouchedKey, translation: "未请求", updatedAt: 1 },
+      ],
+    };
+    vi.stubGlobal("chrome", {
+      storage: {
+        local: {
+          get: vi.fn(async (storageKey: string) => ({ [storageKey]: values[storageKey] })),
+          set: vi.fn(async (items: Record<string, unknown>) => Object.assign(values, items)),
+          remove: vi.fn(async (storageKey: string) => delete values[storageKey]),
+        },
+      },
+    });
+
+    await expect(getPageTranslationMemory([key])).resolves.toEqual(new Map([[key, "账户设置"]]));
+    expect(values.pageTranslationMemoryV1).toEqual([
+      { key: untouchedKey, translation: "未请求", updatedAt: 1 },
+    ]);
   });
 });

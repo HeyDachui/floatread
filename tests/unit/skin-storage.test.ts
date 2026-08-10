@@ -65,6 +65,15 @@ function installStorage(initial: unknown[] = []): void {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("skin storage separation", () => {
+  it("ships three original pets and five authored state frames for the new companions", () => {
+    const pets = BUILTIN_SKINS.filter((skin) => skin.variant === "pet");
+    expect(pets.map((skin) => skin.id)).toEqual(["mochi", "maple", "piko"]);
+    for (const skin of pets.filter((item) => item.id !== "mochi")) {
+      expect(skin.availableAssets).toEqual(["idle", "ready", "thinking", "success", "error"]);
+      expect(Object.keys(skin.builtinAssets ?? {})).toHaveLength(5);
+    }
+  });
+
   it("lists six built-ins, installs binary assets separately, and deletes them", async () => {
     installStorage();
     const id = "storage-proof-skin";

@@ -1,10 +1,18 @@
 import { z } from "zod";
+import { getAutomaticMemory, putAutomaticMemory } from "../cache/service";
+import type { CachePolicy } from "../cache/types";
 import { translationLanguageSchema, type TranslationLanguage } from "../translation/languages";
 
 const ENABLED_ORIGINS_KEY = "pageTranslationEnabledOriginsV1";
 const MEMORY_KEY = "pageTranslationMemoryV1";
 const SITE_LANGUAGE_KEY = "pageTranslationSiteLanguagesV1";
 const MEMORY_LIMIT = 2_000;
+const DEFAULT_MEMORY_POLICY: CachePolicy = {
+  mode: "persistent",
+  ttlDays: 30,
+  maxEntries: 20_000,
+  maxBytes: 10_000_000,
+};
 
 const memoryRecordSchema = z
   .object({
@@ -112,7 +120,7 @@ export async function setPageTranslationEnabled(
   await chrome.storage.local.set({ [ENABLED_ORIGINS_KEY]: [...current].sort() });
 }
 
-async function readMemory(): Promise<MemoryRecord[]> {
+async function readLegacyMemory(): Promise<MemoryRecord[]> {
   const stored = await chrome.storage.local.get(MEMORY_KEY);
   const parsed = z.array(memoryRecordSchema).max(MEMORY_LIMIT).safeParse(stored[MEMORY_KEY]);
   if (parsed.success) return parsed.data;
@@ -120,27 +128,75 @@ async function readMemory(): Promise<MemoryRecord[]> {
   return [];
 }
 
-export async function getPageTranslationMemory(keys: string[]): Promise<Map<string, string>> {
+async function migrateLegacyMemory(
+  keys: string[],
+  policy: CachePolicy,
+): Promise<Map<string, string>> {
+  if (policy.mode !== "persistent" || keys.length === 0) return new Map();
+  const legacy = await readLegacyMemory();
+  if (legacy.length === 0) return new Map();
   const wanted = new Set(keys);
-  return new Map(
-    (await readMemory())
-      .filter((record) => wanted.has(record.key))
-      .map((record) => [record.key, record.translation]),
+  const matches = legacy.filter((record) => wanted.has(record.key));
+  if (matches.length === 0) return new Map();
+  const migrated = await putAutomaticMemory(
+    matches.map((record) => ({
+      key: record.key,
+      output: record.translation,
+      options: { namespace: "page_translation", promotable: true },
+    })),
+    policy,
   );
+  if (migrated) {
+    const migratedKeys = new Set(matches.map((record) => record.key));
+    const remaining = legacy.filter((record) => !migratedKeys.has(record.key));
+    if (remaining.length > 0) await chrome.storage.local.set({ [MEMORY_KEY]: remaining });
+    else await chrome.storage.local.remove(MEMORY_KEY);
+  }
+  return new Map(matches.map((record) => [record.key, record.translation]));
+}
+
+export async function getPageTranslationMemory(
+  keys: string[],
+  policy: CachePolicy = DEFAULT_MEMORY_POLICY,
+): Promise<Map<string, string>> {
+  try {
+    const records = await getAutomaticMemory(keys, policy);
+    const translated = new Map([...records].map(([key, record]) => [key, record.output]));
+    const missing = keys.filter((key) => !translated.has(key));
+    for (const [key, output] of await migrateLegacyMemory(missing, policy)) {
+      translated.set(key, output);
+    }
+    return translated;
+  } catch {
+    return new Map();
+  }
 }
 
 export async function putPageTranslationMemory(
-  values: Array<{ key: string; translation: string }>,
+  values: Array<{
+    key: string;
+    translation: string;
+    sourceLength?: number;
+    kind?: "content" | "ui";
+  }>,
+  policy: CachePolicy = DEFAULT_MEMORY_POLICY,
 ): Promise<void> {
   if (values.length === 0) return;
-  const byKey = new Map((await readMemory()).map((record) => [record.key, record]));
-  const now = Date.now();
-  for (const value of values) {
-    const parsed = memoryRecordSchema.safeParse({ ...value, updatedAt: now });
-    if (parsed.success) byKey.set(parsed.data.key, parsed.data);
-  }
-  const retained = [...byKey.values()]
-    .sort((left, right) => right.updatedAt - left.updatedAt)
-    .slice(0, MEMORY_LIMIT);
-  await chrome.storage.local.set({ [MEMORY_KEY]: retained });
+  await putAutomaticMemory(
+    values.map((value) => ({
+      key: value.key,
+      output: value.translation,
+      options: {
+        namespace: "page_translation",
+        promotable: value.kind === "ui" || (value.sourceLength ?? Number.MAX_SAFE_INTEGER) <= 240,
+        estimatedTokens:
+          Math.ceil((value.sourceLength ?? 0) / 4) + Math.ceil(value.translation.length / 2),
+      },
+    })),
+    policy,
+  );
+}
+
+export async function clearLegacyPageTranslationMemory(): Promise<void> {
+  await chrome.storage.local.remove(MEMORY_KEY);
 }

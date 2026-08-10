@@ -290,6 +290,10 @@
   animation: fr-spin 1.8s linear infinite;
 }
 
+.fr-companion.fr-catching-up :is(.fr-artwork, .fr-community-art) {
+  animation: fr-catch-up 0.7s ease-out !important;
+}
+
 .fr-orb-focus {
   position: absolute;
   inset: 8%;
@@ -789,6 +793,24 @@
   }
   75% {
     transform: translateX(4px);
+  }
+}
+
+@keyframes fr-catch-up {
+  0% {
+    transform: translateX(0) rotate(0deg) scale(1);
+  }
+  24% {
+    transform: translateX(-7px) rotate(-8deg) scale(0.94, 1.06);
+  }
+  52% {
+    transform: translateX(5px) rotate(6deg) scale(1.05, 0.96);
+  }
+  78% {
+    transform: translateX(-2px) rotate(-2deg) scale(0.99, 1.01);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg) scale(1);
   }
 }
 

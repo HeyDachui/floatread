@@ -2,7 +2,7 @@
 
 FloatRead is a free, source-available, serverless, bring-your-own-key page translator for Chromium browsers. Translation starts only when the user clicks the companion, then progressively handles visible content in the selected source languages. Main content receives natural translation, while menus reuse persistent local translation memory. Selection reading remains available for deeper analysis.
 
-> Current release: `0.4.1`. Page translation defaults to English; users can select Fast, Smart or Precise, add source languages and choose one target language.
+> Current development release: `0.5.0`. The owner-tested `0.4.1` stable baseline remains available on the default branch. Page translation defaults to English; users can select Fast, Smart or Precise, add source languages and choose one target language.
 
 [简体中文](README.zh-CN.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Manual testing](MANUAL_TESTING.md)
 
@@ -18,26 +18,28 @@ Request counts, cache hits, and Provider-reported input/output/total tokens are 
 - Key points: what the text says, why it matters, what it omits, and clearly labeled inference.
 - Explain terms: plain-Chinese explanations grounded in the selected text.
 - One-click visible-page translation with progressive processing as the user scrolls.
+- Rapid-scroll catch-up: a stale unfinished batch is cancelled after a large fast jump, then the settled current viewport is prioritized with a rate-limited pet message.
 - Fast, Smart (recommended) and Precise page-translation levels; migrated users keep the previous Precise behavior.
 - One to five source languages and one target language; the extension UI itself remains Chinese/English.
 - A local detected-language choice: this time, always on this site, or ignore—without an AI call before consent.
 - Local per-session request, cache-hit and input/output/total token accounting from Start to Stop.
+- Automatic 10 MB local translation memory: repeated short/functional text can graduate from recent memory to a protected long-term tier; the two 5 MB targets borrow unused space from each other.
 - Hidden pages submit no new Provider batch and resume only when the user returns without explicitly stopping.
 - Enhanced semantic profiles for X, TED and Reddit, with a generic active-tab fallback elsewhere.
 - Precision translation for article/post content and concise translation for navigation, menus and buttons.
 - Persistent, bounded local translation memory so repeated UI labels do not call the model again.
-- Floating companion with drag, edge snap, viewport correction, sizing, opacity and six built-in skins.
+- Floating companion with drag, edge snap, viewport correction, sizing, opacity, three original pets and six additional appearances.
 - Streaming output, cancel, retry, copy, original-text view and bounded local cache.
 - A simplified Popup, per-site/global pause, context menu, keyboard shortcuts and onboarding.
 - Chinese/English UI, keyboard operation, dark appearance and `prefers-reduced-motion` support.
 - OpenAI, OpenAI Compatible, DeepSeek, Anthropic Claude, Google Gemini and Ollama.
-- Mochi, an original default pet with blink, drag-walk, turn and state reactions, plus local PNG/JPG-to-pet creation and secure skin packages.
+- Three original built-in pets: Mochi, Maple the red panda and Piko the penguin. Maple and Piko have five authored state images; all pets react to clicks, walking, turns and rapid-scroll catch-up. Local PNG/JPG-to-pet creation and secure skin packages remain supported.
 
 FloatRead has no developer server, account, payment, analytics, advertising or telemetry system. Provider requests go directly from the extension's Background Service Worker to the endpoint the user configures.
 
 ## How page translation works
 
-After the user explicitly starts translation, FloatRead scans only current-viewport text in selected source languages. Detection happens locally. It uses semantic HTML rather than X private selectors. Precise, Smart and Fast cap batches at 6/6,000, 8/8,000 and 12/12,000 segments/characters respectively. New visible content is translated while scrolling; infinite timelines are never preloaded, and hidden tabs submit no new batch.
+After the user explicitly starts translation, FloatRead scans only current-viewport text in selected source languages. Detection happens locally. It uses semantic HTML rather than X private selectors. Precise, Smart and Fast cap batches at 6/6,000, 8/8,000 and 12/12,000 segments/characters respectively. New visible content is translated while scrolling; a large rapid jump cancels the unfinished stale batch and waits briefly for the new viewport to settle. Infinite timelines are never preloaded, and hidden tabs submit no new batch.
 
 Translations replace visible text-node values and can change wrapping. A restricted child-list observer detects newly added posts and menus without continuously rewriting React-controlled character data. Stop aborts the Background batch, disables restart for the origin and preserves completed translations; Clear also restores surviving original text nodes. Reloading a page never automatically starts AI translation.
 
@@ -49,7 +51,7 @@ Release screenshots are intentionally not fabricated. Maintainers should capture
 
 ## Install a release build
 
-1. Obtain `FloatRead-v0.4.1.zip` and verify its SHA-256 against the adjacent `.sha256` file.
+1. Obtain `FloatRead-v0.5.0.zip` and verify its SHA-256 against the adjacent `.sha256` file.
 2. Extract the ZIP to a permanent local folder.
 3. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select the extracted folder containing `manifest.json`.
 4. Open FloatRead settings, add a Provider, grant the exact endpoint origin when prompted, and test the connection.
@@ -89,17 +91,21 @@ See [Provider configuration](docs/PROVIDERS.md) for protocols, defaults and Olla
 
 ## Permissions
 
-| Permission                                 | Why it exists                                                                                |
-| ------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| `storage`                                  | Settings, site/page-translation preferences, caches, skins and selected credential storage.  |
-| `contextMenus`                             | User-triggered selection actions for the three reading modes.                                |
-| `activeTab`                                | Temporary access to the current non-X page after an explicit toolbar/shortcut action.        |
-| `scripting`                                | Mount or remove the single companion host after that user gesture.                           |
-| `https://x.com/*`, `https://twitter.com/*` | User-enabled progressive translation of visible X text without private post selectors.       |
-| Optional HTTPS origins                     | Direct requests to the Provider origin selected by the user; requested only when configured. |
-| Optional localhost origins                 | Local Ollama or a local proxy controlled by the user.                                        |
+| Permission                                 | Why it exists                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `storage`                                  | Settings, site/page-translation preferences, caches, skins and selected credential storage. |
+| `contextMenus`                             | User-triggered selection actions for the three reading modes.                               |
+| `activeTab`                                | Temporary access to the current non-X page after an explicit toolbar/shortcut action.       |
+| `scripting`                                | Mount the single companion host and register an explicitly enabled exact website origin.    |
+| `https://x.com/*`, `https://twitter.com/*` | User-enabled progressive translation of visible X text without private post selectors.      |
+| Optional HTTPS origins                     | Exact Provider origins and exact websites enabled by the user; never silently broadened.    |
+| Optional localhost origins                 | Local Ollama or a local proxy controlled by the user.                                       |
 
 FloatRead does not request history, cookies, downloads, broad tab access, webRequest or permanent `<all_urls>`. See the [full permission rationale](docs/PERMISSIONS.md).
+
+X loads automatically under its declared permission. On another HTTPS site such as TED, open the
+Popup and choose **Enable on this site**. Chrome asks for that exact origin; after approval,
+FloatRead loads immediately and remembers the site until the permission is revoked.
 
 ## Privacy and security
 
@@ -109,7 +115,7 @@ Read [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md) and the [threat model]
 
 ## Skins
 
-Mochi is the original default pet. Users can also drop one PNG/JPG into Settings; FloatRead locally removes border-connected light background pixels, crops the subject, converts it to transparent WebP and applies built-in motions. Native, Lens, Glass Orb, Pixel Bot, Ink and Terminal remain available. Community `.floatread-skin` packages contain only strict JSON and PNG/WebP; executable or remote content is rejected. See [skin authoring](docs/SKINS.md).
+Mochi remains the default pet; Maple and Piko add distinct five-state artwork. Users can also drop one PNG/JPG into Settings; FloatRead locally removes border-connected light background pixels, crops the subject, converts it to transparent WebP and applies built-in single-image motions. Native, Lens, Glass Orb, Pixel Bot, Ink and Terminal remain available. Community `.floatread-skin` packages contain only strict JSON and PNG/WebP; executable or remote content is rejected. See the [pet customization guide](docs/PET_CUSTOMIZATION.md) and [skin authoring reference](docs/SKINS.md).
 
 ## Contributing
 

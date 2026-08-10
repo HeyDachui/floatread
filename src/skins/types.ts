@@ -45,6 +45,7 @@ export interface RuntimeSkinDefinition {
   panel: SkinPanelTokens;
   availableAssets: SkinState[];
   builtinAssetPath?: string | undefined;
+  builtinAssets?: { [State in SkinState]?: string | undefined } | undefined;
 }
 
 export interface InstalledSkin {
