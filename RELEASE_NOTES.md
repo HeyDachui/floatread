@@ -12,7 +12,7 @@ FloatRead 0.4.1 fixes two owner-reported precision-reading failures without chan
 
 Extract `release/FloatRead-v0.4.1.zip`, load the extracted directory at `chrome://extensions`, then press **Reload** on an existing FloatRead card and refresh the site tab.
 
-Automated, real-Provider and package evidence is recorded in `PROGRESS.md` and `docs/REAL_API_SMOKE.md`. Authenticated-site behavior is not labeled passed until the owner observes it.
+The bounded Provider smoke and package evidence is recorded in [docs/REAL_API_SMOKE.md](docs/REAL_API_SMOKE.md). Authenticated-site behavior is not labeled passed until it is observed in the target environment.
 
 ## Verification
 

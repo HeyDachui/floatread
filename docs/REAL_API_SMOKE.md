@@ -4,12 +4,12 @@ Latest test date: 2026-07-22
 
 This record contains no credential, Authorization header, selected private text or model output body.
 
-## Authorized target
+## Reproducible setup
 
 - Provider: DeepSeek
 - Base URL: `https://api.deepseek.com`
 - Model: `deepseek-v4-flash`
-- Credential injection: ignored `.secrets/FloatRead-APIKEY.txt` read directly into the temporary process environment variable `FLOATREAD_TEST_DEEPSEEK_KEY`
+- Credential injection: the caller supplies a temporary environment variable; no credential file path or value belongs in this repository
 - Fixed source text: `We reset usage limits for affected Codex users.`
 - Parallel keys/requests: none
 
@@ -37,9 +37,9 @@ DeepSeek V4 defaults to Thinking mode and counts reasoning plus final-answer tok
 
 ## Credential handling
 
-The key was never printed, copied into source, saved in a tracked file, put into Chrome settings, or included in test output. Each shell invocation removed its temporary environment variables. The ignored `.secrets/FloatRead-APIKEY.txt` injection file remains only because the owner explicitly asked to retain this low-limit test credential; it is excluded from Git, builds and release archives.
+The key was never printed, copied into source, saved in a tracked file, put into Chrome settings, or included in test output. Each invocation removed its temporary environment variables. Callers should use a separate, low-limit credential and keep it outside the repository.
 
-The V2 page-batch smoke used `Account settings` plus the fixed public test sentence. The record stores only segment count and output character lengths (4 and 23), not the returned translations.
+The V2 page-batch smoke used a short public test sentence. The record stores only segment count and output character lengths (4 and 23), not the returned translations.
 
 The V2.1 retest explicitly requested the Provider's JSON-object response mode after the multiline/mixed-text reliability fix. It used the same two harmless segments and retained the same no-body/no-key evidence policy.
 
@@ -49,6 +49,4 @@ The V3 retest exercised the production streaming parser and the new mixed-name r
 
 The V4 comparison used six harmless X/TED/Reddit/generic representative segments. Fast and Precise each made exactly one bounded streaming request and returned all six strict ids. Fast used 515 total Token and Precise used 516. Fast completed in 1,909 ms with the first item at 1,398 ms; Precise completed in 1,683 ms with the first item at 1,147 ms. This one small-batch observation proves both modes function and that Fast stayed below two seconds, but it does **not** prove Fast is always faster: network/model variance made it 226 ms slower in this sample. Fast's deterministic throughput advantage is its larger 12-segment/12,000-character batch versus Precise's 6-segment/6,000-character batch, so a same-page long-session comparison remains a manual performance check.
 
-The V4.1 smoke used the owner's public `@ChatGPTapp writing feature` regression text after the controlled Chromium path had already proved that a translated page selection is restored to its original source. One Natural Chinese stream completed in 1,288 ms using 365 input + 52 output = 417 Token. The retained metadata proves the response contained Chinese, preserved `ChatGPTapp`, and did not leave the two targeted English sentences untranslated. The output body was inspected only in process and was not logged or saved; natural style remains an owner judgment rather than a metadata claim.
-
-After this V3 test, `.secrets/FloatRead-APIKEY.txt` remains locally present and Git-ignored because the owner explicitly requested that the low-limit test credential be retained. It is not tracked, built, packaged or scanned as repository content and must never be treated as a production credential.
+The V4.1 smoke used a public writing-feature regression text after the controlled Chromium path had already proved that a translated page selection is restored to its original source. One Natural Chinese stream completed in 1,288 ms using 365 input + 52 output = 417 Token. The retained metadata proves the response contained Chinese, preserved the product name, and did not leave the two targeted English sentences untranslated. The output body was inspected only in process and was not logged or saved; natural style remains a human judgment rather than a metadata claim.

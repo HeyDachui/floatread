@@ -2,7 +2,7 @@
 
 报告日期：2026-07-22
 
-锁定工作区：`E:\AI-900\FloatRead`
+来源快照：本仓库 `main` 分支中的受跟踪文件。
 
 发布版本：`0.4.1`
 
@@ -10,7 +10,7 @@
 
 FloatRead 0.4.1 已形成可运行、可测试、可构建和可安装的 Chrome Manifest V3 扩展。它保留 0.4.0 的三档翻译、语言询问、后台 Token 保护、X/TED/Reddit 策略和 Mochi 动画，并修复了页面已经翻译后精读读取译文、精读连接无限转圈以及失效连接无法停止的问题。
 
-受控 Chromium 流程、真实 DeepSeek 最小请求和生产 ZIP 均已通过。所有者随后在真实 X 和 TED 页面复测，未再发现页面翻译、自然中文、停止、连接或流畅度问题。Reddit、实际后台标签切换和宠物自然度仍需单独人工观察，不冒充已通过。
+受控 Chromium 流程、一次有界的真实 Provider 请求和生产 ZIP 均已通过。项目记录的 X 和 TED 代表性检查未再发现页面翻译、自然中文、停止、连接或流畅度问题。Reddit、实际后台标签切换和宠物自然度仍需单独人工观察，不冒充已通过。
 
 ## 2. 实际实现功能
 
@@ -119,8 +119,7 @@ Fast 在本次小样本低于两秒，但没有比 Precise 快；226ms 差异属
 ## 9. 凭据确认
 
 - API Key 未回显、未写入源码、日志、README、缓存、`dist` 或 ZIP。
-- 冒烟命令只把本地忽略文件内容短暂放入子进程环境变量，完成后删除环境变量。
-- 所有者明确要求保留测试 Key，因此它仍只存在于 `.secrets/FloatRead-APIKEY.txt`；`.secrets/` 被 Git 忽略并不参与构建或扫描对象。
+- 冒烟脚本只接受调用方提供的临时环境变量，不把凭据写入仓库、构建产物或发布包。
 
 ## 10. 实际执行的测试
 
@@ -153,8 +152,8 @@ Fast 在本次小样本低于两秒，但没有比 Precise 快；226ms 差异属
 
 ## 13. 构建产物
 
-- 解压目录：`E:\AI-900\FloatRead\dist`
-- 发布 ZIP：`E:\AI-900\FloatRead\release\FloatRead-v0.4.1.zip`
+- 解压目录：`dist/`
+- 发布 ZIP：`release/FloatRead-v0.4.1.zip`
 - ZIP 大小：443,831 字节
 - ZIP 文件数：20
 - SHA-256：`f46c9872ee611ba9142e90a4f1cb4732dcccd1f46cd5b25a26a75d62a664498d`
@@ -165,7 +164,7 @@ Fast 在本次小样本低于两秒，但没有比 Precise 快；226ms 差异属
 1. 解压 `release/FloatRead-v0.4.1.zip` 到固定目录；也可直接使用仓库的 `dist`。
 2. Chrome 打开 `chrome://extensions`。
 3. 开启“开发者模式”。
-4. 点击“加载已解压的扩展程序”，选择解压目录或 `E:\AI-900\FloatRead\dist`。
+4. 点击“加载已解压的扩展程序”，选择解压目录或 `dist/`。
 5. 如果原来已加载旧版，点击 FloatRead 卡片的“重新加载”，再刷新正在测试的网页。
 6. 打开设置，选择 DeepSeek、模型 `deepseek-v4-flash`、Key 保存方式并测试连接。
 
